@@ -1,11 +1,12 @@
 //! The lexer breaks down text information into tokens, which can be used to assemble syntax.
 
-use std::str::SplitWhitespace;
-
 /// Represents all possible tokens.
+#[derive(Debug)]
 pub enum Token {
+    Equal,
     Identifier,
     Let,
+    Number(f32),
 }
 
 pub struct Lexer;
@@ -31,11 +32,20 @@ impl Lexer {
     }
 
     /// Lexes an individual line, split by spaces, and returns a vector of tokens.
-    fn lex_ln(&mut self, words: SplitWhitespace) -> Vec<Token> {
+    fn lex_ln<'a>(&mut self, words: impl Iterator<Item = &'a str>) -> Vec<Token> {
         let mut tokens = vec![];
         for word in words {
             use Token::*;
             tokens.push(match word {
+                // assignments
+                "let" => Let,
+                "=" => Equal,
+
+                // numeric
+                s if s.parse::<f32>().is_ok() => Number(s.parse::<f32>().unwrap()),
+
+                // other
+                "--" => break,
                 _ => Identifier,
             });
         }
