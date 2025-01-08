@@ -65,4 +65,21 @@ fn conditionals() {
             Endl
         ]
     );
+    assert_eq!(
+        Lexer::new().lex("if 1 < 2 then; 1 + 1; end".into()),
+        vec![
+            If,
+            Number(1.),
+            LogicalL,
+            Number(2.),
+            BlockStart,
+            Endl,
+            Number(1.),
+            Add,
+            Number(1.),
+            Endl,
+            BlockEnd,
+            Endl
+        ]
+    );
 }
