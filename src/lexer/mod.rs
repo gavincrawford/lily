@@ -8,6 +8,18 @@ pub enum Token {
     Identifier(String),
     Let,
 
+    // conditionals
+    If,
+    Else,
+    BlockStart,
+    BlockEnd,
+
+    // logic
+    LogicalEq,
+    LogicalNeq,
+    LogicalG,
+    LogicalL,
+
     // math
     Number(f32),
     Add,
@@ -52,11 +64,21 @@ impl Lexer {
         for word in words {
             use Token::*;
             tokens.push(match word {
-                // assignments
+                // variables
                 "let" => Let,
                 "=" => Equal,
 
-                // math
+                // conditionals & logic
+                "if" => If,
+                "else" => Else,
+                "{" => BlockStart,
+                "}" => BlockEnd,
+                "==" => LogicalEq,
+                "!=" => LogicalNeq,
+                ">" => LogicalG,
+                "<" => LogicalL,
+
+                // math & numbers
                 s if s.parse::<f32>().is_ok() => Number(s.parse::<f32>().unwrap()),
                 "+" => Add,
                 "-" => Sub,
@@ -103,6 +125,44 @@ mod tests {
         assert_eq!(
             Lexer::new().lex("1 / 1".into()),
             vec![Number(1.), Div, Number(1.), Endl]
+        );
+    }
+
+    #[test]
+    fn logic() {
+        assert_eq!(
+            Lexer::new().lex("1 == 2".into()),
+            vec![Number(1.), LogicalEq, Number(2.), Endl]
+        );
+        assert_eq!(
+            Lexer::new().lex("1 != 2".into()),
+            vec![Number(1.), LogicalNeq, Number(2.), Endl]
+        );
+        assert_eq!(
+            Lexer::new().lex("1 > 2".into()),
+            vec![Number(1.), LogicalG, Number(2.), Endl]
+        );
+        assert_eq!(
+            Lexer::new().lex("1 < 2".into()),
+            vec![Number(1.), LogicalL, Number(2.), Endl]
+        );
+    }
+
+    #[test]
+    fn conditionals() {
+        assert_eq!(
+            // TODO fix. this test SHOULD pass, but the lexer does not recognize the brackets as
+            // separate characters, and instead converts them into an indentifier
+            Lexer::new().lex("if 1 > 2 {}".into()),
+            vec![
+                If,
+                Number(1.),
+                LogicalG,
+                Number(2.),
+                BlockStart,
+                BlockEnd,
+                Endl
+            ]
         );
     }
 }
