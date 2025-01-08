@@ -54,9 +54,7 @@ fn logic() {
 #[test]
 fn conditionals() {
     assert_eq!(
-        // TODO fix. this test SHOULD pass, but the lexer does not recognize the brackets as
-        // separate characters, and instead converts them into an indentifier
-        Lexer::new().lex("if 1 > 2 {}".into()),
+        Lexer::new().lex("if 1 > 2 then end".into()),
         vec![
             If,
             Number(1.),
