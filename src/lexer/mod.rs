@@ -8,6 +8,7 @@ pub enum Token {
     // variables
     Equal,
     Identifier(String),
+    Function,
     Let,
 
     // conditionals
@@ -66,9 +67,10 @@ impl Lexer {
         for word in words.split_whitespace() {
             use Token::*;
             tokens.push(match word {
-                // variables
+                // variables & functions
                 "let" => Let,
                 "=" => Equal,
+                "func" => Function,
 
                 // conditionals & logic
                 "if" => If,

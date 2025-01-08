@@ -83,3 +83,20 @@ fn conditionals() {
         ]
     );
 }
+
+#[test]
+fn functions() {
+    assert_eq!(
+        Lexer::new().lex("let fn = func do; end".into()),
+        vec![
+            Let,
+            Identifier("fn".into()),
+            Equal,
+            Function,
+            BlockStart,
+            Endl,
+            BlockEnd,
+            Endl,
+        ]
+    );
+}
