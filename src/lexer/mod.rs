@@ -55,15 +55,15 @@ impl Lexer {
             }
 
             // parse line and store tokens
-            tokens.extend(self.lex_ln(line.split_whitespace()));
+            tokens.extend(self.lex_ln(line));
         }
         tokens
     }
 
-    /// Lexes an individual line, split by spaces, and returns a vector of tokens.
-    fn lex_ln<'a>(&mut self, words: impl Iterator<Item = &'a str>) -> Vec<Token> {
+    /// Lexes an individual line and returns a vector of tokens.
+    fn lex_ln(&mut self, words: &str) -> Vec<Token> {
         let mut tokens = vec![];
-        for word in words {
+        for word in words.split_whitespace() {
             use Token::*;
             tokens.push(match word {
                 // variables
