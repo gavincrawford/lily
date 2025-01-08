@@ -73,7 +73,7 @@ impl Lexer {
                 // conditionals & logic
                 "if" => If,
                 "else" => Else,
-                "then" => BlockStart,
+                "do" => BlockStart,
                 "end" => BlockEnd,
                 "==" => LogicalEq,
                 "!=" => LogicalNeq,

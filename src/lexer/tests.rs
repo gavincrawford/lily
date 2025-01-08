@@ -54,7 +54,7 @@ fn logic() {
 #[test]
 fn conditionals() {
     assert_eq!(
-        Lexer::new().lex("if 1 > 2 then end".into()),
+        Lexer::new().lex("if 1 > 2 do end".into()),
         vec![
             If,
             Number(1.),
@@ -66,7 +66,7 @@ fn conditionals() {
         ]
     );
     assert_eq!(
-        Lexer::new().lex("if 1 < 2 then; 1 + 1; end".into()),
+        Lexer::new().lex("if 1 < 2 do; 1 + 1; end".into()),
         vec![
             If,
             Number(1.),
