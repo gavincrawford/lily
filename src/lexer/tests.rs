@@ -51,12 +51,26 @@ fn logic() {
         vec![Number(1.), LogicalNeq, Number(2.), Endl]
     );
     assert_eq!(
-        Lexer::new().lex("1 > 2;".into()),
-        vec![Number(1.), LogicalG, Number(2.), Endl]
+        Lexer::new().lex("1 > 2 >= 3;".into()),
+        vec![
+            Number(1.),
+            LogicalG,
+            Number(2.),
+            LogicalGe,
+            Number(3.),
+            Endl
+        ]
     );
     assert_eq!(
-        Lexer::new().lex("1 < 2;".into()),
-        vec![Number(1.), LogicalL, Number(2.), Endl]
+        Lexer::new().lex("1 < 2 <= 3;".into()),
+        vec![
+            Number(1.),
+            LogicalL,
+            Number(2.),
+            LogicalLe,
+            Number(3.),
+            Endl
+        ]
     );
 }
 

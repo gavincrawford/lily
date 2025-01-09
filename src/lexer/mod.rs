@@ -21,9 +21,10 @@ pub enum Token {
     LogicalNot,
     LogicalEq,
     LogicalNeq,
-    // TODO ge, le
     LogicalG,
+    LogicalGe,
     LogicalL,
+    LogicalLe,
 
     // math
     Number(f32),
@@ -145,7 +146,9 @@ impl Lexer {
                             (Equal, '=') => tokens.push(LogicalEq),
                             (Equal, _) => tokens.push(Equal),
                             (LogicalNot, '=') => tokens.push(LogicalNeq),
+                            (LogicalL, '=') => tokens.push(LogicalLe),
                             (LogicalL, _) => tokens.push(LogicalL),
+                            (LogicalG, '=') => tokens.push(LogicalGe),
                             (LogicalG, _) => tokens.push(LogicalG),
                             _ => {}
                         }
