@@ -1,3 +1,7 @@
+//! Lexer tests.
+//! Not all of these tests are syntax-compliant, but that's fine for this stage of the interpreter.
+//! Here, we just want to make sure that plain text gets converted to the correct tokens.
+
 #![cfg(test)]
 
 use super::*;
