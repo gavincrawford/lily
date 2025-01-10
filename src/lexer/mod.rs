@@ -124,7 +124,7 @@ impl Lexer {
                         '\'' => {
                             mode = CaptureMode::Char;
                         }
-                        c if c.is_alphanumeric() => {
+                        c if c.is_alphanumeric() || c == '_' => {
                             self.keyword_register.push(c);
                         }
 

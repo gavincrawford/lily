@@ -13,6 +13,7 @@ pub enum ASTNode {
     },
     Function {
         id: String,
+        arguments: Vec<String>,
         body: Box<ASTNode>,
     },
     Op {
@@ -97,11 +98,18 @@ impl Parser {
         self.expect(Token::Function);
         let next = self.next();
         if let Some(Token::Identifier(name)) = next {
+            // gather arguments
+            let mut args = vec![];
+            while let Some(Token::Identifier(arg)) = self.peek() {
+                args.push(arg.clone());
+                self.next();
+            }
             self.expect(Token::BlockStart);
             self.expect(Token::Endl);
             ASTNode::Function {
                 id: name,
                 body: Box::from(self.parse()),
+                arguments: args,
             }
         } else {
             panic!("expected identifier, found {:?}", next);

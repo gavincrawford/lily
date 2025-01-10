@@ -89,25 +89,26 @@ fn comparisons() {
 #[test]
 fn functions() {
     assert_eq!(
-        Parser::new(Lexer::new().lex("func fn do; let x = 1 + 1; let y = 1 + 1; end;".into()))
+        Parser::new(Lexer::new().lex("func fn a b do; let x = a + b; let y = a - b; end;".into()))
             .parse(),
         ASTNode::Block(vec![ASTNode::Function {
             id: "fn".into(),
+            arguments: vec!["a".into(), "b".into()],
             body: Box::from(ASTNode::Block(vec![
                 ASTNode::Variable {
                     id: "x".into(),
                     value: Box::from(ASTNode::Op {
-                        lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                        lhs: Box::from(ASTNode::Literal(Token::Identifier("a".into()))),
                         op: Token::Add,
-                        rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                        rhs: Box::from(ASTNode::Literal(Token::Identifier("b".into()))),
                     })
                 },
                 ASTNode::Variable {
                     id: "y".into(),
                     value: Box::from(ASTNode::Op {
-                        lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
-                        op: Token::Add,
-                        rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                        lhs: Box::from(ASTNode::Literal(Token::Identifier("a".into()))),
+                        op: Token::Sub,
+                        rhs: Box::from(ASTNode::Literal(Token::Identifier("b".into()))),
                     })
                 }
             ]))
