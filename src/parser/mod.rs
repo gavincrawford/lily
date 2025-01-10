@@ -62,6 +62,7 @@ impl Parser {
         }
     }
 
+    /// Parses all tokens into a program.
     pub fn parse(&mut self) -> ASTNode {
         let mut statements = vec![];
         while self.peek().is_some() {
@@ -70,6 +71,7 @@ impl Parser {
         ASTNode::Program(statements)
     }
 
+    /// Parses a statement.
     fn parse_statement(&mut self) -> ASTNode {
         match self.peek() {
             Some(Token::Let) => self.parse_decl(),
@@ -79,6 +81,7 @@ impl Parser {
         }
     }
 
+    /// Parses a variable declaration.
     fn parse_decl(&mut self) -> ASTNode {
         self.expect(Token::Let);
         let next = self.next();
@@ -93,6 +96,7 @@ impl Parser {
         }
     }
 
+    /// Parses raw expressions, such was math or comparisons.
     fn parse_expr(&mut self) -> Box<ASTNode> {
         let primary = self.parse_primary();
         match self.peek() {
@@ -118,6 +122,7 @@ impl Parser {
         }
     }
 
+    /// Parses primaries, such as literals.
     fn parse_primary(&mut self) -> Box<ASTNode> {
         match self.peek() {
             Some(Token::Number(_)) | Some(Token::Str(_)) | Some(Token::Identifier(_)) => {
