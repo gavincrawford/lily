@@ -3,7 +3,7 @@
 mod tests;
 
 /// Represents all possible tokens.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     // variables
     Equal,
