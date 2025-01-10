@@ -96,13 +96,18 @@ impl Parser {
     fn parse_expr(&mut self) -> Box<ASTNode> {
         let primary = self.parse_primary();
         match self.peek() {
-            Some(Token::Add) | Some(Token::Sub) | Some(Token::Mul) | Some(Token::Div) => {
-                Box::from(ASTNode::Op {
-                    lhs: primary,
-                    op: self.next().unwrap(),
-                    rhs: self.parse_expr(),
-                })
-            }
+            Some(Token::Add)
+            | Some(Token::Sub)
+            | Some(Token::Mul)
+            | Some(Token::Div)
+            | Some(Token::LogicalL)
+            | Some(Token::LogicalLe)
+            | Some(Token::LogicalG)
+            | Some(Token::LogicalGe) => Box::from(ASTNode::Op {
+                lhs: primary,
+                op: self.next().unwrap(),
+                rhs: self.parse_expr(),
+            }),
             Some(Token::Endl) => {
                 self.next();
                 primary
