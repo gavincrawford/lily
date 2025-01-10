@@ -6,10 +6,14 @@ mod tests;
 
 #[derive(Debug, PartialEq)]
 pub enum ASTNode {
-    Program(Vec<ASTNode>),
+    Block(Vec<ASTNode>),
     Variable {
         id: String,
         value: Box<ASTNode>,
+    },
+    Function {
+        id: String,
+        body: Box<ASTNode>,
     },
     Op {
         lhs: Box<ASTNode>,
@@ -65,24 +69,47 @@ impl Parser {
     /// Parses all tokens into a program.
     pub fn parse(&mut self) -> ASTNode {
         let mut statements = vec![];
-        while self.peek().is_some() {
+        while let Some(token) = self.peek() {
+            if *token == Token::BlockEnd {
+                // consume block end and expect endline
+                self.next();
+                self.expect(Token::Endl);
+                break;
+            }
             statements.push(self.parse_statement());
         }
-        ASTNode::Program(statements)
+        ASTNode::Block(statements)
     }
 
     /// Parses a statement.
     fn parse_statement(&mut self) -> ASTNode {
         match self.peek() {
-            Some(Token::Let) => self.parse_decl(),
+            Some(Token::Let) => self.parse_decl_var(),
+            Some(Token::Function) => self.parse_decl_fn(),
             _ => {
                 todo!();
             }
         }
     }
 
+    /// Parses a function declaration.
+    fn parse_decl_fn(&mut self) -> ASTNode {
+        self.expect(Token::Function);
+        let next = self.next();
+        if let Some(Token::Identifier(name)) = next {
+            self.expect(Token::BlockStart);
+            self.expect(Token::Endl);
+            ASTNode::Function {
+                id: name,
+                body: Box::from(self.parse()),
+            }
+        } else {
+            panic!("expected identifier, found {:?}", next);
+        }
+    }
+
     /// Parses a variable declaration.
-    fn parse_decl(&mut self) -> ASTNode {
+    fn parse_decl_var(&mut self) -> ASTNode {
         self.expect(Token::Let);
         let next = self.next();
         if let Some(Token::Identifier(name)) = next {

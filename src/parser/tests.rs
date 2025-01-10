@@ -8,7 +8,7 @@ use Token::*;
 fn decl() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = 1;".into())).parse(),
-        ASTNode::Program(vec![ASTNode::Variable {
+        ASTNode::Block(vec![ASTNode::Variable {
             id: "x".into(),
             value: Box::from(ASTNode::Literal(Number(1.))),
         }])
@@ -19,7 +19,7 @@ fn decl() {
 fn math() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = 1 + 2 - 3 * 4 / 5;".into())).parse(),
-        ASTNode::Program(vec![ASTNode::Variable {
+        ASTNode::Block(vec![ASTNode::Variable {
             id: "x".into(),
             value: Box::from(ASTNode::Op {
                 lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
@@ -49,7 +49,7 @@ fn comparisons() {
             "let a = 100 < 200; let b = 100 <= 200; let c = 200 > 100; let d = 200 >= 100;".into()
         ))
         .parse(),
-        ASTNode::Program(vec![
+        ASTNode::Block(vec![
             ASTNode::Variable {
                 id: "a".into(),
                 value: Box::from(ASTNode::Op {
@@ -83,5 +83,34 @@ fn comparisons() {
                 })
             }
         ])
+    );
+}
+
+#[test]
+fn functions() {
+    assert_eq!(
+        Parser::new(Lexer::new().lex("func fn do; let x = 1 + 1; let y = 1 + 1; end;".into()))
+            .parse(),
+        ASTNode::Block(vec![ASTNode::Function {
+            id: "fn".into(),
+            body: Box::from(ASTNode::Block(vec![
+                ASTNode::Variable {
+                    id: "x".into(),
+                    value: Box::from(ASTNode::Op {
+                        lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                        op: Token::Add,
+                        rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                    })
+                },
+                ASTNode::Variable {
+                    id: "y".into(),
+                    value: Box::from(ASTNode::Op {
+                        lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                        op: Token::Add,
+                        rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                    })
+                }
+            ]))
+        }])
     );
 }
