@@ -33,6 +33,10 @@ pub enum Token {
     Mul,
     Div,
 
+    // strings
+    Str(String),
+    Char(char),
+
     // other
     Endl,
 }
@@ -42,11 +46,14 @@ enum CaptureMode {
     General,
     Number,
     Equality,
+    String,
+    Char,
 }
 
 pub struct Lexer {
     number_register: String,
     keyword_register: String,
+    string_register: String,
     equality_register: Option<Token>,
 }
 impl Lexer {
@@ -55,6 +62,7 @@ impl Lexer {
         Self {
             number_register: String::new(),
             keyword_register: String::new(),
+            string_register: String::new(),
             equality_register: None,
         }
     }
@@ -110,9 +118,14 @@ impl Lexer {
                         }
 
                         // non-number words
+                        '\"' => {
+                            mode = CaptureMode::String;
+                        }
+                        '\'' => {
+                            mode = CaptureMode::Char;
+                        }
                         c if c.is_alphanumeric() => {
                             self.keyword_register.push(c);
-                            dbg!(&self.keyword_register);
                         }
 
                         // keywords
@@ -168,6 +181,31 @@ impl Lexer {
                         continue;
                     }
                 },
+                CaptureMode::String => match c {
+                    '\"' => {
+                        tokens.push(Str(self.string_register.clone()));
+                        self.string_register.clear();
+                        mode = CaptureMode::General;
+                    }
+                    _ => {
+                        self.string_register.push(c);
+                    }
+                },
+                CaptureMode::Char => {
+                    // peek ahead to make sure the char is 1 in length
+                    // TODO handle unwrap
+                    let next = chars.peek().unwrap_or(&'\0');
+                    if *next != '\'' {
+                        panic!("Literals can only be one character long.");
+                    }
+
+                    // skip second quote
+                    chars.next();
+
+                    // push char token
+                    tokens.push(Char(c));
+                    mode = CaptureMode::General;
+                }
             }
             if let Some(next_c) = chars.next() {
                 c = next_c;

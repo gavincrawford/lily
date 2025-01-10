@@ -127,3 +127,19 @@ fn functions() {
         ]
     );
 }
+
+#[test]
+fn strings() {
+    assert_eq!(
+        Lexer::new().lex("\"this is a string\";".into()),
+        vec![Str(String::from("this is a string")), Endl,]
+    )
+}
+
+#[test]
+fn chars() {
+    assert_eq!(
+        Lexer::new().lex("'a' 'b' 'c';".into()),
+        vec![Char('a'), Char('b'), Char('c'), Endl,]
+    )
+}
