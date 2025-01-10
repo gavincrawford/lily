@@ -115,7 +115,7 @@ impl Parser {
 
     fn parse_primary(&mut self) -> Box<ASTNode> {
         match self.peek() {
-            Some(Token::Number(_)) | Some(Token::Str(_)) => {
+            Some(Token::Number(_)) | Some(Token::Str(_)) | Some(Token::Identifier(_)) => {
                 Box::from(ASTNode::Literal(self.next().unwrap()))
             }
             _ => {
