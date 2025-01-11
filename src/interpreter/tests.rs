@@ -47,4 +47,19 @@ fn conditionals() {
     assert_eq!(i.get("a".into()), Token::Bool(true));
     i.execute(Parser::new(Lexer::new().lex("if 1 < 2 do; a = false; end;".into())).parse());
     assert_eq!(i.get("a".into()), Token::Bool(false));
+    i.execute(Parser::new(Lexer::new().lex("if true do; a = true; end;".into())).parse());
+    assert_eq!(i.get("a".into()), Token::Bool(true));
+}
+
+#[test]
+fn scope() {
+    let mut i = Interpreter::new();
+    i.execute(
+        Parser::new(
+            Lexer::new().lex("let a = \"global\"; if true do; let b = \"local\"; end;".into()),
+        )
+        .parse(),
+    );
+    assert_eq!(i.get("a".into()), Token::Str("global".into()));
+    assert_eq!(i.get("b".into()), Token::Undefined);
 }

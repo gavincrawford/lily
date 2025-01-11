@@ -5,7 +5,7 @@ fn main() {
     let mut interpreter = Interpreter::new();
     loop {
         interpret_line(&mut interpreter);
-        dbg!(&interpreter.global_scope);
+        dbg!(&interpreter.variables);
     }
 }
 

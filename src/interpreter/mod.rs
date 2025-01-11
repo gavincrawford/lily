@@ -6,12 +6,16 @@ use crate::{lexer::Token, parser::ASTNode};
 use std::collections::HashMap;
 
 pub struct Interpreter {
-    pub global_scope: HashMap<String, Box<ASTNode>>,
+    /// Variable storage.
+    pub variables: HashMap<String, (usize, Box<ASTNode>)>,
+    /// Scope level.
+    scope: usize,
 }
 impl Interpreter {
     pub fn new() -> Self {
         Self {
-            global_scope: HashMap::new(),
+            variables: HashMap::new(),
+            scope: 0,
         }
     }
 
@@ -29,14 +33,34 @@ impl Interpreter {
     /// Gets the value of a variable.
     #[allow(unused)] // only used in tests
     fn get(&self, id: String) -> Token {
-        let var = self.global_scope.get(&id).unwrap();
+        // unwrap variable, or undefined
+        let no_var = &(0, Box::from(ASTNode::Literal(Token::Undefined)));
+        let var = self.variables.get(&id).unwrap_or(no_var);
         let var = var.clone();
-        match *var {
-            ASTNode::Literal(t) => t,
+
+        // make sure it's a literal before returning
+        match (var.0, *var.1) {
+            (_scope, ASTNode::Literal(t)) => t,
             _ => {
                 panic!("invalid AST node in global scope.");
             }
         }
+    }
+
+    /// Sets the value of a variable.
+    fn set(&mut self, id: String, value: Box<ASTNode>) {
+        if let Some((old_scope, _)) = self
+            .variables
+            .insert(id.clone(), (self.scope, value.clone()))
+        {
+            self.variables.insert(id, (old_scope, value));
+        }
+    }
+
+    /// Drops all out-of-scope variables
+    fn drop(&mut self) {
+        self.variables
+            .retain(|_key, (scope, _variable)| *scope <= self.scope);
     }
 
     /// Executes an individual expression.
@@ -44,7 +68,7 @@ impl Interpreter {
         match statement {
             ASTNode::Assign { id, value } => {
                 let resolved_expr = self.execute_expr(*value).unwrap();
-                self.global_scope.insert(id, Box::from(resolved_expr));
+                self.set(id, Box::from(resolved_expr));
                 None
             }
             ASTNode::Op { lhs, op, rhs } => {
@@ -79,7 +103,13 @@ impl Interpreter {
                     self.execute_expr(*condition)
                 {
                     if cond_true {
+                        // increase scope level and execute body statements
+                        self.scope += 1;
                         self.execute(*body);
+
+                        // after finishing, decrease scope level and drop locals
+                        self.scope -= 1;
+                        self.drop();
                     }
                 }
                 None

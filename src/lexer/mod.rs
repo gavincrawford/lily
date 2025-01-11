@@ -16,6 +16,7 @@ pub enum Token {
     Bool(bool),
     Str(String),
     Char(char),
+    Undefined,
 
     // conditionals
     If,
