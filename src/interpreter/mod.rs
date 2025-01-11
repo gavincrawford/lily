@@ -56,10 +56,16 @@ impl Interpreter {
                 ) = (a, b)
                 {
                     match op {
+                        // math operators
                         Token::Add => return Some(ASTNode::Literal(Token::Number(a + b))),
                         Token::Sub => return Some(ASTNode::Literal(Token::Number(a - b))),
                         Token::Mul => return Some(ASTNode::Literal(Token::Number(a * b))),
                         Token::Div => return Some(ASTNode::Literal(Token::Number(a / b))),
+                        // logical operators
+                        Token::LogicalG => return Some(ASTNode::Literal(Token::Bool(a > b))),
+                        Token::LogicalGe => return Some(ASTNode::Literal(Token::Bool(a >= b))),
+                        Token::LogicalL => return Some(ASTNode::Literal(Token::Bool(a < b))),
+                        Token::LogicalLe => return Some(ASTNode::Literal(Token::Bool(a <= b))),
                         _ => {
                             panic!("operator not implemented.");
                         }
