@@ -9,11 +9,11 @@ fn decl() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let number = 1; let boolean = true;".into())).parse(),
         ASTNode::Block(vec![
-            ASTNode::Variable {
+            ASTNode::Assign {
                 id: "number".into(),
                 value: Box::from(ASTNode::Literal(Number(1.))),
             },
-            ASTNode::Variable {
+            ASTNode::Assign {
                 id: "boolean".into(),
                 value: Box::from(ASTNode::Literal(Bool(true))),
             }
@@ -25,7 +25,7 @@ fn decl() {
 fn math() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = 1 + 2 - 3 * 4 / 5;".into())).parse(),
-        ASTNode::Block(vec![ASTNode::Variable {
+        ASTNode::Block(vec![ASTNode::Assign {
             id: "x".into(),
             value: Box::from(ASTNode::Op {
                 lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
@@ -56,7 +56,7 @@ fn comparisons() {
         ))
         .parse(),
         ASTNode::Block(vec![
-            ASTNode::Variable {
+            ASTNode::Assign {
                 id: "a".into(),
                 value: Box::from(ASTNode::Op {
                     lhs: Box::from(ASTNode::Literal(Token::Number(100.))),
@@ -64,7 +64,7 @@ fn comparisons() {
                     rhs: Box::from(ASTNode::Literal(Token::Number(200.))),
                 })
             },
-            ASTNode::Variable {
+            ASTNode::Assign {
                 id: "b".into(),
                 value: Box::from(ASTNode::Op {
                     lhs: Box::from(ASTNode::Literal(Token::Number(100.))),
@@ -72,7 +72,7 @@ fn comparisons() {
                     rhs: Box::from(ASTNode::Literal(Token::Number(200.))),
                 })
             },
-            ASTNode::Variable {
+            ASTNode::Assign {
                 id: "c".into(),
                 value: Box::from(ASTNode::Op {
                     lhs: Box::from(ASTNode::Literal(Token::Number(200.))),
@@ -80,7 +80,7 @@ fn comparisons() {
                     rhs: Box::from(ASTNode::Literal(Token::Number(100.))),
                 })
             },
-            ASTNode::Variable {
+            ASTNode::Assign {
                 id: "d".into(),
                 value: Box::from(ASTNode::Op {
                     lhs: Box::from(ASTNode::Literal(Token::Number(200.))),
@@ -93,6 +93,42 @@ fn comparisons() {
 }
 
 #[test]
+fn conditionals() {
+    assert_eq!(
+        Parser::new(Lexer::new().lex("if 2 > 1 do; a = b; end;".into())).parse(),
+        ASTNode::Block(vec![ASTNode::Conditional {
+            condition: Box::from(ASTNode::Op {
+                lhs: Box::from(ASTNode::Literal(Token::Number(2.))),
+                op: LogicalG,
+                rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+            }),
+            body: Box::from(ASTNode::Block(vec![ASTNode::Assign {
+                id: "a".into(),
+                value: Box::from(ASTNode::Literal(Token::Identifier("b".into())))
+            }]))
+        }])
+    );
+    assert_eq!(
+        Parser::new(Lexer::new().lex("if 2 >= 1 + 1 do; let a = b; end;".into())).parse(),
+        ASTNode::Block(vec![ASTNode::Conditional {
+            condition: Box::from(ASTNode::Op {
+                lhs: Box::from(ASTNode::Literal(Token::Number(2.))),
+                op: LogicalGe,
+                rhs: Box::from(ASTNode::Op {
+                    lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                    op: Token::Add,
+                    rhs: Box::from(ASTNode::Literal(Token::Number(1.)))
+                }),
+            }),
+            body: Box::from(ASTNode::Block(vec![ASTNode::Assign {
+                id: "a".into(),
+                value: Box::from(ASTNode::Literal(Token::Identifier("b".into())))
+            }]))
+        }])
+    );
+}
+
+#[test]
 fn functions() {
     assert_eq!(
         Parser::new(Lexer::new().lex("func fn a b do; let x = a + b; let y = a - b; end;".into()))
@@ -101,7 +137,7 @@ fn functions() {
             id: "fn".into(),
             arguments: vec!["a".into(), "b".into()],
             body: Box::from(ASTNode::Block(vec![
-                ASTNode::Variable {
+                ASTNode::Assign {
                     id: "x".into(),
                     value: Box::from(ASTNode::Op {
                         lhs: Box::from(ASTNode::Literal(Token::Identifier("a".into()))),
@@ -109,7 +145,7 @@ fn functions() {
                         rhs: Box::from(ASTNode::Literal(Token::Identifier("b".into()))),
                     })
                 },
-                ASTNode::Variable {
+                ASTNode::Assign {
                     id: "y".into(),
                     value: Box::from(ASTNode::Op {
                         lhs: Box::from(ASTNode::Literal(Token::Identifier("a".into()))),

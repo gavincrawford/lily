@@ -42,7 +42,7 @@ impl Interpreter {
     /// Executes an individual expression.
     fn execute_expr(&mut self, statement: ASTNode) -> Option<ASTNode> {
         match statement {
-            ASTNode::Variable { id, value } => {
+            ASTNode::Assign { id, value } => {
                 let resolved_expr = self.execute_expr(*value).unwrap();
                 self.global_scope.insert(id, Box::from(resolved_expr));
                 None
@@ -73,6 +73,16 @@ impl Interpreter {
                 } else {
                     return None;
                 }
+            }
+            ASTNode::Conditional { condition, body } => {
+                if let Some(ASTNode::Literal(Token::Bool(cond_true))) =
+                    self.execute_expr(*condition)
+                {
+                    if cond_true {
+                        self.execute(*body);
+                    }
+                }
+                None
             }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {

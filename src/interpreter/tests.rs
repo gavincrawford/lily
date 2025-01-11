@@ -37,3 +37,14 @@ fn comparisons() {
     assert_eq!(i.get("a_g_b".into()), Token::Bool(false));
     assert_eq!(i.get("a_l_b".into()), Token::Bool(true));
 }
+
+#[test]
+fn conditionals() {
+    let mut i = Interpreter::new();
+    i.execute(Parser::new(Lexer::new().lex("let a = false;".into())).parse());
+    assert_eq!(i.get("a".into()), Token::Bool(false));
+    i.execute(Parser::new(Lexer::new().lex("if 2 > 1 do; a = true; end;".into())).parse());
+    assert_eq!(i.get("a".into()), Token::Bool(true));
+    i.execute(Parser::new(Lexer::new().lex("if 1 < 2 do; a = false; end;".into())).parse());
+    assert_eq!(i.get("a".into()), Token::Bool(false));
+}

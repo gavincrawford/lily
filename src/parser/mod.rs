@@ -7,13 +7,17 @@ mod tests;
 #[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
     Block(Vec<ASTNode>),
-    Variable {
+    Assign {
         id: String,
         value: Box<ASTNode>,
     },
     Function {
         id: String,
         arguments: Vec<String>,
+        body: Box<ASTNode>,
+    },
+    Conditional {
+        condition: Box<ASTNode>,
         body: Box<ASTNode>,
     },
     Op {
@@ -76,6 +80,9 @@ impl Parser {
                 self.next();
                 self.expect(Token::Endl);
                 break;
+            } else if *token == Token::Endl {
+                // consume endlines
+                self.next();
             }
             statements.push(self.parse_statement());
         }
@@ -86,10 +93,22 @@ impl Parser {
     fn parse_statement(&mut self) -> ASTNode {
         match self.peek() {
             Some(Token::Let) => self.parse_decl_var(),
+            Some(Token::If) => self.parse_cond(),
             Some(Token::Function) => self.parse_decl_fn(),
+            Some(Token::Identifier(_)) => self.parse_assign_var(),
             _ => {
                 todo!();
             }
+        }
+    }
+
+    /// Parses a conditional expression.
+    fn parse_cond(&mut self) -> ASTNode {
+        self.expect(Token::If);
+        let expr = self.parse_expr();
+        ASTNode::Conditional {
+            condition: expr,
+            body: Box::from(self.parse()),
         }
     }
 
@@ -116,13 +135,27 @@ impl Parser {
         }
     }
 
+    /// Parses a variable assignment.
+    fn parse_assign_var(&mut self) -> ASTNode {
+        let next = self.next();
+        if let Some(Token::Identifier(name)) = next {
+            self.expect(Token::Equal);
+            ASTNode::Assign {
+                id: name,
+                value: self.parse_expr(),
+            }
+        } else {
+            panic!("expected identifier, found {:?}", next);
+        }
+    }
+
     /// Parses a variable declaration.
     fn parse_decl_var(&mut self) -> ASTNode {
         self.expect(Token::Let);
         let next = self.next();
         if let Some(Token::Identifier(name)) = next {
             self.expect(Token::Equal);
-            ASTNode::Variable {
+            ASTNode::Assign {
                 id: name,
                 value: self.parse_expr(),
             }
@@ -147,7 +180,7 @@ impl Parser {
                 op: self.next().unwrap(),
                 rhs: self.parse_expr(),
             }),
-            Some(Token::Endl) => {
+            Some(Token::Endl) | Some(Token::BlockStart) => {
                 self.next();
                 primary
             }
