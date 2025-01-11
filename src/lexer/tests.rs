@@ -142,3 +142,11 @@ fn chars() {
         vec![Char('a'), Char('b'), Char('c'), Endl,]
     )
 }
+
+#[test]
+fn bools() {
+    assert_eq!(
+        Lexer::new().lex("true false;".into()),
+        vec![Bool(true), Bool(false), Endl,]
+    )
+}

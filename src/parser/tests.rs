@@ -7,11 +7,17 @@ use Token::*;
 #[test]
 fn decl() {
     assert_eq!(
-        Parser::new(Lexer::new().lex("let x = 1;".into())).parse(),
-        ASTNode::Block(vec![ASTNode::Variable {
-            id: "x".into(),
-            value: Box::from(ASTNode::Literal(Number(1.))),
-        }])
+        Parser::new(Lexer::new().lex("let number = 1; let boolean = true;".into())).parse(),
+        ASTNode::Block(vec![
+            ASTNode::Variable {
+                id: "number".into(),
+                value: Box::from(ASTNode::Literal(Number(1.))),
+            },
+            ASTNode::Variable {
+                id: "boolean".into(),
+                value: Box::from(ASTNode::Literal(Bool(true))),
+            }
+        ])
     );
 }
 

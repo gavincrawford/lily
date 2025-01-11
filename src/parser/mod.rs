@@ -160,9 +160,10 @@ impl Parser {
     /// Parses primaries, such as literals.
     fn parse_primary(&mut self) -> Box<ASTNode> {
         match self.peek() {
-            Some(Token::Number(_)) | Some(Token::Str(_)) | Some(Token::Identifier(_)) => {
-                Box::from(ASTNode::Literal(self.next().unwrap()))
-            }
+            Some(Token::Number(_))
+            | Some(Token::Str(_))
+            | Some(Token::Identifier(_))
+            | Some(Token::Bool(_)) => Box::from(ASTNode::Literal(self.next().unwrap())),
             _ => {
                 todo!()
             }

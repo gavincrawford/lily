@@ -11,6 +11,12 @@ pub enum Token {
     Function,
     Let,
 
+    // data types
+    Number(f32),
+    Bool(bool),
+    Str(String),
+    Char(char),
+
     // conditionals
     If,
     Else,
@@ -26,16 +32,11 @@ pub enum Token {
     LogicalL,
     LogicalLe,
 
-    // math
-    Number(f32),
+    // math ops
     Add,
     Sub,
     Mul,
     Div,
-
-    // strings
-    Str(String),
-    Char(char),
 
     // other
     Endl,
@@ -225,6 +226,8 @@ impl Lexer {
             "else" => Some(Else),
             "do" => Some(BlockStart),
             "end" => Some(BlockEnd),
+            "true" => Some(Bool(true)),
+            "false" => Some(Bool(false)),
             _ => None,
         }
     }
