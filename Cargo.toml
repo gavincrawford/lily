@@ -3,4 +3,8 @@ name = "lily"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "repl"
+path = "bin/repl.rs"
+
 [dependencies]
