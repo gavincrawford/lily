@@ -4,7 +4,7 @@ use crate::lexer::Token;
 
 mod tests;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
     Block(Vec<ASTNode>),
     Variable {
