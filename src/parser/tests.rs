@@ -8,7 +8,7 @@ use Token::*;
 fn decl() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let number = 1; let boolean = true;".into())).parse(),
-        ASTNode::Block(vec![
+        Box::from(ASTNode::Block(vec![
             ASTNode::Assign {
                 id: "number".into(),
                 value: Box::from(ASTNode::Literal(Number(1.))),
@@ -17,7 +17,7 @@ fn decl() {
                 id: "boolean".into(),
                 value: Box::from(ASTNode::Literal(Bool(true))),
             }
-        ])
+        ]))
     );
 }
 
@@ -25,7 +25,7 @@ fn decl() {
 fn math() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = 1 + 2 - 3 * 4 / 5;".into())).parse(),
-        ASTNode::Block(vec![ASTNode::Assign {
+        Box::from(ASTNode::Block(vec![ASTNode::Assign {
             id: "x".into(),
             value: Box::from(ASTNode::Op {
                 lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
@@ -44,11 +44,11 @@ fn math() {
                     }),
                 }),
             })
-        }])
+        }]))
     );
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = (1 + 1) + ((1 * 1) + 1);".into())).parse(),
-        ASTNode::Block(vec![ASTNode::Assign {
+        Box::from(ASTNode::Block(vec![ASTNode::Assign {
             id: "x".into(),
             value: Box::from(ASTNode::Op {
                 lhs: Box::from(ASTNode::Op {
@@ -67,7 +67,7 @@ fn math() {
                     rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
                 }),
             }),
-        }])
+        }]))
     );
 }
 
@@ -78,7 +78,7 @@ fn comparisons() {
             "let a = 100 < 200; let b = 100 <= 200; let c = 200 > 100; let d = 200 >= 100;".into()
         ))
         .parse(),
-        ASTNode::Block(vec![
+        Box::from(ASTNode::Block(vec![
             ASTNode::Assign {
                 id: "a".into(),
                 value: Box::from(ASTNode::Op {
@@ -111,7 +111,7 @@ fn comparisons() {
                     rhs: Box::from(ASTNode::Literal(Token::Number(100.))),
                 })
             }
-        ])
+        ]))
     );
 }
 
@@ -119,7 +119,7 @@ fn comparisons() {
 fn conditionals() {
     assert_eq!(
         Parser::new(Lexer::new().lex("if 2 > 1 do; a = b; end;".into())).parse(),
-        ASTNode::Block(vec![ASTNode::Conditional {
+        Box::from(ASTNode::Block(vec![ASTNode::Conditional {
             condition: Box::from(ASTNode::Op {
                 lhs: Box::from(ASTNode::Literal(Token::Number(2.))),
                 op: LogicalG,
@@ -129,11 +129,11 @@ fn conditionals() {
                 id: "a".into(),
                 value: Box::from(ASTNode::Literal(Token::Identifier("b".into())))
             }]))
-        }])
+        }]))
     );
     assert_eq!(
         Parser::new(Lexer::new().lex("if 2 >= 1 + 1 do; let a = b; end;".into())).parse(),
-        ASTNode::Block(vec![ASTNode::Conditional {
+        Box::from(ASTNode::Block(vec![ASTNode::Conditional {
             condition: Box::from(ASTNode::Op {
                 lhs: Box::from(ASTNode::Literal(Token::Number(2.))),
                 op: LogicalGe,
@@ -147,7 +147,7 @@ fn conditionals() {
                 id: "a".into(),
                 value: Box::from(ASTNode::Literal(Token::Identifier("b".into())))
             }]))
-        }])
+        }]))
     );
 }
 
@@ -159,7 +159,7 @@ fn functions() {
                 .lex("func fn a b do; let x = a + b; let y = a - b; return x * y; end;".into())
         )
         .parse(),
-        ASTNode::Block(vec![ASTNode::Function {
+        Box::from(ASTNode::Block(vec![ASTNode::Function {
             id: "fn".into(),
             arguments: vec!["a".into(), "b".into()],
             body: Box::from(ASTNode::Block(vec![
@@ -185,11 +185,11 @@ fn functions() {
                     rhs: Box::from(ASTNode::Literal(Token::Identifier("y".into()))),
                 }))
             ]))
-        },])
+        },]))
     );
     assert_eq!(
         Parser::new(Lexer::new().lex("fn((1 + 2), (3 + 4))".into())).parse(),
-        ASTNode::Block(vec![ASTNode::FunctionCall {
+        Box::from(ASTNode::Block(vec![ASTNode::FunctionCall {
             id: "fn".into(),
             arguments: vec![
                 Box::from(ASTNode::Op {
@@ -203,11 +203,11 @@ fn functions() {
                     rhs: Box::from(ASTNode::Literal(Token::Number(4.))),
                 }),
             ]
-        }])
+        }]))
     );
     assert_eq!(
         Parser::new(Lexer::new().lex("fna(fnb(1), fnc(2))".into())).parse(),
-        ASTNode::Block(vec![ASTNode::FunctionCall {
+        Box::from(ASTNode::Block(vec![ASTNode::FunctionCall {
             id: "fna".into(),
             arguments: vec![
                 Box::from(ASTNode::FunctionCall {
@@ -219,13 +219,13 @@ fn functions() {
                     arguments: vec![Box::from(ASTNode::Literal(Token::Number(2.)))]
                 })
             ]
-        }])
+        }]))
     );
     assert_eq!(
         Parser::new(Lexer::new().lex("fn()".into())).parse(),
-        ASTNode::Block(vec![ASTNode::FunctionCall {
+        Box::from(ASTNode::Block(vec![ASTNode::FunctionCall {
             id: "fn".into(),
             arguments: vec![]
-        }])
+        }]))
     );
 }

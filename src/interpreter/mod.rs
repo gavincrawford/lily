@@ -20,8 +20,8 @@ impl Interpreter {
     }
 
     /// Executes an AST block, typically the head.
-    pub fn execute(&mut self, ast: ASTNode) {
-        if let ASTNode::Block(statements) = ast {
+    pub fn execute(&mut self, ast: Box<ASTNode>) {
+        if let ASTNode::Block(statements) = *ast {
             for statement in statements {
                 self.execute_expr(statement);
             }
@@ -48,12 +48,14 @@ impl Interpreter {
     }
 
     /// Sets the value of a variable.
-    fn set(&mut self, id: String, value: Box<ASTNode>) {
+    fn set(&mut self, id: String, scope: usize, value: Box<ASTNode>) {
         if let Some((old_scope, _)) = self
             .variables
             .insert(id.clone(), (self.scope, value.clone()))
         {
             self.variables.insert(id, (old_scope, value));
+        } else {
+            self.variables.insert(id, (scope, value));
         }
     }
 
@@ -68,7 +70,65 @@ impl Interpreter {
         match statement {
             ASTNode::Assign { id, value } => {
                 let resolved_expr = self.execute_expr(*value).unwrap();
-                self.set(id, Box::from(resolved_expr));
+                self.set(id, self.scope, Box::from(resolved_expr));
+                None
+            }
+            ASTNode::Function {
+                ref id,
+                arguments: ref _arguments,
+                body: ref _body,
+            } => {
+                // TODO can't clone the entire body, too expensive.
+                self.set(id.clone(), self.scope, Box::from(statement.clone()));
+                None
+            }
+            ASTNode::FunctionCall {
+                id,
+                arguments: call_args,
+            } => {
+                // collect arguments
+                let mut res_args = vec![];
+                for argument in call_args {
+                    res_args.push(self.execute_expr(*argument).unwrap());
+                }
+
+                // execute function
+                let function = self
+                    .variables
+                    .get(&id)
+                    .expect(&*format!("no function named {id} in scope."));
+                // TODO really shouldn't clone here either.
+                let function_ast = function.1.clone();
+                if let ASTNode::Function {
+                    id: _id,
+                    arguments: fn_args,
+                    body,
+                } = *function_ast
+                {
+                    // push args as variables
+                    assert_eq!(fn_args.len(), res_args.len());
+                    for (idx, arg) in fn_args.iter().enumerate() {
+                        // saftey: assertion
+                        self.set(
+                            arg.clone(),
+                            self.scope,
+                            Box::from(res_args.get(idx).unwrap().to_owned()),
+                        );
+                    }
+
+                    // execute body
+                    if let ASTNode::Block(expressions) = *body {
+                        for expression in expressions {
+                            // if return is found, evaluate it
+                            if let ASTNode::Return(value) = expression {
+                                return Some(self.execute_expr(*value).unwrap());
+                            }
+
+                            // otherwise, process this expression
+                            self.execute(Box::from(expression));
+                        }
+                    }
+                }
                 None
             }
             ASTNode::Op { lhs, op, rhs } => {
@@ -105,7 +165,7 @@ impl Interpreter {
                     if cond_true {
                         // increase scope level and execute body statements
                         self.scope += 1;
-                        self.execute(*body);
+                        self.execute(body);
 
                         // after finishing, decrease scope level and drop locals
                         self.scope -= 1;

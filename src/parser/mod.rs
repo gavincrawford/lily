@@ -82,7 +82,7 @@ impl Parser {
     }
 
     /// Parses all tokens into a program.
-    pub fn parse(&mut self) -> ASTNode {
+    pub fn parse(&mut self) -> Box<ASTNode> {
         let mut statements = vec![];
         while let Some(token) = self.peek() {
             if *token == Token::BlockEnd {
@@ -98,7 +98,7 @@ impl Parser {
                 statements.push(self.parse_statement());
             }
         }
-        ASTNode::Block(statements)
+        Box::from(ASTNode::Block(statements))
     }
 
     /// Parses a statement.

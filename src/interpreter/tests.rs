@@ -69,3 +69,15 @@ fn scope() {
     assert_eq!(i.get("a".into()), Token::Str("global".into()));
     assert_eq!(i.get("b".into()), Token::Undefined);
 }
+
+#[test]
+fn functions() {
+    let mut i = Interpreter::new();
+    i.execute(
+        Parser::new(
+            Lexer::new().lex("func add a b do; return a + b; end; let result = add(1, 1);".into()),
+        )
+        .parse(),
+    );
+    assert_eq!(i.get("result".into()), Token::Number(2.));
+}
