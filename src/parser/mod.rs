@@ -16,6 +16,10 @@ pub enum ASTNode {
         arguments: Vec<String>,
         body: Box<ASTNode>,
     },
+    FunctionCall {
+        id: String,
+        arguments: Vec<Box<ASTNode>>,
+    },
     Conditional {
         condition: Box<ASTNode>,
         body: Box<ASTNode>,
@@ -25,6 +29,7 @@ pub enum ASTNode {
         op: Token,
         rhs: Box<ASTNode>,
     },
+    Return(Box<ASTNode>),
     Literal(Token),
 }
 
@@ -44,6 +49,11 @@ impl Parser {
     /// Peek at the next token.
     fn peek(&self) -> Option<&Token> {
         self.tokens.get(self.position)
+    }
+
+    /// Peek `n` positions ahead.
+    fn peek_n(&self, n: usize) -> Option<&Token> {
+        self.tokens.get(self.position + n)
     }
 
     /// Get and return the next token.
@@ -83,8 +93,10 @@ impl Parser {
             } else if *token == Token::Endl {
                 // consume endlines
                 self.next();
+            } else {
+                // otherwise, parse the next statement
+                statements.push(self.parse_statement());
             }
-            statements.push(self.parse_statement());
         }
         ASTNode::Block(statements)
     }
@@ -95,7 +107,16 @@ impl Parser {
             Some(Token::Let) => self.parse_decl_var(),
             Some(Token::If) => self.parse_cond(),
             Some(Token::Function) => self.parse_decl_fn(),
-            Some(Token::Identifier(_)) => self.parse_assign_var(),
+            Some(Token::Identifier(_)) => {
+                if let Some(Token::ParenOpen) = self.peek_n(1) {
+                    // handle function calls
+                    self.parse_call_fn()
+                } else {
+                    // handle variable assignments
+                    self.parse_assign_var()
+                }
+            }
+            Some(Token::Return) => self.parse_return(),
             _ => {
                 todo!();
             }
@@ -133,6 +154,41 @@ impl Parser {
         } else {
             panic!("expected identifier, found {:?}", next);
         }
+    }
+
+    /// Parses a function call.
+    fn parse_call_fn(&mut self) -> ASTNode {
+        // parse identifier
+        let id;
+        if let Some(Token::Identifier(fn_id)) = self.next() {
+            id = fn_id;
+        } else {
+            panic!("function identifier not found.");
+        }
+
+        // parse arguments
+        self.expect(Token::ParenOpen);
+        let mut args = vec![];
+        loop {
+            let last_arg = self.peek_n(1) == Some(&Token::ParenClose);
+            if let Some(_) = self.peek() {
+                args.push(self.parse_expr());
+            }
+            if last_arg {
+                break;
+            }
+        }
+
+        ASTNode::FunctionCall {
+            id,
+            arguments: args,
+        }
+    }
+
+    /// Parses a return statement.
+    fn parse_return(&mut self) -> ASTNode {
+        self.expect(Token::Return);
+        ASTNode::Return(self.parse_expr())
     }
 
     /// Parses a variable assignment.
@@ -190,7 +246,11 @@ impl Parser {
                 op: self.next().unwrap(),
                 rhs: self.parse_expr(),
             }),
-            Some(Token::Endl) | Some(Token::BlockStart) | Some(Token::ParenClose) => {
+            Some(Token::Endl)
+            | Some(Token::BlockStart)
+            | Some(Token::ParenClose)
+            | Some(Token::ParenOpen)
+            | Some(Token::Comma) => {
                 self.next();
                 primary
             }
@@ -200,13 +260,21 @@ impl Parser {
         }
     }
 
-    /// Parses primaries, such as literals.
+    /// Parses primaries, such as literals and function calls.
     fn parse_primary(&mut self) -> Box<ASTNode> {
         match self.peek() {
-            Some(Token::Number(_))
-            | Some(Token::Str(_))
-            | Some(Token::Identifier(_))
-            | Some(Token::Bool(_)) => Box::from(ASTNode::Literal(self.next().unwrap())),
+            Some(Token::Number(_)) | Some(Token::Str(_)) | Some(Token::Bool(_)) => {
+                Box::from(ASTNode::Literal(self.next().unwrap()))
+            }
+            Some(Token::Identifier(_)) => {
+                if let Some(Token::ParenOpen) = self.peek_n(1) {
+                    // if the future token is a parenthesis, this is a function call
+                    Box::from(self.parse_call_fn())
+                } else {
+                    // otherwise, it's safe to assume that the token is a literal
+                    Box::from(ASTNode::Literal(self.next().unwrap()))
+                }
+            }
             _ => {
                 todo!()
             }

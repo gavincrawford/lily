@@ -153,30 +153,66 @@ fn conditionals() {
 
 #[test]
 fn functions() {
+    // TODO cargo fmt breaks down here, presumably due to tab width. fix somehow
     assert_eq!(
-        Parser::new(Lexer::new().lex("func fn a b do; let x = a + b; let y = a - b; end;".into()))
-            .parse(),
-        ASTNode::Block(vec![ASTNode::Function {
-            id: "fn".into(),
-            arguments: vec!["a".into(), "b".into()],
-            body: Box::from(ASTNode::Block(vec![
-                ASTNode::Assign {
-                    id: "x".into(),
-                    value: Box::from(ASTNode::Op {
-                        lhs: Box::from(ASTNode::Literal(Token::Identifier("a".into()))),
-                        op: Token::Add,
-                        rhs: Box::from(ASTNode::Literal(Token::Identifier("b".into()))),
-                    })
-                },
-                ASTNode::Assign {
-                    id: "y".into(),
-                    value: Box::from(ASTNode::Op {
-                        lhs: Box::from(ASTNode::Literal(Token::Identifier("a".into()))),
-                        op: Token::Sub,
-                        rhs: Box::from(ASTNode::Literal(Token::Identifier("b".into()))),
-                    })
-                }
-            ]))
-        }])
+        Parser::new(Lexer::new().lex(
+            "func fn a b do; let x = a + b; let y = a - b; return x * y; end; let result = fn(1 + 1, fn(1 + 1));".into()
+        ))
+        .parse(),
+        ASTNode::Block(vec![
+            ASTNode::Function {
+                id: "fn".into(),
+                arguments: vec!["a".into(), "b".into()],
+                body: Box::from(ASTNode::Block(vec![
+                    ASTNode::Assign {
+                        id: "x".into(),
+                        value: Box::from(ASTNode::Op {
+                            lhs: Box::from(ASTNode::Literal(Token::Identifier("a".into()))),
+                            op: Token::Add,
+                            rhs: Box::from(ASTNode::Literal(Token::Identifier("b".into()))),
+                        })
+                    },
+                    ASTNode::Assign {
+                        id: "y".into(),
+                        value: Box::from(ASTNode::Op {
+                            lhs: Box::from(ASTNode::Literal(Token::Identifier("a".into()))),
+                            op: Token::Sub,
+                            rhs: Box::from(ASTNode::Literal(Token::Identifier("b".into()))),
+                        })
+                    },
+                    ASTNode::Return(Box::from(ASTNode::Op {
+                        lhs: Box::from(ASTNode::Literal(Token::Identifier("x".into()))),
+                        op: Token::Mul,
+                        rhs: Box::from(ASTNode::Literal(Token::Identifier("y".into()))),
+                    }))
+                ]))
+            },
+            ASTNode::Assign {
+                id: "result".into(),
+                value: Box::from(
+                    ASTNode::FunctionCall {
+                        id: "fn".into(),
+                        arguments: vec![
+                            Box::from(ASTNode::Op {
+                                lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                                op: Token::Add,
+                                rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                            }),
+                            Box::from(ASTNode::FunctionCall {
+                                id: "fn".into(),
+                                arguments: vec![
+                                    Box::from(ASTNode::Op {
+                                        lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                                        op: Token::Add,
+                                        rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                                    }),
+                                    Box::from(ASTNode::Literal(Token::Number(2.))),
+                                ]
+                            }),
+                        ]
+                    }
+                )
+            },
+        ])
     );
 }

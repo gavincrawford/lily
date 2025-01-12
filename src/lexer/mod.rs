@@ -9,6 +9,7 @@ pub enum Token {
     Equal,
     Identifier(String),
     Function,
+    Return,
     Let,
 
     // data types
@@ -42,6 +43,7 @@ pub enum Token {
     Div,
 
     // other
+    Comma,
     Endl,
 }
 
@@ -129,10 +131,18 @@ impl Lexer {
                             mode = CaptureMode::Char;
                         }
                         '(' => {
+                            // add identifier for function calls
+                            if !self.keyword_register.is_empty() {
+                                tokens.push(Identifier(self.keyword_register.clone()));
+                                self.keyword_register.clear();
+                            }
                             tokens.push(ParenOpen);
                         }
                         ')' => {
                             tokens.push(ParenClose);
+                        }
+                        ',' => {
+                            tokens.push(Comma);
                         }
                         c if c.is_alphanumeric() || c == '_' => {
                             self.keyword_register.push(c);
@@ -231,6 +241,7 @@ impl Lexer {
         match &*self.keyword_register {
             "let" => Some(Let),
             "func" => Some(Function),
+            "return" => Some(Return),
             "if" => Some(If),
             "else" => Some(Else),
             "do" => Some(BlockStart),
