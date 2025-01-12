@@ -126,7 +126,7 @@ impl Parser {
     /// Parses a conditional expression.
     fn parse_cond(&mut self) -> ASTNode {
         self.expect(Token::If);
-        let expr = self.parse_expr();
+        let expr = self.parse_expr(true);
         ASTNode::Conditional {
             condition: expr,
             body: Box::from(self.parse()),
@@ -170,12 +170,17 @@ impl Parser {
         self.expect(Token::ParenOpen);
         let mut args = vec![];
         loop {
-            let last_arg = self.peek_n(1) == Some(&Token::ParenClose);
-            if let Some(_) = self.peek() {
-                args.push(self.parse_expr());
-            }
-            if last_arg {
-                break;
+            match self.peek() {
+                Some(Token::ParenClose) => {
+                    self.next();
+                    break;
+                }
+                Some(_) => {
+                    args.push(self.parse_expr(false));
+                }
+                _ => {
+                    todo!();
+                }
             }
         }
 
@@ -188,7 +193,7 @@ impl Parser {
     /// Parses a return statement.
     fn parse_return(&mut self) -> ASTNode {
         self.expect(Token::Return);
-        ASTNode::Return(self.parse_expr())
+        ASTNode::Return(self.parse_expr(true))
     }
 
     /// Parses a variable assignment.
@@ -198,7 +203,7 @@ impl Parser {
             self.expect(Token::Equal);
             ASTNode::Assign {
                 id: name,
-                value: self.parse_expr(),
+                value: self.parse_expr(true),
             }
         } else {
             panic!("expected identifier, found {:?}", next);
@@ -213,23 +218,27 @@ impl Parser {
             self.expect(Token::Equal);
             ASTNode::Assign {
                 id: name,
-                value: self.parse_expr(),
+                value: self.parse_expr(true),
             }
         } else {
             panic!("expected identifier, found {:?}", next);
         }
     }
 
-    /// Parses raw expressions, such was math or comparisons.
-    fn parse_expr(&mut self) -> Box<ASTNode> {
+    /// Parses raw expressions, such as math or comparisons.
+    // TODO the whole `consume_parens` thing seems janky. find another way?
+    fn parse_expr(&mut self, consume_parens: bool) -> Box<ASTNode> {
         let primary;
-        if let Some(Token::ParenOpen) = self.peek() {
-            // if parenthesis are present, parse them as an expression
-            self.next();
-            primary = self.parse_expr();
-        } else {
-            // otherwise, parse as a primary/literal
-            primary = self.parse_primary();
+        match self.peek() {
+            Some(Token::ParenOpen) => {
+                // if parenthesis are present, parse them as an expression
+                self.next();
+                primary = self.parse_expr(true);
+            }
+            _ => {
+                // otherwise, parse as a primary/literal
+                primary = self.parse_primary();
+            }
         }
 
         // match operator
@@ -244,13 +253,15 @@ impl Parser {
             | Some(Token::LogicalGe) => Box::from(ASTNode::Op {
                 lhs: primary,
                 op: self.next().unwrap(),
-                rhs: self.parse_expr(),
+                rhs: self.parse_expr(true),
             }),
-            Some(Token::Endl)
-            | Some(Token::BlockStart)
-            | Some(Token::ParenClose)
-            | Some(Token::ParenOpen)
-            | Some(Token::Comma) => {
+            Some(Token::ParenClose) => {
+                if consume_parens {
+                    self.next();
+                }
+                primary
+            }
+            Some(Token::Endl) | Some(Token::BlockStart) | Some(Token::Comma) => {
                 self.next();
                 primary
             }
