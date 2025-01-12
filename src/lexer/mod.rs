@@ -23,6 +23,8 @@ pub enum Token {
     Else,
     BlockStart,
     BlockEnd,
+    ParenOpen,
+    ParenClose,
 
     // logic
     LogicalNot,
@@ -125,6 +127,12 @@ impl Lexer {
                         }
                         '\'' => {
                             mode = CaptureMode::Char;
+                        }
+                        '(' => {
+                            tokens.push(ParenOpen);
+                        }
+                        ')' => {
+                            tokens.push(ParenClose);
                         }
                         c if c.is_alphanumeric() || c == '_' => {
                             self.keyword_register.push(c);

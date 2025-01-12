@@ -166,7 +166,17 @@ impl Parser {
 
     /// Parses raw expressions, such was math or comparisons.
     fn parse_expr(&mut self) -> Box<ASTNode> {
-        let primary = self.parse_primary();
+        let primary;
+        if let Some(Token::ParenOpen) = self.peek() {
+            // if parenthesis are present, parse them as an expression
+            self.next();
+            primary = self.parse_expr();
+        } else {
+            // otherwise, parse as a primary/literal
+            primary = self.parse_primary();
+        }
+
+        // match operator
         match self.peek() {
             Some(Token::Add)
             | Some(Token::Sub)
@@ -180,7 +190,7 @@ impl Parser {
                 op: self.next().unwrap(),
                 rhs: self.parse_expr(),
             }),
-            Some(Token::Endl) | Some(Token::BlockStart) => {
+            Some(Token::Endl) | Some(Token::BlockStart) | Some(Token::ParenClose) => {
                 self.next();
                 primary
             }

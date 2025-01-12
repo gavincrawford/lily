@@ -20,9 +20,15 @@ fn global_scope() {
 #[test]
 fn math() {
     let mut i = Interpreter::new();
-    i.execute(Parser::new(Lexer::new().lex("let a = 1 + 2 * 2; let b = a + 1;".into())).parse());
-    assert_eq!(i.get("a".into()), Token::Number(5.));
-    assert_eq!(i.get("b".into()), Token::Number(6.));
+    i.execute(
+        Parser::new(
+            Lexer::new().lex("let a = 2 * 2 + 1; let b = a + 1; let c = (2 * 2) + 1;".into()),
+        )
+        .parse(),
+    );
+    assert_eq!(i.get("a".into()), Token::Number(6.));
+    assert_eq!(i.get("b".into()), Token::Number(7.));
+    assert_eq!(i.get("c".into()), Token::Number(5.));
 }
 
 #[test]

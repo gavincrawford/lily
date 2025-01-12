@@ -150,3 +150,20 @@ fn bools() {
         vec![Bool(true), Bool(false), Endl,]
     )
 }
+
+#[test]
+fn parens() {
+    assert_eq!(
+        Lexer::new().lex("(1 + 1) + 1;".into()),
+        vec![
+            ParenOpen,
+            Number(1.),
+            Add,
+            Number(1.),
+            ParenClose,
+            Add,
+            Number(1.),
+            Endl,
+        ]
+    )
+}

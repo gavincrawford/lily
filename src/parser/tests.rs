@@ -46,6 +46,29 @@ fn math() {
             })
         }])
     );
+    assert_eq!(
+        Parser::new(Lexer::new().lex("let x = (1 + 1) + ((1 * 1) + 1);".into())).parse(),
+        ASTNode::Block(vec![ASTNode::Assign {
+            id: "x".into(),
+            value: Box::from(ASTNode::Op {
+                lhs: Box::from(ASTNode::Op {
+                    lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                    op: Token::Add,
+                    rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                }),
+                op: Token::Add,
+                rhs: Box::from(ASTNode::Op {
+                    lhs: Box::from(ASTNode::Op {
+                        lhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                        op: Token::Mul,
+                        rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                    }),
+                    op: Token::Add,
+                    rhs: Box::from(ASTNode::Literal(Token::Number(1.))),
+                }),
+            }),
+        }])
+    );
 }
 
 #[test]
