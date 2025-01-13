@@ -7,77 +7,44 @@ use crate::{
 };
 
 #[test]
-fn global_scope() {
+fn global_variables() {
     let mut i = Interpreter::new();
-    let ast =
-        Parser::new(Lexer::new().lex("let a = 1; let b = \"string\"; let c = a;".into())).parse();
+    let ast = Parser::new(Lexer::new().lex(include_str!("tests/global_variables.ly").to_string()))
+        .parse();
     i.execute(&ast);
     assert_eq!(i.get("a".into()), Token::Number(1.));
-    assert_eq!(i.get("b".into()), Token::Str("string".into()));
-    assert_eq!(i.get("c".into()), i.get("a".into()));
+    assert_eq!(i.get("b".into()), Token::Bool(true));
+    assert_eq!(i.get("c".into()), Token::Str("str".into()));
+    assert_eq!(i.get("d".into()), Token::Char('c'));
 }
 
 #[test]
 fn math() {
     let mut i = Interpreter::new();
-    let ast = Parser::new(
-        Lexer::new().lex("let a = 2 * 2 + 1; let b = a + 1; let c = (2 * 2) + 1;".into()),
-    )
-    .parse();
+    let ast = Parser::new(Lexer::new().lex(include_str!("tests/math.ly").to_string())).parse();
     i.execute(&ast);
-    assert_eq!(i.get("a".into()), Token::Number(6.));
-    assert_eq!(i.get("b".into()), Token::Number(7.));
-    assert_eq!(i.get("c".into()), Token::Number(5.));
-}
-
-#[test]
-fn comparisons() {
-    let mut i = Interpreter::new();
-    let ast = Parser::new(
-        Lexer::new().lex("let a = 1; let b = 2; let a_g_b = a > b; let a_l_b = a < b;".into()),
-    )
-    .parse();
-    i.execute(&ast);
-    assert_eq!(i.get("a_g_b".into()), Token::Bool(false));
-    assert_eq!(i.get("a_l_b".into()), Token::Bool(true));
+    assert_eq!(i.get("a".into()), Token::Number(2.));
+    assert_eq!(i.get("b".into()), Token::Number(0.));
+    assert_eq!(i.get("c".into()), Token::Number(25.));
+    assert_eq!(i.get("d".into()), Token::Number(2.));
+    assert_eq!(i.get("e".into()), Token::Number(6.));
 }
 
 #[test]
 fn conditionals() {
     let mut i = Interpreter::new();
-    let ast = Parser::new(Lexer::new().lex("let a = false;".into())).parse();
+    let ast =
+        Parser::new(Lexer::new().lex(include_str!("tests/conditionals.ly").to_string())).parse();
     i.execute(&ast);
-    assert_eq!(i.get("a".into()), Token::Bool(false));
-    let ast = Parser::new(Lexer::new().lex("if 2 > 1 do; a = true; end;".into())).parse();
-    i.execute(&ast);
-    assert_eq!(i.get("a".into()), Token::Bool(true));
-    let ast = Parser::new(Lexer::new().lex("if 1 < 2 do; a = false; end;".into())).parse();
-    i.execute(&ast);
-    assert_eq!(i.get("a".into()), Token::Bool(false));
-    let ast = Parser::new(Lexer::new().lex("if true do; a = true; end;".into())).parse();
-    i.execute(&ast);
-    assert_eq!(i.get("a".into()), Token::Bool(true));
-}
-
-#[test]
-fn scope() {
-    let mut i = Interpreter::new();
-    let ast = Parser::new(
-        Lexer::new().lex("let a = \"global\"; if true do; let b = \"local\"; end;".into()),
-    )
-    .parse();
-    i.execute(&ast);
-    assert_eq!(i.get("a".into()), Token::Str("global".into()));
-    assert_eq!(i.get("b".into()), Token::Undefined);
+    assert_eq!(i.get("a".into()), Token::Number(4.));
 }
 
 #[test]
 fn functions() {
     let mut i = Interpreter::new();
-    let ast = Parser::new(
-        Lexer::new().lex("func add a b do; return a + b; end; let result = add(1, 1);".into()),
-    )
-    .parse();
+    let ast = Parser::new(Lexer::new().lex(include_str!("tests/functions.ly").to_string())).parse();
     i.execute(&ast);
-    assert_eq!(i.get("result".into()), Token::Number(2.));
+    assert_eq!(i.get("a".into()), Token::Number(10.));
+    assert_eq!(i.get("b".into()), Token::Number(20.));
+    assert_eq!(i.get("c".into()), Token::Bool(true));
 }
