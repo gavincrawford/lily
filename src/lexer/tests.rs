@@ -114,7 +114,7 @@ fn conditionals() {
 #[test]
 fn functions() {
     assert_eq!(
-        Lexer::new().lex("func func_name a b do; return a + b; end; func_name(1, 1)".into()),
+        Lexer::new().lex("func func_name a b do; return a + b; end; func_name(a, b)".into()),
         vec![
             Function,
             Identifier("func_name".into()),
@@ -131,9 +131,9 @@ fn functions() {
             Endl,
             Identifier("func_name".into()),
             ParenOpen,
-            Number(1.),
+            Identifier("a".into()),
             Comma,
-            Number(1.),
+            Identifier("b".into()),
             ParenClose,
         ]
     );

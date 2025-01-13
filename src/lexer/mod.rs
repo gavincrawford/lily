@@ -130,19 +130,18 @@ impl Lexer {
                         '\'' => {
                             mode = CaptureMode::Char;
                         }
-                        '(' => {
+                        '(' | ')' | ',' => {
                             // add identifier for function calls
                             if !self.keyword_register.is_empty() {
                                 tokens.push(Identifier(self.keyword_register.clone()));
                                 self.keyword_register.clear();
                             }
-                            tokens.push(ParenOpen);
-                        }
-                        ')' => {
-                            tokens.push(ParenClose);
-                        }
-                        ',' => {
-                            tokens.push(Comma);
+                            match c {
+                                '(' => tokens.push(ParenOpen),
+                                ')' => tokens.push(ParenClose),
+                                ',' => tokens.push(Comma),
+                                _ => panic!(),
+                            }
                         }
                         c if c.is_alphanumeric() || c == '_' => {
                             self.keyword_register.push(c);
