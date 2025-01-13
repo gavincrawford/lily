@@ -114,13 +114,19 @@ impl<'a> Interpreter<'a> {
                         for expression in expressions {
                             // if return is found, evaluate it
                             if let ASTNode::Return(value) = &**expression {
-                                return Some(self.execute_expr(&value).unwrap());
+                                let return_expr = self.execute_expr(&value).unwrap();
+                                self.scope -= 1;
+                                self.drop();
+                                return Some(return_expr);
                             }
 
                             // otherwise, process this expression
                             self.execute(&expression);
                         }
                     }
+
+                    // if no return, drop scoped variables anyway
+                    self.drop();
                     self.scope -= 1;
                 }
                 None
