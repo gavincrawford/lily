@@ -3,25 +3,28 @@
 mod tests;
 
 use crate::{lexer::Token, parser::ASTNode};
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
-pub struct Interpreter {
+pub struct Interpreter<'a> {
     /// Variable storage.
-    pub variables: HashMap<String, (usize, Box<ASTNode>)>,
+    pub variables: HashMap<String, (usize, ASTNode)>,
+    /// Function table.
+    pub functions: HashMap<String, (usize, &'a Rc<ASTNode>)>,
     /// Scope level.
     scope: usize,
 }
-impl Interpreter {
+impl<'a> Interpreter<'a> {
     pub fn new() -> Self {
         Self {
             variables: HashMap::new(),
+            functions: HashMap::new(),
             scope: 0,
         }
     }
 
     /// Executes an AST block, typically the head.
-    pub fn execute(&mut self, ast: Box<ASTNode>) {
-        if let ASTNode::Block(statements) = *ast {
+    pub fn execute(&mut self, ast: &'a Rc<ASTNode>) {
+        if let ASTNode::Block(statements) = &**ast {
             for statement in statements {
                 self.execute_expr(statement);
             }
@@ -34,28 +37,28 @@ impl Interpreter {
     #[allow(unused)] // only used in tests
     fn get(&self, id: String) -> Token {
         // unwrap variable, or undefined
-        let no_var = &(0, Box::from(ASTNode::Literal(Token::Undefined)));
+        let no_var = &(0, ASTNode::Literal(Token::Undefined));
         let var = self.variables.get(&id).unwrap_or(no_var);
         let var = var.clone();
 
         // make sure it's a literal before returning
-        match (var.0, *var.1) {
-            (_scope, ASTNode::Literal(t)) => t,
+        match (var.0, var.1) {
+            (_scope, ASTNode::Literal(t)) => t.clone(),
             _ => {
                 panic!("invalid AST node in global scope.");
             }
         }
     }
 
-    /// Sets the value of a variable.
-    fn set(&mut self, id: String, scope: usize, value: Box<ASTNode>) {
+    /// Sets the value of a variable, copying in the process.
+    fn set(&mut self, id: String, scope: usize, value: ASTNode) {
         if let Some((old_scope, _)) = self
             .variables
             .insert(id.clone(), (self.scope, value.clone()))
         {
-            self.variables.insert(id, (old_scope, value));
+            self.variables.insert(id, (old_scope, value.clone()));
         } else {
-            self.variables.insert(id, (scope, value));
+            self.variables.insert(id, (scope, value.clone()));
         }
     }
 
@@ -66,11 +69,11 @@ impl Interpreter {
     }
 
     /// Executes an individual expression.
-    fn execute_expr(&mut self, statement: ASTNode) -> Option<ASTNode> {
-        match statement {
+    fn execute_expr(&mut self, statement: &'a Rc<ASTNode>) -> Option<Rc<ASTNode>> {
+        match &**statement {
             ASTNode::Assign { id, value } => {
-                let resolved_expr = self.execute_expr(*value).unwrap();
-                self.set(id, self.scope, Box::from(resolved_expr));
+                let resolved_expr = &self.execute_expr(&value).unwrap();
+                self.set(id.clone(), self.scope, (&*resolved_expr.clone()).clone());
                 None
             }
             ASTNode::Function {
@@ -78,91 +81,97 @@ impl Interpreter {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                // TODO can't clone the entire body, too expensive.
-                self.set(id.clone(), self.scope, Box::from(statement.clone()));
+                self.functions.insert(id.clone(), (self.scope, statement));
                 None
             }
             ASTNode::FunctionCall {
                 id,
                 arguments: call_args,
             } => {
-                // collect arguments
-                let mut res_args = vec![];
-                for argument in call_args {
-                    res_args.push(self.execute_expr(*argument).unwrap());
-                }
-
                 // execute function
                 let function = self
-                    .variables
-                    .get(&id)
-                    .expect(&*format!("no function named {id} in scope."));
-                // TODO really shouldn't clone here either.
-                let function_ast = function.1.clone();
+                    .functions
+                    .get(id)
+                    .expect(&*format!("no function named {id} in scope."))
+                    .1;
                 if let ASTNode::Function {
                     id: _id,
                     arguments: fn_args,
                     body,
-                } = *function_ast
+                } = &**function
                 {
-                    // push args as variables
-                    assert_eq!(fn_args.len(), res_args.len());
+                    // push arguments
+                    assert_eq!(call_args.len(), fn_args.len());
+                    self.scope += 1;
                     for (idx, arg) in fn_args.iter().enumerate() {
-                        // saftey: assertion
-                        self.set(
-                            arg.clone(),
-                            self.scope,
-                            Box::from(res_args.get(idx).unwrap().to_owned()),
-                        );
+                        let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
+                        let resolved_expr = self.execute_expr(arg_expr).unwrap().clone();
+                        self.set(arg.clone(), self.scope, (&*resolved_expr.clone()).clone());
                     }
 
                     // execute body
-                    if let ASTNode::Block(expressions) = *body {
+                    if let ASTNode::Block(expressions) = &**body {
                         for expression in expressions {
                             // if return is found, evaluate it
-                            if let ASTNode::Return(value) = expression {
-                                return Some(self.execute_expr(*value).unwrap());
+                            if let ASTNode::Return(value) = &**expression {
+                                return Some(self.execute_expr(&value).unwrap());
                             }
 
                             // otherwise, process this expression
-                            self.execute(Box::from(expression));
+                            self.execute(&expression);
                         }
                     }
+                    self.scope -= 1;
                 }
                 None
             }
             ASTNode::Op { lhs, op, rhs } => {
-                let a = self.execute_expr(*lhs);
-                let b = self.execute_expr(*rhs);
-                if let (
-                    Some(ASTNode::Literal(Token::Number(a))),
-                    Some(ASTNode::Literal(Token::Number(b))),
-                ) = (a, b)
-                {
-                    match op {
-                        // math operators
-                        Token::Add => return Some(ASTNode::Literal(Token::Number(a + b))),
-                        Token::Sub => return Some(ASTNode::Literal(Token::Number(a - b))),
-                        Token::Mul => return Some(ASTNode::Literal(Token::Number(a * b))),
-                        Token::Div => return Some(ASTNode::Literal(Token::Number(a / b))),
-                        // logical operators
-                        Token::LogicalG => return Some(ASTNode::Literal(Token::Bool(a > b))),
-                        Token::LogicalGe => return Some(ASTNode::Literal(Token::Bool(a >= b))),
-                        Token::LogicalL => return Some(ASTNode::Literal(Token::Bool(a < b))),
-                        Token::LogicalLe => return Some(ASTNode::Literal(Token::Bool(a <= b))),
-                        _ => {
-                            panic!("operator not implemented.");
+                if let (Some(a), Some(b)) = (self.execute_expr(&lhs), self.execute_expr(&rhs)) {
+                    if let (
+                        ASTNode::Literal(Token::Number(a)),
+                        ASTNode::Literal(Token::Number(b)),
+                    ) = (&*a, &*b)
+                    {
+                        match op {
+                            // math operators
+                            Token::Add => {
+                                return Some(ASTNode::Literal(Token::Number(a + b)).into())
+                            }
+                            Token::Sub => {
+                                return Some(ASTNode::Literal(Token::Number(a - b)).into())
+                            }
+                            Token::Mul => {
+                                return Some(ASTNode::Literal(Token::Number(a * b)).into())
+                            }
+                            Token::Div => {
+                                return Some(ASTNode::Literal(Token::Number(a / b)).into())
+                            }
+                            // logical operators
+                            Token::LogicalG => {
+                                return Some(ASTNode::Literal(Token::Bool(a > b)).into())
+                            }
+                            Token::LogicalGe => {
+                                return Some(ASTNode::Literal(Token::Bool(a >= b)).into())
+                            }
+                            Token::LogicalL => {
+                                return Some(ASTNode::Literal(Token::Bool(a < b)).into())
+                            }
+                            Token::LogicalLe => {
+                                return Some(ASTNode::Literal(Token::Bool(a <= b)).into())
+                            }
+                            _ => {
+                                panic!("operator not implemented.");
+                            }
                         }
                     }
+                    return None;
                 } else {
                     return None;
                 }
             }
             ASTNode::Conditional { condition, body } => {
-                if let Some(ASTNode::Literal(Token::Bool(cond_true))) =
-                    self.execute_expr(*condition)
-                {
-                    if cond_true {
+                if let Some(condition) = self.execute_expr(&condition) {
+                    if let ASTNode::Literal(Token::Bool(true)) = *condition {
                         // increase scope level and execute body statements
                         self.scope += 1;
                         self.execute(body);
@@ -177,10 +186,10 @@ impl Interpreter {
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
                     // get variable value if applicable
-                    Some(ASTNode::Literal(self.get(identifier.clone())))
+                    Some(ASTNode::Literal(self.get(identifier.clone())).into())
                 } else {
                     // otherwise, return raw literal
-                    Some(statement)
+                    Some(statement.clone())
                 }
             }
             _ => {
