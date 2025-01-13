@@ -281,7 +281,10 @@ impl Parser {
     /// Parses primaries, such as literals and function calls.
     fn parse_primary(&mut self) -> Rc<ASTNode> {
         match self.peek() {
-            Some(Token::Number(_)) | Some(Token::Str(_)) | Some(Token::Bool(_)) => {
+            Some(Token::Number(_))
+            | Some(Token::Str(_))
+            | Some(Token::Bool(_))
+            | Some(Token::Char(_)) => {
                 ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
             }
             Some(Token::Identifier(_)) => {
