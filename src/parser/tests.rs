@@ -4,13 +4,14 @@ use super::*;
 use crate::lexer::Lexer;
 use Token::*;
 
-// TODO replace any left over `Rc::from` with `.into()`
+// TODO replace left over `Rc::from` with `.into()`
+// there's gotta be a regex or something to do this for me, right????
 
 #[test]
 fn decl() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let number = 1; let boolean = true;".into())).parse(),
-        Rc::from(ASTNode::Block(vec![
+        ASTNode::Block(vec![
             ASTNode::Assign {
                 id: "number".into(),
                 value: Rc::from(ASTNode::Literal(Number(1.))),
@@ -21,7 +22,8 @@ fn decl() {
                 value: Rc::from(ASTNode::Literal(Bool(true))),
             }
             .into(),
-        ]))
+        ])
+        .into()
     );
 }
 
@@ -29,7 +31,7 @@ fn decl() {
 fn math() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = 1 + 2 - 3 * 4 / 5;".into())).parse(),
-        Rc::from(ASTNode::Block(vec![ASTNode::Assign {
+        ASTNode::Block(vec![ASTNode::Assign {
             id: "x".into(),
             value: Rc::from(ASTNode::Op {
                 lhs: Rc::from(ASTNode::Literal(Token::Number(1.))),
@@ -49,11 +51,12 @@ fn math() {
                 }),
             })
         }
-        .into()]))
+        .into()])
+        .into()
     );
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = (1 + 1) + ((1 * 1) + 1);".into())).parse(),
-        Rc::from(ASTNode::Block(vec![ASTNode::Assign {
+        ASTNode::Block(vec![ASTNode::Assign {
             id: "x".into(),
             value: Rc::from(ASTNode::Op {
                 lhs: Rc::from(ASTNode::Op {
@@ -73,7 +76,8 @@ fn math() {
                 }),
             }),
         }
-        .into()]))
+        .into()])
+        .into()
     );
 }
 
@@ -84,44 +88,45 @@ fn comparisons() {
             "let a = 100 < 200; let b = 100 <= 200; let c = 200 > 100; let d = 200 >= 100;".into()
         ))
         .parse(),
-        Rc::from(ASTNode::Block(vec![
+        ASTNode::Block(vec![
             ASTNode::Assign {
                 id: "a".into(),
                 value: Rc::from(ASTNode::Op {
-                    lhs: Rc::from(ASTNode::Literal(Token::Number(100.))),
+                    lhs: ASTNode::Literal(Token::Number(100.)).into(),
                     op: Token::LogicalL,
-                    rhs: Rc::from(ASTNode::Literal(Token::Number(200.))),
+                    rhs: ASTNode::Literal(Token::Number(200.)).into(),
                 })
             }
             .into(),
             ASTNode::Assign {
                 id: "b".into(),
                 value: Rc::from(ASTNode::Op {
-                    lhs: Rc::from(ASTNode::Literal(Token::Number(100.))),
+                    lhs: ASTNode::Literal(Token::Number(100.)).into(),
                     op: Token::LogicalLe,
-                    rhs: Rc::from(ASTNode::Literal(Token::Number(200.))),
+                    rhs: ASTNode::Literal(Token::Number(200.)).into(),
                 })
             }
             .into(),
             ASTNode::Assign {
                 id: "c".into(),
                 value: Rc::from(ASTNode::Op {
-                    lhs: Rc::from(ASTNode::Literal(Token::Number(200.))),
+                    lhs: ASTNode::Literal(Token::Number(200.)).into(),
                     op: Token::LogicalG,
-                    rhs: Rc::from(ASTNode::Literal(Token::Number(100.))),
+                    rhs: ASTNode::Literal(Token::Number(100.)).into(),
                 })
             }
             .into(),
             ASTNode::Assign {
                 id: "d".into(),
                 value: Rc::from(ASTNode::Op {
-                    lhs: Rc::from(ASTNode::Literal(Token::Number(200.))),
+                    lhs: ASTNode::Literal(Token::Number(200.)).into(),
                     op: Token::LogicalGe,
-                    rhs: Rc::from(ASTNode::Literal(Token::Number(100.))),
+                    rhs: ASTNode::Literal(Token::Number(100.)).into(),
                 })
             }
             .into(),
-        ]))
+        ])
+        .into()
     );
 }
 
@@ -129,24 +134,27 @@ fn comparisons() {
 fn conditionals() {
     assert_eq!(
         Parser::new(Lexer::new().lex("if 2 > 1 do; a = b; end;".into())).parse(),
-        Rc::from(ASTNode::Block(vec![ASTNode::Conditional {
-            condition: Rc::from(ASTNode::Op {
-                lhs: Rc::from(ASTNode::Literal(Token::Number(2.))),
+        ASTNode::Block(vec![ASTNode::Conditional {
+            condition: ASTNode::Op {
+                lhs: ASTNode::Literal(Token::Number(2.)).into(),
                 op: LogicalG,
-                rhs: Rc::from(ASTNode::Literal(Token::Number(1.))),
-            }),
-            body: Rc::from(ASTNode::Block(vec![ASTNode::Assign {
-                id: "a".into(),
-                value: Rc::from(ASTNode::Literal(Token::Identifier("b".into())))
+                rhs: ASTNode::Literal(Token::Number(1.)).into(),
             }
-            .into()]))
+            .into(),
+            body: ASTNode::Block(vec![ASTNode::Assign {
+                id: "a".into(),
+                value: ASTNode::Literal(Token::Identifier("b".into())).into(),
+            }
+            .into()])
+            .into()
         }
-        .into()]))
+        .into()])
+        .into()
     );
     assert_eq!(
         Parser::new(Lexer::new().lex("if 2 >= 1 + 1 do; let a = b; end;".into())).parse(),
-        Rc::from(ASTNode::Block(vec![ASTNode::Conditional {
-            condition: Rc::from(ASTNode::Op {
+        ASTNode::Block(vec![ASTNode::Conditional {
+            condition: ASTNode::Op {
                 lhs: Rc::from(ASTNode::Literal(Token::Number(2.))),
                 op: LogicalGe,
                 rhs: Rc::from(ASTNode::Op {
@@ -154,14 +162,17 @@ fn conditionals() {
                     op: Token::Add,
                     rhs: Rc::from(ASTNode::Literal(Token::Number(1.)))
                 }),
-            }),
-            body: Rc::from(ASTNode::Block(vec![ASTNode::Assign {
+            }
+            .into(),
+            body: ASTNode::Block(vec![ASTNode::Assign {
                 id: "a".into(),
                 value: Rc::from(ASTNode::Literal(Token::Identifier("b".into())))
             }
-            .into()]))
+            .into()])
+            .into(),
         }
-        .into()]))
+        .into()])
+        .into()
     );
 }
 

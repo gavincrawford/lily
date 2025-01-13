@@ -5,8 +5,6 @@ use std::rc::Rc;
 
 mod tests;
 
-// TODO replace any left over `Rc::from` with `.into()`
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
     Block(Vec<Rc<ASTNode>>),
@@ -284,15 +282,15 @@ impl Parser {
     fn parse_primary(&mut self) -> Rc<ASTNode> {
         match self.peek() {
             Some(Token::Number(_)) | Some(Token::Str(_)) | Some(Token::Bool(_)) => {
-                Rc::from(ASTNode::Literal(self.next().unwrap()))
+                ASTNode::Literal(self.next().unwrap()).into()
             }
             Some(Token::Identifier(_)) => {
                 if let Some(Token::ParenOpen) = self.peek_n(1) {
                     // if the future token is a parenthesis, this is a function call
-                    Rc::from(self.parse_call_fn())
+                    self.parse_call_fn().into()
                 } else {
                     // otherwise, it's safe to assume that the token is a literal
-                    Rc::from(ASTNode::Literal(self.next().unwrap()))
+                    ASTNode::Literal(self.next().unwrap()).into()
                 }
             }
             _ => {
