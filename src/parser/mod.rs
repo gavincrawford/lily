@@ -282,7 +282,7 @@ impl Parser {
     fn parse_primary(&mut self) -> Rc<ASTNode> {
         match self.peek() {
             Some(Token::Number(_)) | Some(Token::Str(_)) | Some(Token::Bool(_)) => {
-                ASTNode::Literal(self.next().unwrap()).into()
+                ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
             }
             Some(Token::Identifier(_)) => {
                 if let Some(Token::ParenOpen) = self.peek_n(1) {
@@ -290,7 +290,7 @@ impl Parser {
                     self.parse_call_fn().into()
                 } else {
                     // otherwise, it's safe to assume that the token is a literal
-                    ASTNode::Literal(self.next().unwrap()).into()
+                    ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
                 }
             }
             _ => {

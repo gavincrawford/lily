@@ -194,9 +194,14 @@ impl Lexer {
                         self.number_register.push(n);
                     }
                     _ => {
-                        // TODO no unwrap
-                        tokens.push(Number(self.number_register.parse().unwrap()));
-                        self.number_register.clear();
+                        if let Ok(number) = self.number_register.parse::<f32>() {
+                            // number parsed ok-- push token
+                            tokens.push(Number(number));
+                            self.number_register.clear();
+                        } else {
+                            // number failed to parse, panic
+                            panic!("cannot coerce {} to number.", self.number_register);
+                        }
                         mode = CaptureMode::General;
                         continue;
                     }
@@ -213,10 +218,9 @@ impl Lexer {
                 },
                 CaptureMode::Char => {
                     // peek ahead to make sure the char is 1 in length
-                    // TODO handle unwrap
-                    let next = chars.peek().unwrap_or(&'\0');
+                    let next = chars.peek().expect("expected char, found EOF.");
                     if *next != '\'' {
-                        panic!("Literals can only be one character long.");
+                        panic!("literals can only be one character long.");
                     }
 
                     // skip second quote
