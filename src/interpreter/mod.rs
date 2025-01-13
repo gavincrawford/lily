@@ -22,14 +22,16 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    /// Executes an AST block, typically the head.
+    /// Executes an AST segment, typically the head.
     pub fn execute(&mut self, ast: &'a Rc<ASTNode>) {
         if let ASTNode::Block(statements) = &**ast {
+            // if this segment is a block, execute all of its statements
             for statement in statements {
                 self.execute_expr(statement);
             }
         } else {
-            panic!("AST segment is not a block.");
+            // otherwise, execute the segment by itself
+            self.execute_expr(ast);
         }
     }
 
@@ -198,6 +200,7 @@ impl<'a> Interpreter<'a> {
                     Some(statement.clone())
                 }
             }
+            ASTNode::Return(ref expr) => Some(self.execute_expr(expr).unwrap()),
             _ => {
                 todo!()
             }
