@@ -124,7 +124,7 @@ impl Parser {
             }
             Some(Token::Return) => self.parse_return(),
             _ => {
-                todo!();
+                panic!("expected statement, found {:?}.", self.peek().unwrap());
             }
         }
     }
@@ -248,15 +248,21 @@ impl Parser {
     /// Parses raw expressions, such as math or comparisons.
     // TODO the whole `consume_parens` thing seems janky. find another way?
     fn parse_expr(&mut self, consume_parens: bool) -> Rc<ASTNode> {
+        // tracks if a paren has been opened for error messages
+        let parens_open;
+
+        // evaluate primary value
         let primary;
         match self.peek() {
             Some(Token::ParenOpen) => {
                 // if parenthesis are present, parse them as an expression
                 self.next();
+                parens_open = true;
                 primary = self.parse_expr(true);
             }
             _ => {
                 // otherwise, parse as a primary/literal
+                parens_open = false;
                 primary = self.parse_primary();
             }
         }
@@ -287,7 +293,11 @@ impl Parser {
                 primary
             }
             _ => {
-                todo!();
+                if parens_open {
+                    panic!("unclosed delimiter found, aborting.");
+                } else {
+                    panic!("unexpected member of expression.")
+                }
             }
         }
     }
