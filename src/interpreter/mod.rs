@@ -27,6 +27,12 @@ impl<'a> Interpreter<'a> {
         if let ASTNode::Block(statements) = &**ast {
             // if this segment is a block, execute all of its statements
             for statement in statements {
+                if let ASTNode::Return(_) = &**statement {
+                    // TODO implement this at some point. it's gonna be difficult to get the value
+                    // back out and down the chain, considering it may be several scopes backwards
+                    // to return the value
+                    panic!("return statements unsupported in conditionals.")
+                }
                 self.execute_expr(statement);
             }
         } else {
