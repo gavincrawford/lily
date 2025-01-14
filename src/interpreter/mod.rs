@@ -201,6 +201,21 @@ impl<'a> Interpreter<'a> {
                 }
                 None
             }
+            ASTNode::Loop { condition, body } => {
+                // increase scope level and execute body
+                self.scope += 1;
+                while let Some(condition) = self.execute_expr(&condition) {
+                    if let ASTNode::Literal(Token::Bool(true)) = *condition {
+                        self.execute(body);
+                    } else {
+                        break;
+                    }
+                }
+                // after finishing, decrease scope level and drop locals
+                self.scope -= 1;
+                self.drop();
+                None
+            }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
                     // get variable value if applicable

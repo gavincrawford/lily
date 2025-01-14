@@ -179,3 +179,11 @@ fn parens() {
         ]
     )
 }
+
+#[test]
+fn loops() {
+    assert_eq!(
+        Lexer::new().lex("while true do; end;".into()),
+        vec![While, Bool(true), BlockStart, Endl, BlockEnd, Endl]
+    )
+}

@@ -22,6 +22,7 @@ pub enum Token {
     // conditionals
     If,
     Else,
+    While,
     BlockStart,
     BlockEnd,
     ParenOpen,
@@ -247,6 +248,7 @@ impl Lexer {
             "return" => Some(Return),
             "if" => Some(If),
             "else" => Some(Else),
+            "while" => Some(While),
             "do" => Some(BlockStart),
             "end" => Some(BlockEnd),
             "true" => Some(Bool(true)),

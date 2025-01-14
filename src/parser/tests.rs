@@ -2,7 +2,6 @@
 
 use super::*;
 use crate::lexer::Lexer;
-use Token::*;
 
 #[test]
 fn decl() {
@@ -11,12 +10,12 @@ fn decl() {
         ASTNode::Block(vec![
             ASTNode::Assign {
                 id: "number".into(),
-                value: ASTNode::Literal(Number(1.)).into(),
+                value: ASTNode::Literal(Token::Number(1.)).into(),
             }
             .into(),
             ASTNode::Assign {
                 id: "boolean".into(),
-                value: ASTNode::Literal(Bool(true)).into(),
+                value: ASTNode::Literal(Token::Bool(true)).into(),
             }
             .into(),
         ])
@@ -146,7 +145,7 @@ fn conditionals() {
         ASTNode::Block(vec![ASTNode::Conditional {
             condition: ASTNode::Op {
                 lhs: ASTNode::Literal(Token::Number(2.)).into(),
-                op: LogicalG,
+                op: Token::LogicalG,
                 rhs: ASTNode::Literal(Token::Number(1.)).into(),
             }
             .into(),
@@ -165,7 +164,7 @@ fn conditionals() {
         ASTNode::Block(vec![ASTNode::Conditional {
             condition: ASTNode::Op {
                 lhs: ASTNode::Literal(Token::Number(2.)).into(),
-                op: LogicalGe,
+                op: Token::LogicalGe,
                 rhs: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(1.)).into(),
                     op: Token::Add,
@@ -184,6 +183,41 @@ fn conditionals() {
         .into()])
         .into()
     );
+}
+
+#[test]
+fn loops() {
+    assert_eq!(
+        Parser::new(Lexer::new().lex("let i = 0; while i < 10 do; i = i + 1; end;".into())).parse(),
+        ASTNode::Block(vec![
+            ASTNode::Assign {
+                id: "i".into(),
+                value: ASTNode::Literal(Token::Number(0.)).into(),
+            }
+            .into(),
+            ASTNode::Loop {
+                condition: ASTNode::Op {
+                    lhs: ASTNode::Literal(Token::Identifier("i".into())).into(),
+                    op: Token::LogicalL,
+                    rhs: ASTNode::Literal(Token::Number(10.)).into(),
+                }
+                .into(),
+                body: ASTNode::Block(vec![ASTNode::Assign {
+                    id: "i".into(),
+                    value: ASTNode::Op {
+                        lhs: ASTNode::Literal(Token::Identifier("i".into())).into(),
+                        op: Token::Add,
+                        rhs: ASTNode::Literal(Token::Number(1.)).into(),
+                    }
+                    .into()
+                }
+                .into()])
+                .into(),
+            }
+            .into(),
+        ])
+        .into()
+    )
 }
 
 #[test]

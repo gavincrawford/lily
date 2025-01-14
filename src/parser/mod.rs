@@ -25,6 +25,10 @@ pub enum ASTNode {
         condition: Rc<ASTNode>,
         body: Rc<ASTNode>,
     },
+    Loop {
+        condition: Rc<ASTNode>,
+        body: Rc<ASTNode>,
+    },
     Op {
         lhs: Rc<ASTNode>,
         op: Token,
@@ -108,6 +112,7 @@ impl Parser {
             Some(Token::Let) => self.parse_decl_var(),
             Some(Token::If) => self.parse_cond(),
             Some(Token::Function) => self.parse_decl_fn(),
+            Some(Token::While) => self.parse_while(),
             Some(Token::Identifier(_)) => {
                 if let Some(Token::ParenOpen) = self.peek_n(1) {
                     // handle function calls
@@ -127,9 +132,18 @@ impl Parser {
     /// Parses a conditional expression.
     fn parse_cond(&mut self) -> Rc<ASTNode> {
         self.expect(Token::If);
-        let expr = self.parse_expr(true);
         ASTNode::Conditional {
-            condition: expr,
+            condition: self.parse_expr(true),
+            body: self.parse(),
+        }
+        .into()
+    }
+
+    /// Parses a while loop.
+    fn parse_while(&mut self) -> Rc<ASTNode> {
+        self.expect(Token::While);
+        ASTNode::Loop {
+            condition: self.parse_expr(true),
             body: self.parse(),
         }
         .into()
