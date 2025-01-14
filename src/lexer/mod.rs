@@ -80,7 +80,7 @@ impl Lexer {
         let mut chars = buf.chars().peekable();
         let mut tokens = vec![];
         let mut mode = CaptureMode::General;
-        let mut c = chars.next().unwrap();
+        let mut c = chars.next().expect("source file empty.");
         loop {
             match mode {
                 CaptureMode::General => {

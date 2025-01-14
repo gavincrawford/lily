@@ -80,7 +80,9 @@ impl<'a> Interpreter<'a> {
     fn execute_expr(&mut self, statement: &'a Rc<ASTNode>) -> Option<Rc<ASTNode>> {
         match &**statement {
             ASTNode::Assign { id, value } => {
-                let resolved_expr = &self.execute_expr(&value).unwrap();
+                let resolved_expr = &self
+                    .execute_expr(&value)
+                    .expect("expected expression after variable assignment.");
                 self.set(id.clone(), self.scope, (&*resolved_expr.clone()).clone());
                 None
             }
@@ -122,7 +124,9 @@ impl<'a> Interpreter<'a> {
                         for expression in expressions {
                             // if return is found, evaluate it
                             if let ASTNode::Return(value) = &**expression {
-                                let return_expr = self.execute_expr(&value).unwrap();
+                                let return_expr = self
+                                    .execute_expr(&value)
+                                    .expect("expected return expression.");
                                 self.scope -= 1;
                                 self.drop();
                                 return Some(return_expr);
@@ -206,7 +210,10 @@ impl<'a> Interpreter<'a> {
                     Some(statement.clone())
                 }
             }
-            ASTNode::Return(ref expr) => Some(self.execute_expr(expr).unwrap()),
+            ASTNode::Return(ref expr) => Some(
+                self.execute_expr(expr)
+                    .expect("expected return expression."),
+            ),
             _ => {
                 todo!()
             }

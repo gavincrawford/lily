@@ -258,7 +258,7 @@ impl Parser {
             | Some(Token::LogicalG)
             | Some(Token::LogicalGe) => ASTNode::Op {
                 lhs: primary,
-                op: self.next().unwrap(),
+                op: self.next().unwrap(), // safety: peek
                 rhs: self.parse_expr(true),
             }
             .into(),
