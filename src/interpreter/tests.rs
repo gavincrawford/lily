@@ -55,4 +55,5 @@ fn loops() {
     let ast = Parser::new(Lexer::new().lex(include_str!("tests/loops.ly").to_string())).parse();
     i.execute(&ast);
     assert_eq!(i.get("i".into()), Token::Number(25.));
+    assert_eq!(i.get("a".into()), Token::Number(25.));
 }
