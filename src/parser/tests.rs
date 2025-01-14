@@ -150,33 +150,35 @@ fn conditionals() {
                 rhs: ASTNode::Literal(Token::Number(1.)).into(),
             }
             .into(),
-            body: ASTNode::Block(vec![ASTNode::Assign {
+            if_body: ASTNode::Block(vec![ASTNode::Assign {
                 id: "a".into(),
                 value: ASTNode::Literal(Token::Identifier("b".into())).into(),
             }
             .into()])
             .into(),
+            else_body: ASTNode::Block(vec![]).into(),
         }
         .into()])
         .into()
     );
     assert_eq!(
-        Parser::new(Lexer::new().lex("if 2 >= 1 + 1 do; let a = b; end;".into())).parse(),
+        Parser::new(Lexer::new().lex("if 1 > 2 do; a = b; else; b = a; end;".into())).parse(),
         ASTNode::Block(vec![ASTNode::Conditional {
             condition: ASTNode::Op {
-                lhs: ASTNode::Literal(Token::Number(2.)).into(),
-                op: LogicalGe,
-                rhs: ASTNode::Op {
-                    lhs: ASTNode::Literal(Token::Number(1.)).into(),
-                    op: Token::Add,
-                    rhs: ASTNode::Literal(Token::Number(1.)).into(),
-                }
-                .into(),
+                lhs: ASTNode::Literal(Token::Number(1.)).into(),
+                op: LogicalG,
+                rhs: ASTNode::Literal(Token::Number(2.)).into(),
             }
             .into(),
-            body: ASTNode::Block(vec![ASTNode::Assign {
+            if_body: ASTNode::Block(vec![ASTNode::Assign {
                 id: "a".into(),
                 value: ASTNode::Literal(Token::Identifier("b".into())).into(),
+            }
+            .into()])
+            .into(),
+            else_body: ASTNode::Block(vec![ASTNode::Assign {
+                id: "b".into(),
+                value: ASTNode::Literal(Token::Identifier("a".into())).into(),
             }
             .into()])
             .into(),
