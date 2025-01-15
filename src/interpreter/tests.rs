@@ -36,7 +36,7 @@ fn conditionals() {
     let ast =
         Parser::new(Lexer::new().lex(include_str!("tests/conditionals.ly").to_string())).parse();
     i.execute(&ast);
-    assert_eq!(i.get("a".into()), Token::Number(4.));
+    assert_eq!(i.get("a".into()), Token::Number(5.));
 }
 
 #[test]

@@ -23,7 +23,8 @@ pub enum ASTNode {
     },
     Conditional {
         condition: Rc<ASTNode>,
-        body: Rc<ASTNode>,
+        if_body: Rc<ASTNode>,
+        else_body: Rc<ASTNode>,
     },
     Loop {
         condition: Rc<ASTNode>,
@@ -90,10 +91,16 @@ impl Parser {
     pub fn parse(&mut self) -> Rc<ASTNode> {
         let mut statements = vec![];
         while let Some(token) = self.peek() {
+            // TODO you might be able to merge the first two of these statements into one, and let
+            // other functions take care of consuming their block ends. haven't tried it though, so
+            // it may fail terribly
             if *token == Token::BlockEnd {
-                // consume block end and expect endline
+                // consume block ends and expect endline
                 self.next();
                 self.expect(Token::Endl);
+                break;
+            } else if *token == Token::Else {
+                // also counts as a block end for conditionals
                 break;
             } else if *token == Token::Endl {
                 // consume endlines
@@ -131,10 +138,24 @@ impl Parser {
 
     /// Parses a conditional expression.
     fn parse_cond(&mut self) -> Rc<ASTNode> {
+        // consume if token
         self.expect(Token::If);
+
+        // get if expression and if body block
+        let expr = self.parse_expr(true);
+        let if_body = self.parse();
+
+        // process else body block, if present
+        let mut else_body = ASTNode::Block(vec![]).into();
+        if let Some(Token::Else) = self.peek() {
+            self.next();
+            else_body = self.parse();
+        }
+
         ASTNode::Conditional {
-            condition: self.parse_expr(true),
-            body: self.parse(),
+            condition: expr,
+            if_body,
+            else_body,
         }
         .into()
     }

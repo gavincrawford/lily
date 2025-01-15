@@ -187,17 +187,22 @@ impl<'a> Interpreter<'a> {
                     return None;
                 }
             }
-            ASTNode::Conditional { condition, body } => {
+            ASTNode::Conditional {
+                condition,
+                if_body,
+                else_body,
+            } => {
                 if let Some(condition) = self.execute_expr(&condition) {
+                    // increase scope level and execute body statements
+                    self.scope += 1;
                     if let ASTNode::Literal(Token::Bool(true)) = *condition {
-                        // increase scope level and execute body statements
-                        self.scope += 1;
-                        self.execute(body);
-
-                        // after finishing, decrease scope level and drop locals
-                        self.scope -= 1;
-                        self.drop();
+                        self.execute(if_body);
+                    } else {
+                        self.execute(else_body);
                     }
+                    // after finishing, decrease scope level and drop locals
+                    self.scope -= 1;
+                    self.drop();
                 }
                 None
             }
