@@ -12,6 +12,10 @@ pub enum ASTNode {
         id: String,
         value: Rc<ASTNode>,
     },
+    Declare {
+        id: String,
+        value: Rc<ASTNode>,
+    },
     Function {
         id: String,
         arguments: Vec<String>,
@@ -256,7 +260,7 @@ impl Parser {
         let next = self.next();
         if let Some(Token::Identifier(name)) = next {
             self.expect(Token::Equal);
-            ASTNode::Assign {
+            ASTNode::Declare {
                 id: name,
                 value: self.parse_expr(true),
             }

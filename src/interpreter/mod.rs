@@ -1,5 +1,6 @@
 //! The interpreter executes an abstract syntax tree.
 
+mod mem;
 mod tests;
 
 use crate::{lexer::Token, parser::ASTNode};
@@ -7,17 +8,17 @@ use std::{collections::HashMap, rc::Rc};
 
 pub struct Interpreter<'a> {
     /// Variable storage.
-    pub variables: HashMap<String, (usize, ASTNode)>,
+    pub variables: Vec<HashMap<String, ASTNode>>,
     /// Function table.
-    pub functions: HashMap<String, (usize, &'a Rc<ASTNode>)>,
+    pub functions: Vec<HashMap<String, &'a Rc<ASTNode>>>,
     /// Scope level.
     scope: usize,
 }
 impl<'a> Interpreter<'a> {
     pub fn new() -> Self {
         Self {
-            variables: HashMap::new(),
-            functions: HashMap::new(),
+            variables: Vec::with_capacity(8),
+            functions: Vec::with_capacity(8),
             scope: 0,
         }
     }
@@ -41,41 +42,6 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    /// Gets the value of a variable.
-    #[allow(unused)] // only used in tests
-    fn get(&self, id: String) -> Token {
-        // unwrap variable, or undefined
-        let no_var = &(0, ASTNode::Literal(Token::Undefined));
-        let var = self.variables.get(&id).unwrap_or(no_var);
-        let var = var.clone();
-
-        // make sure it's a literal before returning
-        match (var.0, var.1) {
-            (_scope, ASTNode::Literal(t)) => t.clone(),
-            _ => {
-                panic!("invalid AST node in global scope.");
-            }
-        }
-    }
-
-    /// Sets the value of a variable, copying in the process.
-    fn set(&mut self, id: String, scope: usize, value: ASTNode) {
-        if let Some((old_scope, _)) = self
-            .variables
-            .insert(id.clone(), (self.scope, value.clone()))
-        {
-            self.variables.insert(id, (old_scope, value.clone()));
-        } else {
-            self.variables.insert(id, (scope, value.clone()));
-        }
-    }
-
-    /// Drops all out-of-scope variables
-    fn drop(&mut self) {
-        self.variables
-            .retain(|_key, (scope, _variable)| *scope <= self.scope);
-    }
-
     /// Executes an individual expression.
     fn execute_expr(&mut self, statement: &'a Rc<ASTNode>) -> Option<Rc<ASTNode>> {
         match &**statement {
@@ -83,7 +49,14 @@ impl<'a> Interpreter<'a> {
                 let resolved_expr = &self
                     .execute_expr(&value)
                     .expect("expected expression after variable assignment.");
-                self.set(id.clone(), self.scope, (&*resolved_expr.clone()).clone());
+                self.assign(id.clone(), (&*resolved_expr.clone()).clone());
+                None
+            }
+            ASTNode::Declare { id, value } => {
+                let resolved_expr = &self
+                    .execute_expr(&value)
+                    .expect("expected expression after variable declaration.");
+                self.declare(id.clone(), (&*resolved_expr.clone()).clone());
                 None
             }
             ASTNode::Function {
@@ -91,7 +64,7 @@ impl<'a> Interpreter<'a> {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                self.functions.insert(id.clone(), (self.scope, statement));
+                self.set_fn(id.clone(), &*statement);
                 None
             }
             ASTNode::FunctionCall {
@@ -99,11 +72,7 @@ impl<'a> Interpreter<'a> {
                 arguments: call_args,
             } => {
                 // execute function
-                let function = self
-                    .functions
-                    .get(id)
-                    .expect(&*format!("no function named {id} in scope."))
-                    .1;
+                let function = self.get_fn(id.clone());
                 if let ASTNode::Function {
                     id: _id,
                     arguments: fn_args,
@@ -116,7 +85,7 @@ impl<'a> Interpreter<'a> {
                     for (idx, arg) in fn_args.iter().enumerate() {
                         let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
                         let resolved_expr = self.execute_expr(arg_expr).unwrap().clone();
-                        self.set(arg.clone(), self.scope, (&*resolved_expr.clone()).clone());
+                        self.declare(arg.clone(), (&*resolved_expr.clone()).clone());
                     }
 
                     // execute body
@@ -210,11 +179,15 @@ impl<'a> Interpreter<'a> {
                 // increase scope level and execute body
                 self.scope += 1;
                 while let Some(condition) = self.execute_expr(&condition) {
+                    // run loop body
                     if let ASTNode::Literal(Token::Bool(true)) = *condition {
                         self.execute(body);
                     } else {
                         break;
                     }
+
+                    // drop any variables created inside
+                    self.drop_here();
                 }
                 // after finishing, decrease scope level and drop locals
                 self.scope -= 1;

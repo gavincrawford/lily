@@ -50,6 +50,14 @@ fn functions() {
 }
 
 #[test]
+fn fibonacci() {
+    let mut i = Interpreter::new();
+    let ast = Parser::new(Lexer::new().lex(include_str!("tests/fibonacci.ly").to_string())).parse();
+    i.execute(&ast);
+    assert_eq!(i.get("result".into()), Token::Number(21.));
+}
+
+#[test]
 fn loops() {
     let mut i = Interpreter::new();
     let ast = Parser::new(Lexer::new().lex(include_str!("tests/loops.ly").to_string())).parse();

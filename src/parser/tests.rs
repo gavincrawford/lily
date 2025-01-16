@@ -8,12 +8,12 @@ fn decl() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let number = 1; let boolean = true;".into())).parse(),
         ASTNode::Block(vec![
-            ASTNode::Assign {
+            ASTNode::Declare {
                 id: "number".into(),
                 value: ASTNode::Literal(Token::Number(1.)).into(),
             }
             .into(),
-            ASTNode::Assign {
+            ASTNode::Declare {
                 id: "boolean".into(),
                 value: ASTNode::Literal(Token::Bool(true)).into(),
             }
@@ -27,7 +27,7 @@ fn decl() {
 fn math() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = 1 + 2 - 3 * 4 / 5;".into())).parse(),
-        ASTNode::Block(vec![ASTNode::Assign {
+        ASTNode::Block(vec![ASTNode::Declare {
             id: "x".into(),
             value: ASTNode::Op {
                 lhs: ASTNode::Literal(Token::Number(1.)).into(),
@@ -56,7 +56,7 @@ fn math() {
     );
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = (1 + 1) + ((1 * 1) + 1);".into())).parse(),
-        ASTNode::Block(vec![ASTNode::Assign {
+        ASTNode::Block(vec![ASTNode::Declare {
             id: "x".into(),
             value: ASTNode::Op {
                 lhs: ASTNode::Op {
@@ -93,7 +93,7 @@ fn comparisons() {
         ))
         .parse(),
         ASTNode::Block(vec![
-            ASTNode::Assign {
+            ASTNode::Declare {
                 id: "a".into(),
                 value: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(100.)).into(),
@@ -103,7 +103,7 @@ fn comparisons() {
                 .into(),
             }
             .into(),
-            ASTNode::Assign {
+            ASTNode::Declare {
                 id: "b".into(),
                 value: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(100.)).into(),
@@ -113,7 +113,7 @@ fn comparisons() {
                 .into(),
             }
             .into(),
-            ASTNode::Assign {
+            ASTNode::Declare {
                 id: "c".into(),
                 value: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(200.)).into(),
@@ -123,7 +123,7 @@ fn comparisons() {
                 .into(),
             }
             .into(),
-            ASTNode::Assign {
+            ASTNode::Declare {
                 id: "d".into(),
                 value: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(200.)).into(),
@@ -192,7 +192,7 @@ fn loops() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let i = 0; while i < 10 do; i = i + 1; end;".into())).parse(),
         ASTNode::Block(vec![
-            ASTNode::Assign {
+            ASTNode::Declare {
                 id: "i".into(),
                 value: ASTNode::Literal(Token::Number(0.)).into(),
             }
@@ -234,7 +234,7 @@ fn functions() {
             id: "fn".into(),
             arguments: vec!["a".into(), "b".into()],
             body: ASTNode::Block(vec![
-                ASTNode::Assign {
+                ASTNode::Declare {
                     id: "x".into(),
                     value: ASTNode::Op {
                         lhs: ASTNode::Literal(Token::Identifier("a".into())).into(),
@@ -244,7 +244,7 @@ fn functions() {
                     .into(),
                 }
                 .into(),
-                ASTNode::Assign {
+                ASTNode::Declare {
                     id: "y".into(),
                     value: ASTNode::Op {
                         lhs: ASTNode::Literal(Token::Identifier("a".into())).into(),
