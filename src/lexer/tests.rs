@@ -137,6 +137,21 @@ fn functions() {
             ParenClose,
         ]
     );
+    assert_eq!(
+        Lexer::new().lex("func(1 + 2, 3 + 4)".into()),
+        vec![
+            Identifier("func".into()),
+            ParenOpen,
+            Number(1.),
+            Add,
+            Number(2.),
+            Comma,
+            Number(3.),
+            Add,
+            Number(4.),
+            ParenClose,
+        ]
+    );
 }
 
 #[test]

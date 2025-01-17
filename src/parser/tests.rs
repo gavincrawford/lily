@@ -270,7 +270,7 @@ fn functions() {
         .into()
     );
     assert_eq!(
-        Parser::new(Lexer::new().lex("fn(1 + 2, 3 + 4)".into())).parse(),
+        Parser::new(Lexer::new().lex("fn(1 + 2, 3 + 4);".into())).parse(),
         ASTNode::Block(vec![ASTNode::FunctionCall {
             id: "fn".into(),
             arguments: vec![
