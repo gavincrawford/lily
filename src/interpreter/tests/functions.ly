@@ -9,11 +9,10 @@ end
 let b = double(10)
 
 func greater_than lhs rhs do
-  let val = false;
   if lhs > rhs do
-    val = true;
+    return true
   end
-  return val;
+  return false
 end
 let c = greater_than(2, 1)
 

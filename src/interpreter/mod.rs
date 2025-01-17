@@ -23,23 +23,22 @@ impl<'a> Interpreter<'a> {
         }
     }
 
-    /// Executes an AST segment, typically the head.
-    pub fn execute(&mut self, ast: &'a Rc<ASTNode>) {
+    /// Executes an AST segment, typically the head. Returns `Some` when a return block is reached.
+    pub fn execute(&mut self, ast: &'a Rc<ASTNode>) -> Option<Rc<ASTNode>> {
         if let ASTNode::Block(statements) = &**ast {
             // if this segment is a block, execute all of its statements
             for statement in statements {
-                if let ASTNode::Return(_) = &**statement {
-                    // TODO implement this at some point. it's gonna be difficult to get the value
-                    // back out and down the chain, considering it may be several scopes backwards
-                    // to return the value
-                    panic!("return statements unsupported in conditionals.")
+                // TODO this might cause some unintended issues with returning at base scope. take
+                // a look at it later and evaluate risk
+                if let Some(ret_value) = self.execute_expr(statement) {
+                    return Some(ret_value);
                 }
-                self.execute_expr(statement);
             }
         } else {
             // otherwise, execute the segment by itself
             self.execute_expr(ast);
         }
+        None
     }
 
     /// Executes an individual expression.
@@ -88,27 +87,11 @@ impl<'a> Interpreter<'a> {
                         self.declare(arg.clone(), (&*resolved_expr.clone()).clone());
                     }
 
-                    // execute body
-                    if let ASTNode::Block(expressions) = &**body {
-                        for expression in expressions {
-                            // if return is found, evaluate it
-                            if let ASTNode::Return(value) = &**expression {
-                                let return_expr = self
-                                    .execute_expr(&value)
-                                    .expect("expected return expression.");
-                                self.scope -= 1;
-                                self.drop();
-                                return Some(return_expr);
-                            }
-
-                            // otherwise, process this expression
-                            self.execute(&expression);
-                        }
-                    }
-
                     // if no return, drop scoped variables anyway
-                    self.drop();
+                    let result = self.execute(body);
                     self.scope -= 1;
+                    self.drop();
+                    return result;
                 }
                 None
             }
@@ -165,9 +148,18 @@ impl<'a> Interpreter<'a> {
                     // increase scope level and execute body statements
                     self.scope += 1;
                     if let ASTNode::Literal(Token::Bool(true)) = *condition {
-                        self.execute(if_body);
+                        if let Some(result) = self.execute(if_body) {
+                            self.scope -= 1;
+                            self.drop();
+                            return Some(result);
+                        }
                     } else {
-                        self.execute(else_body);
+                        if let Some(result) = self.execute(else_body) {
+                            self.scope -= 1;
+                            self.drop();
+                            return Some(result);
+                        } else {
+                        }
                     }
                     // after finishing, decrease scope level and drop locals
                     self.scope -= 1;
