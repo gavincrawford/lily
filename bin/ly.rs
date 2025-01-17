@@ -2,6 +2,9 @@ use lily::{interpreter::*, lexer::*, parser::*};
 use std::{env, fs, process};
 
 fn main() {
+    // enable full backtraces
+    env::set_var("RUST_BACKTRACE", "1");
+
     // read file to buffer
     let args: Vec<String> = env::args().collect();
     let file_path = &args.get(1).expect("no file provided.");

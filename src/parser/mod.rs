@@ -213,15 +213,18 @@ impl Parser {
         let mut args = vec![];
         loop {
             match self.peek() {
+                Some(Token::Endl) | None => {
+                    // if an endline is found, there aren't any more arguments
+                    // TODO i kinda feel like this shouldn't happen here, given the end paren
+                    // should do this job just fine. pretty strange
+                    break;
+                }
                 Some(Token::ParenClose) => {
                     self.next();
                     break;
                 }
                 Some(_) => {
                     args.push(self.parse_expr(false));
-                }
-                _ => {
-                    todo!();
                 }
             }
         }
