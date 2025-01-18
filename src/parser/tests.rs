@@ -24,6 +24,24 @@ fn decl() {
 }
 
 #[test]
+fn lists() {
+    assert_eq!(
+        Parser::new(Lexer::new().lex("let list = [1, 2, 3];".into())).parse(),
+        ASTNode::Block(vec![ASTNode::Declare {
+            id: "list".into(),
+            value: ASTNode::List(vec![
+                Token::Number(1.),
+                Token::Number(2.),
+                Token::Number(3.)
+            ])
+            .into(),
+        }
+        .into(),])
+        .into()
+    );
+}
+
+#[test]
 fn math() {
     assert_eq!(
         Parser::new(Lexer::new().lex("let x = 1 + 2 - 3 * 4 / 5;".into())).parse(),

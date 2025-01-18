@@ -4,11 +4,12 @@ mod mem;
 mod tests;
 
 use crate::{lexer::Token, parser::ASTNode};
+use mem::variable::Variable;
 use std::{collections::HashMap, rc::Rc};
 
 pub struct Interpreter<'a> {
     /// Variable storage.
-    pub variables: Vec<HashMap<String, ASTNode>>,
+    pub variables: Vec<HashMap<String, Variable<'a>>>,
     /// Function table.
     pub functions: Vec<HashMap<String, &'a Rc<ASTNode>>>,
     /// Scope level.
@@ -52,14 +53,20 @@ impl<'a> Interpreter<'a> {
                 let resolved_expr = &self
                     .execute_expr(&value)
                     .expect("expected expression after variable assignment.");
-                self.assign(id.clone(), (&*resolved_expr.clone()).clone());
+                self.assign(
+                    id.clone(),
+                    Variable::Owned((*resolved_expr.clone()).clone()),
+                );
                 None
             }
             ASTNode::Declare { id, value } => {
                 let resolved_expr = &self
                     .execute_expr(&value)
                     .expect("expected expression after variable declaration.");
-                self.declare(id.clone(), (&*resolved_expr.clone()).clone());
+                self.declare(
+                    id.clone(),
+                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                );
                 None
             }
             ASTNode::Function {
@@ -67,7 +74,7 @@ impl<'a> Interpreter<'a> {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                self.set_fn(id.clone(), &*statement);
+                self.declare(id.clone(), Variable::Reference(&*statement));
                 None
             }
             ASTNode::FunctionCall {
@@ -75,27 +82,32 @@ impl<'a> Interpreter<'a> {
                 arguments: call_args,
             } => {
                 // execute function
-                let function = self.get_fn(id.clone());
-                if let ASTNode::Function {
-                    id: _id,
-                    arguments: fn_args,
-                    body,
-                } = &**function
-                {
-                    // push arguments
-                    assert_eq!(call_args.len(), fn_args.len());
-                    self.scope += 1;
-                    for (idx, arg) in fn_args.iter().enumerate() {
-                        let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
-                        let resolved_expr = self.execute_expr(arg_expr).unwrap().clone();
-                        self.declare(arg.clone(), (&*resolved_expr.clone()).clone());
-                    }
+                let variable = self.get_owned(id.clone());
+                if let Variable::Reference(function) = variable {
+                    if let ASTNode::Function {
+                        id: _id,
+                        arguments: fn_args,
+                        body,
+                    } = &**function
+                    {
+                        // push arguments
+                        assert_eq!(call_args.len(), fn_args.len());
+                        self.scope += 1;
+                        for (idx, arg) in fn_args.iter().enumerate() {
+                            let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
+                            let resolved_expr = self.execute_expr(arg_expr).unwrap().clone();
+                            self.declare(
+                                arg.clone(),
+                                Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                            );
+                        }
 
-                    // if no return, drop scoped variables anyway
-                    let result = self.execute(body);
-                    self.scope -= 1;
-                    self.drop();
-                    return result;
+                        // if no return, drop scoped variables anyway
+                        let result = self.execute(body);
+                        self.scope -= 1;
+                        self.drop();
+                        return result;
+                    }
                 }
                 None
             }
@@ -190,10 +202,17 @@ impl<'a> Interpreter<'a> {
                 self.drop();
                 None
             }
+            ASTNode::List(_) => {
+                // return self
+                return Some(statement.to_owned());
+            }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
-                    // get variable value if applicable
-                    Some(ASTNode::Literal(self.get(identifier.clone())).into())
+                    if let Variable::Owned(var) = self.get(identifier.clone()) {
+                        // reutrn owned variables
+                        return Some(var.clone().into());
+                    }
+                    None
                 } else {
                     // otherwise, return raw literal
                     Some(statement.clone())

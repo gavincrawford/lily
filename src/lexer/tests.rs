@@ -196,6 +196,26 @@ fn parens() {
 }
 
 #[test]
+fn lists() {
+    assert_eq!(
+        Lexer::new().lex("let list = [1, 2, 3];".into()),
+        vec![
+            Let,
+            Identifier("list".into()),
+            Equal,
+            BracketOpen,
+            Number(1.),
+            Comma,
+            Number(2.),
+            Comma,
+            Number(3.),
+            BracketClose,
+            Endl,
+        ]
+    )
+}
+
+#[test]
 fn loops() {
     assert_eq!(
         Lexer::new().lex("while true do; end;".into()),

@@ -25,8 +25,12 @@ pub enum Token {
     While,
     BlockStart,
     BlockEnd,
+
+    // delimiters
     ParenOpen,
     ParenClose,
+    BracketOpen,
+    BracketClose,
 
     // logic
     LogicalNot,
@@ -131,7 +135,7 @@ impl Lexer {
                         '\'' => {
                             mode = CaptureMode::Char;
                         }
-                        '(' | ')' | ',' => {
+                        '(' | ')' | '[' | ']' | ',' => {
                             // add identifier for function calls
                             if !self.keyword_register.is_empty() {
                                 tokens.push(Identifier(self.keyword_register.clone()));
@@ -140,6 +144,8 @@ impl Lexer {
                             match c {
                                 '(' => tokens.push(ParenOpen),
                                 ')' => tokens.push(ParenClose),
+                                '[' => tokens.push(BracketOpen),
+                                ']' => tokens.push(BracketClose),
                                 ',' => tokens.push(Comma),
                                 _ => panic!(),
                             }

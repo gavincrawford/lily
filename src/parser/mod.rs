@@ -41,12 +41,20 @@ pub enum ASTNode {
     },
     Return(Rc<ASTNode>),
     Literal(Token),
+    List(Vec<Token>),
+}
+
+impl ASTNode {
+    pub fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {
+        (&*rc.clone()).clone()
+    }
 }
 
 pub struct Parser {
     tokens: Vec<Token>,
     position: usize,
 }
+
 impl Parser {
     /// Creates a new parser over `tokens`.
     pub fn new(tokens: Vec<Token>) -> Self {
@@ -274,8 +282,8 @@ impl Parser {
     }
 
     /// Parses raw expressions, such as math or comparisons.
-    // TODO the whole `consume_parens` thing seems janky. find another way?
-    fn parse_expr(&mut self, consume_parens: bool) -> Rc<ASTNode> {
+    // TODO the whole `consume_delimiters` thing seems janky. find another way?
+    fn parse_expr(&mut self, consume_delimiters: bool) -> Rc<ASTNode> {
         // tracks if a paren has been opened for error messages
         let parens_open;
 
@@ -310,8 +318,8 @@ impl Parser {
                 rhs: self.parse_expr(true),
             }
             .into(),
-            Some(Token::ParenClose) => {
-                if consume_parens {
+            Some(Token::ParenClose) | Some(Token::BracketClose) => {
+                if consume_delimiters {
                     self.next();
                 }
                 primary
@@ -339,6 +347,7 @@ impl Parser {
             | Some(Token::Char(_)) => {
                 ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
             }
+            Some(Token::BracketOpen) => self.parse_list(),
             Some(Token::Identifier(_)) => {
                 if let Some(Token::ParenOpen) = self.peek_n(1) {
                     // if the future token is a parenthesis, this is a function call
@@ -352,5 +361,28 @@ impl Parser {
                 todo!()
             }
         }
+    }
+
+    /// Parses lists.
+    fn parse_list(&mut self) -> Rc<ASTNode> {
+        // consume open bracket
+        self.expect(Token::BracketOpen);
+
+        // parse items individually
+        let mut items = vec![];
+        // TODO limit the size of arrays here to avoid getting stuck
+        loop {
+            // end when bracket close is reached
+            if let Some(Token::BracketClose) = self.peek() {
+                break;
+            }
+
+            // add item to the list
+            if let ASTNode::Literal(value) = &*self.parse_expr(false) {
+                items.push(value.clone());
+            }
+        }
+
+        ASTNode::List(items).into()
     }
 }
