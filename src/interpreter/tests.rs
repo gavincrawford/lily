@@ -14,19 +14,19 @@ fn global_variables() {
     i.execute(&ast);
 
     assert_eq!(
-        *i.get("a".into()),
+        *i.get("a"),
         Variable::Owned(ASTNode::Literal(Token::Number(1.)))
     );
     assert_eq!(
-        *i.get("b".into()),
+        *i.get("b"),
         Variable::Owned(ASTNode::Literal(Token::Bool(true)))
     );
     assert_eq!(
-        *i.get("c".into()),
-        Variable::Owned(ASTNode::Literal(Token::Str("str".into())))
+        *i.get("c"),
+        Variable::Owned(ASTNode::Literal(Token::Str("str".to_string())))
     );
     assert_eq!(
-        *i.get("d".into()),
+        *i.get("d"),
         Variable::Owned(ASTNode::Literal(Token::Char('c')))
     );
 }
@@ -38,23 +38,23 @@ fn math() {
     i.execute(&ast);
 
     assert_eq!(
-        *i.get("a".into()),
+        *i.get("a"),
         Variable::Owned(ASTNode::Literal(Token::Number(2.)))
     );
     assert_eq!(
-        *i.get("b".into()),
+        *i.get("b"),
         Variable::Owned(ASTNode::Literal(Token::Number(0.)))
     );
     assert_eq!(
-        *i.get("c".into()),
+        *i.get("c"),
         Variable::Owned(ASTNode::Literal(Token::Number(25.)))
     );
     assert_eq!(
-        *i.get("d".into()),
+        *i.get("d"),
         Variable::Owned(ASTNode::Literal(Token::Number(2.)))
     );
     assert_eq!(
-        *i.get("e".into()),
+        *i.get("e"),
         Variable::Owned(ASTNode::Literal(Token::Number(6.)))
     );
 }
@@ -67,7 +67,7 @@ fn conditionals() {
     i.execute(&ast);
 
     assert_eq!(
-        *i.get("a".into()),
+        *i.get("a"),
         Variable::Owned(ASTNode::Literal(Token::Number(5.)))
     );
 }
@@ -79,15 +79,15 @@ fn functions() {
     i.execute(&ast);
 
     assert_eq!(
-        *i.get("a".into()),
+        *i.get("a"),
         Variable::Owned(ASTNode::Literal(Token::Number(10.)))
     );
     assert_eq!(
-        *i.get("b".into()),
+        *i.get("b"),
         Variable::Owned(ASTNode::Literal(Token::Number(20.)))
     );
     assert_eq!(
-        *i.get("c".into()),
+        *i.get("c"),
         Variable::Owned(ASTNode::Literal(Token::Bool(true)))
     );
 }
@@ -99,7 +99,7 @@ fn fibonacci() {
     i.execute(&ast);
 
     assert_eq!(
-        *i.get("result".into()),
+        *i.get("result"),
         Variable::Owned(ASTNode::Literal(Token::Number(21.)))
     );
 }
@@ -111,11 +111,11 @@ fn loops() {
     i.execute(&ast);
 
     assert_eq!(
-        *i.get("i".into()),
+        *i.get("i"),
         Variable::Owned(ASTNode::Literal(Token::Number(25.)))
     );
     assert_eq!(
-        *i.get("a".into()),
+        *i.get("a"),
         Variable::Owned(ASTNode::Literal(Token::Number(25.)))
     );
 }

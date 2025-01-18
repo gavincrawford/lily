@@ -53,20 +53,14 @@ impl<'a> Interpreter<'a> {
                 let resolved_expr = &self
                     .execute_expr(&value)
                     .expect("expected expression after variable assignment.");
-                self.assign(
-                    id.clone(),
-                    Variable::Owned((*resolved_expr.clone()).clone()),
-                );
+                self.assign(id, Variable::Owned((*resolved_expr.clone()).clone()));
                 None
             }
             ASTNode::Declare { id, value } => {
                 let resolved_expr = &self
                     .execute_expr(&value)
                     .expect("expected expression after variable declaration.");
-                self.declare(
-                    id.clone(),
-                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
-                );
+                self.declare(id, Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)));
                 None
             }
             ASTNode::Function {
@@ -74,7 +68,7 @@ impl<'a> Interpreter<'a> {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                self.declare(id.clone(), Variable::Reference(&*statement));
+                self.declare(id, Variable::Reference(&*statement));
                 None
             }
             ASTNode::FunctionCall {
@@ -82,7 +76,7 @@ impl<'a> Interpreter<'a> {
                 arguments: call_args,
             } => {
                 // execute function
-                let variable = self.get_owned(id.clone());
+                let variable = self.get_owned(id);
                 if let Variable::Reference(function) = variable {
                     if let ASTNode::Function {
                         id: _id,
@@ -97,7 +91,7 @@ impl<'a> Interpreter<'a> {
                             let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
                             let resolved_expr = self.execute_expr(arg_expr).unwrap().clone();
                             self.declare(
-                                arg.clone(),
+                                arg,
                                 Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
                             );
                         }
@@ -208,7 +202,7 @@ impl<'a> Interpreter<'a> {
             }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
-                    if let Variable::Owned(var) = self.get(identifier.clone()) {
+                    if let Variable::Owned(var) = self.get(identifier) {
                         // reutrn owned variables
                         return Some(var.clone().into());
                     }

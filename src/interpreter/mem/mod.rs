@@ -8,7 +8,9 @@ pub mod variable;
 
 impl<'a> Interpreter<'a> {
     /// Gets the value of a variable.
-    pub fn get(&self, id: String) -> &Variable {
+    pub fn get(&self, id: impl Into<String>) -> &Variable {
+        let id = id.into();
+
         // step down scopes until a variable is found
         for scope in self.variables.iter().rev() {
             if scope.contains_key(&id) {
@@ -19,7 +21,9 @@ impl<'a> Interpreter<'a> {
     }
 
     /// Gets the value of a variable, and clones it in the process.
-    pub fn get_owned(&self, id: String) -> Variable<'a> {
+    pub fn get_owned(&self, id: impl Into<String>) -> Variable<'a> {
+        let id = id.into();
+
         // step down scopes until a variable is found
         for scope in self.variables.iter().rev() {
             if scope.contains_key(&id) {
@@ -30,7 +34,9 @@ impl<'a> Interpreter<'a> {
     }
 
     /// Declares a new variable.
-    pub fn declare(&mut self, id: String, value: Variable<'a>) {
+    pub fn declare(&mut self, id: impl Into<String>, value: Variable<'a>) {
+        let id = id.into();
+
         // add new scope if required
         while self.variables.len() <= self.scope {
             self.variables.push(HashMap::new());
@@ -47,7 +53,9 @@ impl<'a> Interpreter<'a> {
     }
 
     /// Assigns to an existing variable.
-    pub fn assign(&mut self, id: String, value: Variable<'a>) {
+    pub fn assign(&mut self, id: impl Into<String>, value: Variable<'a>) {
+        let id = id.into();
+
         let mut scope_idx = self.scope;
         for (idx, scope) in self.variables.iter().enumerate() {
             if scope.contains_key(&id) {
