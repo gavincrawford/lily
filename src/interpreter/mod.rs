@@ -28,10 +28,14 @@ impl<'a> Interpreter<'a> {
         if let ASTNode::Block(statements) = &**ast {
             // if this segment is a block, execute all of its statements
             for statement in statements {
-                // TODO this might cause some unintended issues with returning at base scope. take
-                // a look at it later and evaluate risk
                 if let Some(ret_value) = self.execute_expr(statement) {
-                    return Some(ret_value);
+                    if self.scope > 0 {
+                        return Some(ret_value);
+                    } else {
+                        // TODO this still doesn't prevent return from being called inside a
+                        // conditional, so maybe add a syntax error for that too
+                        panic!("return cannot be called outside of a function.");
+                    }
                 }
             }
         } else {
