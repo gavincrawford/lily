@@ -53,7 +53,7 @@ impl<'a> Interpreter<'a> {
                 let resolved_expr = &self
                     .execute_expr(&value)
                     .expect("expected expression after variable assignment.");
-                self.assign(id, Variable::Owned((*resolved_expr.clone()).clone()));
+                self.assign(id, Variable::Owned((*resolved_expr.to_owned()).to_owned()));
                 None
             }
             ASTNode::Declare { id, value } => {
@@ -89,7 +89,7 @@ impl<'a> Interpreter<'a> {
                         self.scope += 1;
                         for (idx, arg) in fn_args.iter().enumerate() {
                             let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
-                            let resolved_expr = self.execute_expr(arg_expr).unwrap().clone();
+                            let resolved_expr = self.execute_expr(arg_expr).unwrap().to_owned();
                             self.declare(
                                 arg,
                                 Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
@@ -204,12 +204,12 @@ impl<'a> Interpreter<'a> {
                 if let Token::Identifier(identifier) = t {
                     if let Variable::Owned(var) = self.get(identifier) {
                         // reutrn owned variables
-                        return Some(var.clone().into());
+                        return Some(var.to_owned().into());
                     }
                     None
                 } else {
                     // otherwise, return raw literal
-                    Some(statement.clone())
+                    Some(statement.to_owned())
                 }
             }
             ASTNode::Return(ref expr) => Some(
