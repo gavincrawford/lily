@@ -312,7 +312,8 @@ impl Parser {
             | Some(Token::LogicalL)
             | Some(Token::LogicalLe)
             | Some(Token::LogicalG)
-            | Some(Token::LogicalGe) => ASTNode::Op {
+            | Some(Token::LogicalGe)
+            | Some(Token::LogicalEq) => ASTNode::Op {
                 lhs: primary,
                 op: self.next().unwrap(), // safety: peek
                 rhs: self.parse_expr(true),
@@ -330,7 +331,7 @@ impl Parser {
             }
             _ => {
                 if parens_open {
-                    panic!("unclosed delimiter found, aborting.");
+                    panic!("unclosed delimiter found.");
                 } else {
                     panic!("unexpected member of expression.")
                 }
