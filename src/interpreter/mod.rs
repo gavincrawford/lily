@@ -126,6 +126,10 @@ impl<'a> Interpreter<'a> {
                             Token::Div => {
                                 return Some(ASTNode::Literal(Token::Number(a / b)).into())
                             }
+                            Token::Pow => {
+                                return Some(ASTNode::Literal(Token::Number(a.powf(*b))).into())
+                            }
+
                             // logical operators
                             Token::LogicalEq => {
                                 return Some(ASTNode::Literal(Token::Bool(a == b)).into())

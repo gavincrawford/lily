@@ -35,12 +35,17 @@ fn math() {
         vec![Number(32.), Add, Number(12.), Sub, Number(7.), Endl]
     );
     assert_eq!(
-        Lexer::new().lex("0.5731 * 0.222;".into()),
-        vec![Number(0.5731), Mul, Number(0.222), Endl]
-    );
-    assert_eq!(
-        Lexer::new().lex("1 / 1;".into()),
-        vec![Number(1.), Div, Number(1.), Endl]
+        Lexer::new().lex("0.5731 * 0.222 / 1^3;".into()),
+        vec![
+            Number(0.5731),
+            Mul,
+            Number(0.222),
+            Div,
+            Number(1.),
+            Pow,
+            Number(3.),
+            Endl
+        ]
     );
 }
 

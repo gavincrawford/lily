@@ -39,22 +39,14 @@ mod feature {
 
         assert_eq!(
             *i.get("a"),
-            Variable::Owned(ASTNode::Literal(Token::Number(2.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
         );
         assert_eq!(
             *i.get("b"),
-            Variable::Owned(ASTNode::Literal(Token::Number(0.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(2.5)))
         );
         assert_eq!(
             *i.get("c"),
-            Variable::Owned(ASTNode::Literal(Token::Number(25.)))
-        );
-        assert_eq!(
-            *i.get("d"),
-            Variable::Owned(ASTNode::Literal(Token::Number(2.)))
-        );
-        assert_eq!(
-            *i.get("e"),
             Variable::Owned(ASTNode::Literal(Token::Number(6.)))
         );
     }

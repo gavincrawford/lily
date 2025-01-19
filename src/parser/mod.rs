@@ -309,6 +309,7 @@ impl Parser {
             | Some(Token::Sub)
             | Some(Token::Mul)
             | Some(Token::Div)
+            | Some(Token::Pow)
             | Some(Token::LogicalL)
             | Some(Token::LogicalLe)
             | Some(Token::LogicalG)

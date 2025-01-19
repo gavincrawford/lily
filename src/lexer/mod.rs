@@ -46,6 +46,7 @@ pub enum Token {
     Sub,
     Mul,
     Div,
+    Pow,
 
     // other
     Comma,
@@ -102,6 +103,9 @@ impl Lexer {
                         }
                         '/' => {
                             tokens.push(Div);
+                        }
+                        '^' => {
+                            tokens.push(Pow);
                         }
 
                         // equalities
