@@ -5,4 +5,6 @@ func factorial n do
     return n * factorial(n - 1)
   end
 end
-let result = factorial(6);
+let six_fac = factorial(6);
+let one_fac = factorial(1);
+let zero_fac = factorial(0);

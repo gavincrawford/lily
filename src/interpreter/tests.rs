@@ -135,8 +135,16 @@ mod implementation {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("result"),
+            *i.get("six_fac"),
             Variable::Owned(ASTNode::Literal(Token::Number(720.)))
+        );
+        assert_eq!(
+            *i.get("one_fac"),
+            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
+        );
+        assert_eq!(
+            *i.get("zero_fac"),
+            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
         );
     }
 }
