@@ -207,6 +207,33 @@ impl<'a> Interpreter<'a> {
                 // return self
                 return Some(statement.to_owned());
             }
+            ASTNode::Index { id, index } => {
+                // get index as a usize
+                let usize_idx;
+                if let ASTNode::Literal(Token::Number(n)) = &*self.execute_expr(index).unwrap() {
+                    usize_idx = n.to_owned() as usize;
+                } else {
+                    panic!("index must be positive and a number.");
+                }
+
+                // get value from list
+                if let Variable::Owned(list) = self.get(id) {
+                    if let ASTNode::List(tokens) = &*list {
+                        return Some(
+                            ASTNode::Literal(
+                                tokens
+                                    .get(usize_idx.to_owned() as usize)
+                                    .expect("index out of bounds.")
+                                    .to_owned(),
+                            )
+                            .into(),
+                        );
+                    }
+                }
+
+                // if return hasn't been reached, panic
+                panic!("invalid index expression.");
+            }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
                     if let Variable::Owned(var) = self.get(identifier) {

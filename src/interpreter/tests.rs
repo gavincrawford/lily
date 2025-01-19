@@ -100,6 +100,26 @@ mod feature {
             Variable::Owned(ASTNode::Literal(Token::Number(25.)))
         );
     }
+
+    #[test]
+    fn lists() {
+        let mut i = Interpreter::new();
+        let ast = Parser::new(Lexer::new().lex(include_str!("tests/lists.ly").to_string())).parse();
+        i.execute(&ast);
+
+        assert_eq!(
+            *i.get("idx_a"),
+            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
+        );
+        assert_eq!(
+            *i.get("idx_b"),
+            Variable::Owned(ASTNode::Literal(Token::Number(2.)))
+        );
+        assert_eq!(
+            *i.get("idx_c"),
+            Variable::Owned(ASTNode::Literal(Token::Number(3.)))
+        );
+    }
 }
 
 #[cfg(test)]

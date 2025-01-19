@@ -8,6 +8,10 @@ mod tests;
 #[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
     Block(Vec<Rc<ASTNode>>),
+    Index {
+        id: String,
+        index: Rc<ASTNode>,
+    },
     Assign {
         id: String,
         value: Rc<ASTNode>,
@@ -132,15 +136,11 @@ impl Parser {
             Some(Token::If) => self.parse_cond(),
             Some(Token::Function) => self.parse_decl_fn(),
             Some(Token::While) => self.parse_while(),
-            Some(Token::Identifier(_)) => {
-                if let Some(Token::ParenOpen) = self.peek_n(1) {
-                    // handle function calls
-                    self.parse_call_fn()
-                } else {
-                    // handle variable assignments
-                    self.parse_assign_var()
-                }
-            }
+            Some(Token::Identifier(_)) => match self.peek_n(1) {
+                Some(Token::ParenOpen) => self.parse_call_fn(),
+                Some(Token::BracketOpen) => self.parse_index(),
+                _ => self.parse_assign_var(),
+            },
             Some(Token::Return) => self.parse_return(),
             _ => {
                 panic!("expected statement, found {:?}.", self.peek().unwrap());
@@ -170,6 +170,25 @@ impl Parser {
             else_body,
         }
         .into()
+    }
+
+    /// Parses a list index.
+    fn parse_index(&mut self) -> Rc<ASTNode> {
+        if let Some(Token::Identifier(id)) = self.next() {
+            // if id is found, parse index value
+            self.expect(Token::BracketOpen);
+            let index = self.parse_expr(false);
+            self.expect(Token::BracketClose);
+
+            // if the index is a non-number, panic
+            if let ASTNode::Literal(Token::Number(_)) = &*index {
+                ASTNode::Index { id, index }.into()
+            } else {
+                panic!("index must be a number.");
+            }
+        } else {
+            panic!("expected identifier to index.");
+        }
     }
 
     /// Parses a while loop.
@@ -350,15 +369,20 @@ impl Parser {
                 ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
             }
             Some(Token::BracketOpen) => self.parse_list(),
-            Some(Token::Identifier(_)) => {
-                if let Some(Token::ParenOpen) = self.peek_n(1) {
+            Some(Token::Identifier(_)) => match self.peek_n(1) {
+                Some(Token::ParenOpen) => {
                     // if the future token is a parenthesis, this is a function call
                     self.parse_call_fn().into()
-                } else {
+                }
+                Some(Token::BracketOpen) => {
+                    // if the future token is a bracket, this is an index
+                    self.parse_index().into()
+                }
+                _ => {
                     // otherwise, it's safe to assume that the token is a literal
                     ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
                 }
-            }
+            },
             _ => {
                 todo!()
             }

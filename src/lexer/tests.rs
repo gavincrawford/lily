@@ -203,7 +203,7 @@ fn parens() {
 #[test]
 fn lists() {
     assert_eq!(
-        Lexer::new().lex("let list = [1, 2, 3];".into()),
+        Lexer::new().lex("let list = [1, 2, 3]; list[0];".into()),
         vec![
             Let,
             Identifier("list".into()),
@@ -214,6 +214,11 @@ fn lists() {
             Number(2.),
             Comma,
             Number(3.),
+            BracketClose,
+            Endl,
+            Identifier("list".into()),
+            BracketOpen,
+            Number(0.),
             BracketClose,
             Endl,
         ]
