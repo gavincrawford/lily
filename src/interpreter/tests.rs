@@ -119,6 +119,10 @@ mod feature {
             *i.get("idx_c"),
             Variable::Owned(ASTNode::Literal(Token::Number(3.)))
         );
+        assert_eq!(
+            *i.get("idx_d"),
+            Variable::Owned(ASTNode::Literal(Token::Number(4.)))
+        );
     }
 }
 

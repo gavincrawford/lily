@@ -180,12 +180,8 @@ impl Parser {
             let index = self.parse_expr(false);
             self.expect(Token::BracketClose);
 
-            // if the index is a non-number, panic
-            if let ASTNode::Literal(Token::Number(_)) = &*index {
-                ASTNode::Index { id, index }.into()
-            } else {
-                panic!("index must be a number.");
-            }
+            // return index block
+            ASTNode::Index { id, index }.into()
         } else {
             panic!("expected identifier to index.");
         }
