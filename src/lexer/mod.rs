@@ -60,6 +60,7 @@ enum CaptureMode {
     Equality,
     String,
     Char,
+    Comment,
 }
 
 pub struct Lexer {
@@ -179,8 +180,19 @@ impl Lexer {
                             tokens.push(Endl);
                         }
 
+                        // comments
+                        '#' => {
+                            mode = CaptureMode::Comment;
+                        }
+
                         // other
                         _ => {}
+                    }
+                }
+                CaptureMode::Comment => {
+                    if c == '\n' || c == ';' {
+                        tokens.push(Endl);
+                        mode = CaptureMode::General;
                     }
                 }
                 CaptureMode::Equality => {
