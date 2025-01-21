@@ -10,7 +10,10 @@ pub enum ASTNode {
     /// Represents a block of statements, grouped in a scope.
     Block(Vec<Rc<ASTNode>>),
     /// Holds a block, but represents a separate module.
-    Module(Rc<ASTNode>),
+    Module {
+        alias: Option<String>,
+        body: Rc<ASTNode>,
+    },
 
     Index {
         id: String,
@@ -171,15 +174,13 @@ impl Parser {
             }
 
             // check if alias is provided
-            let mut _alias = None;
+            let mut alias = None;
             if let Some(Token::As) = self.peek() {
                 self.next();
                 if let Some(Token::Identifier(alias_str)) = self.peek() {
                     // if an identifier is found, it is our alias
-                    _alias = Some(alias_str.to_owned());
+                    alias = Some(alias_str.to_owned());
                     self.next();
-
-                    todo!(); // FIX
                 } else {
                     // if something other than an identifier is provided, this import is malformed
                     panic!("expected identifier as alias, found {:?}", self.peek());
@@ -204,7 +205,11 @@ impl Parser {
 
             // parse the module
             let module = parser.parse();
-            ASTNode::Module(module.into()).into()
+            ASTNode::Module {
+                alias,
+                body: module.into(),
+            }
+            .into()
         } else {
             panic!("expected path after import.");
         }

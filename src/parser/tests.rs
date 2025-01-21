@@ -353,12 +353,13 @@ fn functions() {
 #[test]
 fn import() {
     // TODO test aliases once they're implemented
-    let mut parser = Parser::new(Lexer::new().lex("import \"./module.ly\";".into()));
+    let mut parser = Parser::new(Lexer::new().lex("import \"./module.ly\" as math;".into()));
     parser.set_pwd(PathBuf::from("src/parser/tests"));
     assert_eq!(
         parser.parse(),
-        ASTNode::Block(vec![ASTNode::Module(
-            ASTNode::Block(vec![ASTNode::Function {
+        ASTNode::Block(vec![ASTNode::Module {
+            alias: Some("math".into()),
+            body: ASTNode::Block(vec![ASTNode::Function {
                 id: "add".into(),
                 arguments: vec!["a".into(), "b".into()],
                 body: ASTNode::Block(vec![ASTNode::Return(
@@ -374,7 +375,7 @@ fn import() {
             }
             .into()])
             .into()
-        )
+        }
         .into()])
         .into()
     );

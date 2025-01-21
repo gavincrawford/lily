@@ -250,9 +250,14 @@ impl<'a> Interpreter<'a> {
                 self.execute_expr(expr)
                     .expect("expected return expression."),
             ),
-            ASTNode::Module(module) => {
+            ASTNode::Module {
+                alias: _alias,
+                body,
+            } => {
+                // TODO use aliases
+
                 // execute modules to add them to the scope
-                self.execute(&*module);
+                self.execute(&*body);
                 None
             }
             _ => {
