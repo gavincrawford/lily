@@ -1,13 +1,17 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
-use crate::lexer::Token;
-use std::rc::Rc;
+use crate::lexer::{Lexer, Token};
+use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
 
 mod tests;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
+    /// Represents a block of statements, grouped in a scope.
     Block(Vec<Rc<ASTNode>>),
+    /// Holds a block, but represents a separate module.
+    Module(Rc<ASTNode>),
+
     Index {
         id: String,
         index: Rc<ASTNode>,
@@ -57,6 +61,7 @@ impl ASTNode {
 pub struct Parser {
     tokens: Vec<Token>,
     position: usize,
+    path: Box<PathBuf>,
 }
 
 impl Parser {
@@ -65,7 +70,13 @@ impl Parser {
         Self {
             tokens,
             position: 0,
+            path: Box::new(env::current_dir().unwrap()),
         }
+    }
+
+    /// Sets the current working directory, used to set relative location of imports.
+    pub fn set_pwd(&mut self, path: PathBuf) {
+        self.path = Box::new(path);
     }
 
     /// Peek at the next token.
@@ -132,6 +143,7 @@ impl Parser {
     /// Parses a statement.
     fn parse_statement(&mut self) -> Rc<ASTNode> {
         match self.peek() {
+            Some(Token::Import) => self.parse_import(),
             Some(Token::Let) => self.parse_decl_var(),
             Some(Token::If) => self.parse_cond(),
             Some(Token::Function) => self.parse_decl_fn(),
@@ -145,6 +157,56 @@ impl Parser {
             _ => {
                 panic!("expected statement, found {:?}.", self.peek().unwrap());
             }
+        }
+    }
+
+    /// Parses imports.
+    fn parse_import(&mut self) -> Rc<ASTNode> {
+        self.expect(Token::Import);
+        if let Some(Token::Str(path)) = self.next() {
+            // get full path
+            let mut path = self.path.join(PathBuf::from(path));
+            if !path.exists() {
+                panic!("module not found at '{}'", path.display());
+            }
+
+            // check if alias is provided
+            let mut _alias = None;
+            if let Some(Token::As) = self.peek() {
+                self.next();
+                if let Some(Token::Identifier(alias_str)) = self.peek() {
+                    // if an identifier is found, it is our alias
+                    _alias = Some(alias_str.to_owned());
+                    self.next();
+
+                    todo!(); // FIX
+                } else {
+                    // if something other than an identifier is provided, this import is malformed
+                    panic!("expected identifier as alias, found {:?}", self.peek());
+                }
+            }
+
+            // read the file to be imported to a buffer
+            let mut buffer = String::new();
+            // TODO handle unwrap
+            File::open(path.to_owned())
+                .unwrap()
+                .read_to_string(&mut buffer)
+                .unwrap();
+
+            // lex buffer into tokens
+            let tokens = Lexer::new().lex(buffer);
+
+            // create a parser and point it to the file's parent directory
+            let mut parser = Self::new(tokens);
+            path.pop();
+            parser.set_pwd(path);
+
+            // parse the module
+            let module = parser.parse();
+            ASTNode::Module(module.into()).into()
+        } else {
+            panic!("expected path after import.");
         }
     }
 

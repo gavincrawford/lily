@@ -1,5 +1,5 @@
 use lily::{interpreter::*, lexer::*, parser::*};
-use std::{env, fs, process};
+use std::{env, fs, path::PathBuf, process};
 
 fn main() {
     // enable full backtraces
@@ -16,9 +16,14 @@ fn main() {
         }
     };
 
+    // get pwd
+    let mut path = PathBuf::from(file_path);
+    path.pop();
+
     // execute file
-    let toks = Lexer::new().lex(buf);
-    let ast = Parser::new(toks).parse();
+    let mut parser = Parser::new(Lexer::new().lex(buf));
+    parser.set_pwd(path);
+    let ast = parser.parse();
     let mut interp = Interpreter::new();
     interp.execute(&ast);
 

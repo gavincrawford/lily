@@ -232,3 +232,20 @@ fn loops() {
         vec![While, Bool(true), BlockStart, Endl, BlockEnd, Endl]
     )
 }
+
+#[test]
+fn modules() {
+    assert_eq!(
+        Lexer::new().lex("import \"./module.ly\"; import \"./module.ly\" as alias;".into()),
+        vec![
+            Import,
+            Str("./module.ly".into()),
+            Endl,
+            Import,
+            Str("./module.ly".into()),
+            As,
+            Identifier("alias".into()),
+            Endl
+        ]
+    )
+}

@@ -48,6 +48,10 @@ pub enum Token {
     Div,
     Pow,
 
+    // modules
+    Import,
+    As,
+
     // other
     Comma,
     Endl,
@@ -69,6 +73,7 @@ pub struct Lexer {
     string_register: String,
     equality_register: Option<Token>,
 }
+
 impl Lexer {
     /// Creates a new lexer.
     pub fn new() -> Self {
@@ -275,6 +280,8 @@ impl Lexer {
             "end" => Some(BlockEnd),
             "true" => Some(Bool(true)),
             "false" => Some(Bool(false)),
+            "import" => Some(Import),
+            "as" => Some(As),
             _ => None,
         }
     }

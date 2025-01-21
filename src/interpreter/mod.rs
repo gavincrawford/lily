@@ -250,6 +250,11 @@ impl<'a> Interpreter<'a> {
                 self.execute_expr(expr)
                     .expect("expected return expression."),
             ),
+            ASTNode::Module(module) => {
+                // execute modules to add them to the scope
+                self.execute(&*module);
+                None
+            }
             _ => {
                 todo!()
             }
