@@ -3,6 +3,8 @@ use crate::{interpreter::*, lexer::*, parser::*};
 
 #[cfg(test)]
 mod feature {
+    use std::path::PathBuf;
+
     use super::*;
 
     #[test]
@@ -121,6 +123,20 @@ mod feature {
         );
         assert_eq!(
             *i.get("idx_d"),
+            Variable::Owned(ASTNode::Literal(Token::Number(4.)))
+        );
+    }
+
+    #[test]
+    fn imports() {
+        let mut i = Interpreter::new();
+        let mut p = Parser::new(Lexer::new().lex(include_str!("tests/imports.ly").to_string()));
+        p.set_pwd(PathBuf::from("src/interpreter/tests/"));
+        let ast = p.parse();
+        i.execute(&ast);
+
+        assert_eq!(
+            *i.get("res"),
             Variable::Owned(ASTNode::Literal(Token::Number(4.)))
         );
     }

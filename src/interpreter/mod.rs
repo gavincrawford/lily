@@ -12,6 +12,8 @@ pub struct Interpreter<'a> {
     pub variables: Vec<HashMap<String, Variable<'a>>>,
     /// Function table.
     pub functions: Vec<HashMap<String, &'a Rc<ASTNode>>>,
+    /// Module prefix, if applicable.
+    module: Option<String>,
     /// Scope level.
     scope: usize,
 }
@@ -20,6 +22,7 @@ impl<'a> Interpreter<'a> {
         Self {
             variables: Vec::with_capacity(8),
             functions: Vec::with_capacity(8),
+            module: None,
             scope: 0,
         }
     }
@@ -68,6 +71,15 @@ impl<'a> Interpreter<'a> {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
+                if let Some(prefix) = &self.module {
+                    let old_scope = self.scope;
+                    self.scope = 0;
+                    self.declare(
+                        [prefix.to_owned(), id.to_owned()].join("."),
+                        Variable::Reference(&*statement),
+                    );
+                    self.scope = old_scope;
+                }
                 self.declare(id, Variable::Reference(&*statement));
                 None
             }
@@ -250,14 +262,16 @@ impl<'a> Interpreter<'a> {
                 self.execute_expr(expr)
                     .expect("expected return expression."),
             ),
-            ASTNode::Module {
-                alias: _alias,
-                body,
-            } => {
-                // TODO use aliases
+            ASTNode::Module { alias, body } => {
+                // add alias if applicable
+                self.module = alias.to_owned();
 
                 // execute modules to add them to the scope
                 self.execute(&*body);
+
+                // remove alias
+                self.module = None;
+
                 None
             }
             _ => {

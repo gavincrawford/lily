@@ -160,7 +160,7 @@ impl Lexer {
                                 _ => panic!(),
                             }
                         }
-                        c if c.is_alphanumeric() || c == '_' => {
+                        c if c.is_alphanumeric() || c == '_' || c == '.' => {
                             self.keyword_register.push(c);
                         }
 
