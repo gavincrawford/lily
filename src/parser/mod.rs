@@ -119,6 +119,11 @@ impl Parser {
 
     /// Parses all tokens into a program.
     pub fn parse(&mut self) -> Rc<ASTNode> {
+        self.parse_with_imports(vec![])
+    }
+
+    /// Parses all tokens with hidden module imports.
+    pub fn parse_with_imports(&mut self, imports: Vec<Rc<ASTNode>>) -> Rc<ASTNode> {
         let mut statements = vec![];
         while let Some(token) = self.peek() {
             // TODO you might be able to merge the first two of these statements into one, and let
@@ -140,7 +145,7 @@ impl Parser {
                 statements.push(self.parse_statement());
             }
         }
-        ASTNode::Block(statements).into()
+        ASTNode::Block([imports, statements].concat()).into()
     }
 
     /// Parses a statement.

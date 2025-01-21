@@ -1,2 +1,3 @@
 # lily files-- for now
 *.ly
+!std/*.ly

@@ -1,5 +1,5 @@
 use lily::{interpreter::*, lexer::*, parser::*};
-use std::{env, fs, path::PathBuf, process};
+use std::{env, fs, path::PathBuf, process, rc::Rc};
 
 fn main() {
     // enable full backtraces
@@ -23,11 +23,21 @@ fn main() {
     // execute file
     let mut parser = Parser::new(Lexer::new().lex(buf));
     parser.set_pwd(path);
-    let ast = parser.parse();
+    let ast = parser.parse_with_imports(stdlib());
     let mut interp = Interpreter::new();
     interp.execute(&ast);
 
     // TODO for debugging
     #[cfg(debug_assertions)]
     dbg!(interp.variables);
+}
+
+/// Creates STD module import.
+fn stdlib() -> Vec<Rc<ASTNode>> {
+    let mut lexer = Lexer::new();
+    vec![ASTNode::Module {
+        alias: Some("math".into()),
+        body: Parser::new(lexer.lex(include_str!("./std/math.ly").into())).parse(),
+    }
+    .into()]
 }

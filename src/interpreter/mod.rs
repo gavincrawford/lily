@@ -79,8 +79,9 @@ impl<'a> Interpreter<'a> {
                         Variable::Reference(&*statement),
                     );
                     self.scope = old_scope;
+                } else {
+                    self.declare(id, Variable::Reference(&*statement));
                 }
-                self.declare(id, Variable::Reference(&*statement));
                 None
             }
             ASTNode::FunctionCall {
