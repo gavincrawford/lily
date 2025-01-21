@@ -6,11 +6,11 @@ use crate::lexer::Lexer;
 #[test]
 fn decl() {
     assert_eq!(
-        Parser::new(Lexer::new().lex("let number = 1; let boolean = true;".into())).parse(),
+        Parser::new(Lexer::new().lex("let number = -1; let boolean = true;".into())).parse(),
         ASTNode::Block(vec![
             ASTNode::Declare {
                 id: "number".into(),
-                value: ASTNode::Literal(Token::Number(1.)).into(),
+                value: ASTNode::Literal(Token::Number(-1.)).into(),
             }
             .into(),
             ASTNode::Declare {

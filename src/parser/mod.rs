@@ -430,13 +430,33 @@ impl Parser {
     /// Parses primaries, such as literals and function calls.
     fn parse_primary(&mut self) -> Rc<ASTNode> {
         match self.peek() {
+            // process negative numbers
+            Some(Token::Sub) => {
+                let next = self.peek_n(1).unwrap().to_owned();
+                if let Token::Number(value) = next {
+                    // consume both values
+                    self.next();
+                    self.next();
+
+                    // negate literal and return
+                    ASTNode::Literal(Token::Number(-1. * (value.to_owned()))).into()
+                } else {
+                    panic!("expected number after '-', found {:?}.", self.peek());
+                }
+            }
+
+            // literals
             Some(Token::Number(_))
             | Some(Token::Str(_))
             | Some(Token::Bool(_))
             | Some(Token::Char(_)) => {
                 ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
             }
+
+            // lists
             Some(Token::BracketOpen) => self.parse_list(),
+
+            // variables, function calls
             Some(Token::Identifier(_)) => match self.peek_n(1) {
                 Some(Token::ParenOpen) => {
                     // if the future token is a parenthesis, this is a function call
