@@ -3,26 +3,31 @@
 mod mem;
 mod tests;
 
-use crate::{lexer::Token, parser::ASTNode};
-use mem::variable::Variable;
+use crate::{
+    lexer::Token,
+    parser::{ASTNode, ID},
+};
+use mem::{svtable::SVTable, variable::Variable};
 use std::{collections::HashMap, rc::Rc};
 
 pub struct Interpreter<'a> {
-    /// Variable storage.
-    pub variables: Vec<HashMap<String, Variable<'a>>>,
-    /// Function table.
-    pub functions: Vec<HashMap<String, &'a Rc<ASTNode>>>,
-    /// Module prefix, if applicable.
-    module: Option<String>,
+    /// Module storage. Variables at base scope are stored in the `$` module.
+    pub modules: HashMap<String, SVTable<'a>>,
+    /// Current module name.
+    mod_id: String,
     /// Scope level.
     scope: usize,
 }
 impl<'a> Interpreter<'a> {
     pub fn new() -> Self {
+        // create a new module map with default scope
+        let mut modules = HashMap::new();
+        modules.insert("$".into(), SVTable::new());
+
+        // return new interpreter
         Self {
-            variables: Vec::with_capacity(8),
-            functions: Vec::with_capacity(8),
-            module: None,
+            modules,
+            mod_id: "$".into(),
             scope: 0,
         }
     }
@@ -71,17 +76,7 @@ impl<'a> Interpreter<'a> {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                if let Some(prefix) = &self.module {
-                    let old_scope = self.scope;
-                    self.scope = 0;
-                    self.declare(
-                        [prefix.to_owned(), id.to_owned()].join("."),
-                        Variable::Reference(&*statement),
-                    );
-                    self.scope = old_scope;
-                } else {
-                    self.declare(id, Variable::Reference(&*statement));
-                }
+                self.declare(id, Variable::Reference(&*statement));
                 None
             }
             ASTNode::FunctionCall {
@@ -104,7 +99,7 @@ impl<'a> Interpreter<'a> {
                             let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
                             let resolved_expr = self.execute_expr(arg_expr).unwrap().to_owned();
                             self.declare(
-                                arg,
+                                &ID::new(arg),
                                 Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
                             );
                         }
@@ -249,7 +244,7 @@ impl<'a> Interpreter<'a> {
             }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
-                    if let Variable::Owned(var) = self.get(identifier) {
+                    if let Variable::Owned(var) = self.get(&ID::new(identifier)) {
                         // reutrn owned variables
                         return Some(var.to_owned().into());
                     }
@@ -264,15 +259,28 @@ impl<'a> Interpreter<'a> {
                     .expect("expected return expression."),
             ),
             ASTNode::Module { alias, body } => {
-                // add alias if applicable
-                self.module = alias.to_owned();
+                // TODO keep proper track of these things. i think it might be adventageous to just
+                // merge the variable table with the module table and have the default scope be
+                // named something reserved
 
-                // execute modules to add them to the scope
-                self.execute(&*body);
+                if let Some(mod_name) = alias {
+                    // insert named modules
+                    self.modules.insert(mod_name.to_owned(), SVTable::new());
+                    let temp = self.mod_id.to_owned();
+                    self.mod_id = mod_name.to_owned();
 
-                // remove alias
-                self.module = None;
+                    // execute body
+                    self.execute(&*body);
+                    self.mod_id = temp;
+                } else {
+                    // insert named modules
+                    let temp = self.mod_id.to_owned();
+                    self.mod_id = String::from("$");
 
+                    // execute body
+                    self.execute(&*body);
+                    self.mod_id = temp;
+                }
                 None
             }
             _ => {

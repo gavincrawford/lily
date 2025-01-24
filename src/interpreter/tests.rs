@@ -16,19 +16,19 @@ mod feature {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("a"),
+            *i.get(&ID::new("a")),
             Variable::Owned(ASTNode::Literal(Token::Number(1.)))
         );
         assert_eq!(
-            *i.get("b"),
+            *i.get(&ID::new("b")),
             Variable::Owned(ASTNode::Literal(Token::Bool(true)))
         );
         assert_eq!(
-            *i.get("c"),
+            *i.get(&ID::new("c")),
             Variable::Owned(ASTNode::Literal(Token::Str("str".to_string())))
         );
         assert_eq!(
-            *i.get("d"),
+            *i.get(&ID::new("d")),
             Variable::Owned(ASTNode::Literal(Token::Char('c')))
         );
     }
@@ -40,15 +40,15 @@ mod feature {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("a"),
+            *i.get(&ID::new("a")),
             Variable::Owned(ASTNode::Literal(Token::Number(1.)))
         );
         assert_eq!(
-            *i.get("b"),
+            *i.get(&ID::new("b")),
             Variable::Owned(ASTNode::Literal(Token::Number(2.5)))
         );
         assert_eq!(
-            *i.get("c"),
+            *i.get(&ID::new("c")),
             Variable::Owned(ASTNode::Literal(Token::Number(6.)))
         );
     }
@@ -61,7 +61,7 @@ mod feature {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("a"),
+            *i.get(&ID::new("a")),
             Variable::Owned(ASTNode::Literal(Token::Number(5.)))
         );
     }
@@ -74,15 +74,15 @@ mod feature {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("a"),
+            *i.get(&ID::new("a")),
             Variable::Owned(ASTNode::Literal(Token::Number(10.)))
         );
         assert_eq!(
-            *i.get("b"),
+            *i.get(&ID::new("b")),
             Variable::Owned(ASTNode::Literal(Token::Number(20.)))
         );
         assert_eq!(
-            *i.get("c"),
+            *i.get(&ID::new("c")),
             Variable::Owned(ASTNode::Literal(Token::Bool(true)))
         );
     }
@@ -94,11 +94,11 @@ mod feature {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("i"),
+            *i.get(&ID::new("i")),
             Variable::Owned(ASTNode::Literal(Token::Number(25.)))
         );
         assert_eq!(
-            *i.get("a"),
+            *i.get(&ID::new("a")),
             Variable::Owned(ASTNode::Literal(Token::Number(25.)))
         );
     }
@@ -110,19 +110,19 @@ mod feature {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("idx_a"),
+            *i.get(&ID::new("idx_a")),
             Variable::Owned(ASTNode::Literal(Token::Number(1.)))
         );
         assert_eq!(
-            *i.get("idx_b"),
+            *i.get(&ID::new("idx_b")),
             Variable::Owned(ASTNode::Literal(Token::Number(2.)))
         );
         assert_eq!(
-            *i.get("idx_c"),
+            *i.get(&ID::new("idx_c")),
             Variable::Owned(ASTNode::Literal(Token::Number(3.)))
         );
         assert_eq!(
-            *i.get("idx_d"),
+            *i.get(&ID::new("idx_d")),
             Variable::Owned(ASTNode::Literal(Token::Number(4.)))
         );
     }
@@ -136,7 +136,7 @@ mod feature {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("res"),
+            *i.get(&ID::new("res")),
             Variable::Owned(ASTNode::Literal(Token::Number(4.)))
         );
     }
@@ -154,7 +154,7 @@ mod implementation {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("result"),
+            *i.get(&ID::new("result")),
             Variable::Owned(ASTNode::Literal(Token::Number(21.)))
         );
     }
@@ -167,15 +167,15 @@ mod implementation {
         i.execute(&ast);
 
         assert_eq!(
-            *i.get("six_fac"),
+            *i.get(&ID::new("six_fac")),
             Variable::Owned(ASTNode::Literal(Token::Number(720.)))
         );
         assert_eq!(
-            *i.get("one_fac"),
+            *i.get(&ID::new("one_fac")),
             Variable::Owned(ASTNode::Literal(Token::Number(1.)))
         );
         assert_eq!(
-            *i.get("zero_fac"),
+            *i.get(&ID::new("zero_fac")),
             Variable::Owned(ASTNode::Literal(Token::Number(1.)))
         );
     }

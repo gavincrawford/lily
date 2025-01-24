@@ -3,6 +3,9 @@
 use crate::lexer::{Lexer, Token};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
 
+pub mod id;
+pub use id::*;
+
 mod tests;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -16,24 +19,24 @@ pub enum ASTNode {
     },
 
     Index {
-        id: String,
+        id: ID,
         index: Rc<ASTNode>,
     },
     Assign {
-        id: String,
+        id: ID,
         value: Rc<ASTNode>,
     },
     Declare {
-        id: String,
+        id: ID,
         value: Rc<ASTNode>,
     },
     Function {
-        id: String,
+        id: ID,
         arguments: Vec<String>,
         body: Rc<ASTNode>,
     },
     FunctionCall {
-        id: String,
+        id: ID,
         arguments: Vec<Rc<ASTNode>>,
     },
     Conditional {
@@ -253,7 +256,11 @@ impl Parser {
             self.expect(Token::BracketClose);
 
             // return index block
-            ASTNode::Index { id, index }.into()
+            ASTNode::Index {
+                id: ID::new(id),
+                index,
+            }
+            .into()
         } else {
             panic!("expected identifier to index.");
         }
@@ -283,7 +290,7 @@ impl Parser {
             self.expect(Token::BlockStart);
             self.expect(Token::Endl);
             ASTNode::Function {
-                id: name,
+                id: ID::new(name),
                 body: self.parse(),
                 arguments: args,
             }
@@ -325,7 +332,7 @@ impl Parser {
         }
 
         ASTNode::FunctionCall {
-            id,
+            id: ID::new(id),
             arguments: args,
         }
         .into()
@@ -340,10 +347,10 @@ impl Parser {
     /// Parses a variable assignment.
     fn parse_assign_var(&mut self) -> Rc<ASTNode> {
         let next = self.next();
-        if let Some(Token::Identifier(name)) = next {
+        if let Some(Token::Identifier(id)) = next {
             self.expect(Token::Equal);
             ASTNode::Assign {
-                id: name,
+                id: ID::new(id),
                 value: self.parse_expr(true),
             }
             .into()
@@ -356,10 +363,10 @@ impl Parser {
     fn parse_decl_var(&mut self) -> Rc<ASTNode> {
         self.expect(Token::Let);
         let next = self.next();
-        if let Some(Token::Identifier(name)) = next {
+        if let Some(Token::Identifier(id)) = next {
             self.expect(Token::Equal);
             ASTNode::Declare {
-                id: name,
+                id: ID::new(id),
                 value: self.parse_expr(true),
             }
             .into()

@@ -29,7 +29,7 @@ fn main() {
 
     // TODO for debugging
     #[cfg(debug_assertions)]
-    dbg!(interp.variables);
+    dbg!(interp.modules);
 }
 
 /// Creates STD module import.
