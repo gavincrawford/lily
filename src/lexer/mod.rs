@@ -133,7 +133,7 @@ impl Lexer {
                         }
 
                         // numbers
-                        c if c.is_numeric() => {
+                        c if c.is_numeric() && self.keyword_register.is_empty() => {
                             mode = CaptureMode::Number;
                             self.number_register.push(c);
                         }

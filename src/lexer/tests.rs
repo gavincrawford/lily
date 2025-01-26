@@ -10,8 +10,19 @@ use Token::*;
 #[test]
 fn variable_assignment() {
     assert_eq!(
-        Lexer::new().lex("let x;".into()),
-        vec![Let, Identifier("x".into()), Endl]
+        Lexer::new().lex("let var1 = 1; let var2 = 2;".into()),
+        vec![
+            Let,
+            Identifier("var1".into()),
+            Equal,
+            Number(1.),
+            Endl,
+            Let,
+            Identifier("var2".into()),
+            Equal,
+            Number(2.),
+            Endl
+        ]
     );
 }
 
