@@ -129,9 +129,6 @@ impl Parser {
     pub fn parse_with_imports(&mut self, imports: Vec<Rc<ASTNode>>) -> Rc<ASTNode> {
         let mut statements = vec![];
         while let Some(token) = self.peek() {
-            // TODO you might be able to merge the first two of these statements into one, and let
-            // other functions take care of consuming their block ends. haven't tried it though, so
-            // it may fail terribly
             if *token == Token::BlockEnd {
                 // consume block ends and expect endline
                 self.next();
@@ -288,7 +285,6 @@ impl Parser {
                 self.next();
             }
             self.expect(Token::BlockStart);
-            self.expect(Token::Endl);
             ASTNode::Function {
                 id: ID::new(name),
                 body: self.parse(),
@@ -315,18 +311,15 @@ impl Parser {
         let mut args = vec![];
         loop {
             match self.peek() {
-                Some(Token::Endl) | None => {
-                    // if an endline is found, there aren't any more arguments
-                    // TODO i kinda feel like this shouldn't happen here, given the end paren
-                    // should do this job just fine. pretty strange
-                    break;
-                }
                 Some(Token::ParenClose) => {
                     self.next();
                     break;
                 }
                 Some(_) => {
                     args.push(self.parse_expr(false));
+                }
+                _ => {
+                    panic!("unexpected token in argument position");
                 }
             }
         }
@@ -376,7 +369,6 @@ impl Parser {
     }
 
     /// Parses raw expressions, such as math or comparisons.
-    // TODO the whole `consume_delimiters` thing seems janky. find another way?
     fn parse_expr(&mut self, consume_delimiters: bool) -> Rc<ASTNode> {
         // tracks if a paren has been opened for error messages
         let parens_open;
@@ -411,7 +403,7 @@ impl Parser {
             | Some(Token::LogicalEq) => ASTNode::Op {
                 lhs: primary,
                 op: self.next().unwrap(), // safety: peek
-                rhs: self.parse_expr(true),
+                rhs: self.parse_expr(parens_open || consume_delimiters),
             }
             .into(),
             Some(Token::ParenClose) | Some(Token::BracketClose) => {
@@ -491,7 +483,6 @@ impl Parser {
 
         // parse items individually
         let mut items = vec![];
-        // TODO limit the size of arrays here to avoid getting stuck
         loop {
             // end when bracket close is reached
             if let Some(Token::BracketClose) = self.peek() {
