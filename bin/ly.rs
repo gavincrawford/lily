@@ -27,9 +27,9 @@ fn main() {
     let mut interp = Interpreter::new();
     interp.execute(&ast);
 
-    // TODO for debugging
+    // for debugging
     #[cfg(debug_assertions)]
-    dbg!(interp.modules);
+    dbg!(interp.modules.get("$").unwrap());
 }
 
 /// Creates STD module import.
