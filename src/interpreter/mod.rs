@@ -64,17 +64,17 @@ impl<'a> Interpreter<'a> {
             ASTNode::Assign { id, value } => {
                 let resolved_expr = &self
                     .execute_expr(&value)
-                    .context("expected expression after variable assignment")?
+                    .context("failed to evaluate assignment value")?
                     .unwrap();
-                self.assign(id, Variable::Owned((*resolved_expr.to_owned()).to_owned()));
+                self.assign(id, Variable::Owned((*resolved_expr.to_owned()).to_owned()))?;
                 Ok(None)
             }
             ASTNode::Declare { id, value } => {
                 let resolved_expr = &self
                     .execute_expr(&value)
-                    .context("expected expression after variable declaration")?
+                    .context("failed to evaluate declaration value")?
                     .unwrap();
-                self.declare(id, Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)));
+                self.declare(id, Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)))?;
                 Ok(None)
             }
             ASTNode::Function {
@@ -82,7 +82,7 @@ impl<'a> Interpreter<'a> {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                self.declare(id, Variable::Reference(&*statement));
+                self.declare(id, Variable::Reference(&*statement))?;
                 Ok(None)
             }
             ASTNode::FunctionCall {
@@ -90,7 +90,7 @@ impl<'a> Interpreter<'a> {
                 arguments: call_args,
             } => {
                 // execute function
-                let variable = self.get_owned(id);
+                let variable = self.get_owned(id)?;
                 if let Variable::Reference(function) = variable {
                     if let ASTNode::Function {
                         id: _id,
@@ -111,7 +111,7 @@ impl<'a> Interpreter<'a> {
                             self.declare(
                                 &ID::new(arg),
                                 Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
-                            );
+                            )?;
                         }
 
                         // if no return, drop scoped variables anyway
@@ -244,7 +244,7 @@ impl<'a> Interpreter<'a> {
                 }
 
                 // get value from list
-                if let Variable::Owned(list) = self.get(id) {
+                if let Variable::Owned(list) = self.get(id)? {
                     if let ASTNode::List(tokens) = &*list {
                         return Ok(Some(
                             ASTNode::Literal(
@@ -263,7 +263,7 @@ impl<'a> Interpreter<'a> {
             }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
-                    if let Variable::Owned(var) = self.get(&ID::new(identifier)) {
+                    if let Variable::Owned(var) = self.get(&ID::new(identifier))? {
                         // reutrn owned variables
                         return Ok(Some(var.to_owned().into()));
                     }
