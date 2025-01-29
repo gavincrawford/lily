@@ -21,7 +21,7 @@ fn main() {
     let tokens = match Lexer::new().lex(buf) {
         Ok(toks) => toks,
         Err(e) => {
-            eprintln!("ERR: {:?}\n", e);
+            eprintln!("LEX ERR: {:?}\n", e);
             panic!();
         }
     };
@@ -32,14 +32,20 @@ fn main() {
     let ast = match parser.parse_with_imports(stdlib()) {
         Ok(tree) => tree,
         Err(e) => {
-            eprintln!("ERR: {:?}\n", e);
+            eprintln!("PARSE ERR: {:?}\n", e);
             panic!();
         }
     };
 
     // execute interpreter
     let mut interp = Interpreter::new();
-    interp.execute(&ast);
+    match interp.execute(&ast) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("EXEC ERR: {:?}\n", e);
+            panic!();
+        }
+    }
 
     // for debugging
     #[cfg(debug_assertions)]
