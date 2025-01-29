@@ -2,9 +2,6 @@ use lily::{interpreter::*, lexer::*, parser::*};
 use std::{env, fs, path::PathBuf, process, rc::Rc};
 
 fn main() {
-    // enable full backtraces
-    env::set_var("RUST_BACKTRACE", "1");
-
     // read file to buffer
     let args: Vec<String> = env::args().collect();
     let file_path = &args.get(1).expect("no file provided.");
@@ -20,10 +17,27 @@ fn main() {
     let mut path = PathBuf::from(file_path);
     path.pop();
 
-    // execute file
-    let mut parser = Parser::new(Lexer::new().lex(buf));
+    // lex buffer into tokens
+    let tokens = match Lexer::new().lex(buf) {
+        Ok(toks) => toks,
+        Err(e) => {
+            eprintln!("ERR: {:?}\n", e);
+            panic!();
+        }
+    };
+
+    // parse tokens into ast
+    let mut parser = Parser::new(tokens);
     parser.set_pwd(path);
-    let ast = parser.parse_with_imports(stdlib());
+    let ast = match parser.parse_with_imports(stdlib()) {
+        Ok(tree) => tree,
+        Err(e) => {
+            eprintln!("ERR: {:?}\n", e);
+            panic!();
+        }
+    };
+
+    // execute interpreter
     let mut interp = Interpreter::new();
     interp.execute(&ast);
 
@@ -34,10 +48,13 @@ fn main() {
 
 /// Creates STD module import.
 fn stdlib() -> Vec<Rc<ASTNode>> {
+    // TODO more informative error messages here, no unwraps
     let mut lexer = Lexer::new();
     vec![ASTNode::Module {
         alias: Some("math".into()),
-        body: Parser::new(lexer.lex(include_str!("./std/math.ly").into())).parse(),
+        body: Parser::new(lexer.lex(include_str!("./std/math.ly").into()).unwrap())
+            .parse()
+            .unwrap(),
     }
     .into()]
 }

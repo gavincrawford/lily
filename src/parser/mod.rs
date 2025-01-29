@@ -1,6 +1,7 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
 use crate::lexer::{Lexer, Token};
+use anyhow::{bail, Context, Result};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
 
 pub mod id;
@@ -105,34 +106,34 @@ impl Parser {
         }
     }
 
-    /// Panics if the next token is not `expected`.
-    fn expect(&mut self, expected: Token) {
+    /// Throws an error if the next token is not `expected`.
+    fn expect(&mut self, expected: Token) -> Result<()> {
         match self.next() {
             Some(token) if token == expected => {
-                return;
+                return Ok(());
             }
             Some(token) => {
-                panic!("found {:?}, expected {:?}", token, expected);
+                bail!("found {:?}, expected {:?}", token, expected);
             }
             _ => {
-                panic!("unexpected EOF")
+                bail!("unexpected EOF")
             }
         }
     }
 
     /// Parses all tokens into a program.
-    pub fn parse(&mut self) -> Rc<ASTNode> {
+    pub fn parse(&mut self) -> Result<Rc<ASTNode>> {
         self.parse_with_imports(vec![])
     }
 
     /// Parses all tokens with hidden module imports.
-    pub fn parse_with_imports(&mut self, imports: Vec<Rc<ASTNode>>) -> Rc<ASTNode> {
+    pub fn parse_with_imports(&mut self, imports: Vec<Rc<ASTNode>>) -> Result<Rc<ASTNode>> {
         let mut statements = vec![];
         while let Some(token) = self.peek() {
             if *token == Token::BlockEnd {
                 // consume block ends and expect endline
                 self.next();
-                self.expect(Token::Endl);
+                self.expect(Token::Endl)?;
                 break;
             } else if *token == Token::Else {
                 // also counts as a block end for conditionals
@@ -142,14 +143,14 @@ impl Parser {
                 self.next();
             } else {
                 // otherwise, parse the next statement
-                statements.push(self.parse_statement());
+                statements.push(self.parse_statement()?);
             }
         }
-        ASTNode::Block([imports, statements].concat()).into()
+        Ok(ASTNode::Block([imports, statements].concat()).into())
     }
 
     /// Parses a statement.
-    fn parse_statement(&mut self) -> Rc<ASTNode> {
+    fn parse_statement(&mut self) -> Result<Rc<ASTNode>> {
         match self.peek() {
             Some(Token::Import) => self.parse_import(),
             Some(Token::Let) => self.parse_decl_var(),
@@ -163,19 +164,19 @@ impl Parser {
             },
             Some(Token::Return) => self.parse_return(),
             _ => {
-                panic!("expected statement, found {:?}.", self.peek().unwrap());
+                bail!("expected statement, found {:?}.", self.peek().unwrap());
             }
         }
     }
 
     /// Parses imports.
-    fn parse_import(&mut self) -> Rc<ASTNode> {
-        self.expect(Token::Import);
+    fn parse_import(&mut self) -> Result<Rc<ASTNode>> {
+        self.expect(Token::Import)?;
         if let Some(Token::Str(path)) = self.next() {
             // get full path
             let mut path = self.path.join(PathBuf::from(path));
             if !path.exists() {
-                panic!("module not found at '{}'", path.display());
+                bail!("module not found at '{}'", path.display());
             }
 
             // check if alias is provided
@@ -188,7 +189,7 @@ impl Parser {
                     self.next();
                 } else {
                     // if something other than an identifier is provided, this import is malformed
-                    panic!("expected identifier as alias, found {:?}", self.peek());
+                    bail!("expected identifier as alias, found {:?}", self.peek());
                 }
             }
 
@@ -201,7 +202,7 @@ impl Parser {
                 .unwrap();
 
             // lex buffer into tokens
-            let tokens = Lexer::new().lex(buffer);
+            let tokens = Lexer::new().lex(buffer)?;
 
             // create a parser and point it to the file's parent directory
             let mut parser = Self::new(tokens);
@@ -209,73 +210,80 @@ impl Parser {
             parser.set_pwd(path);
 
             // parse the module
-            let module = parser.parse();
-            ASTNode::Module {
+            let module = parser
+                .parse()
+                .context("failed to parse module body")
+                .unwrap();
+            Ok(ASTNode::Module {
                 alias,
                 body: module.into(),
             }
-            .into()
+            .into())
         } else {
-            panic!("expected path after import.");
+            bail!("expected path after import");
         }
     }
 
     /// Parses a conditional expression.
-    fn parse_cond(&mut self) -> Rc<ASTNode> {
+    fn parse_cond(&mut self) -> Result<Rc<ASTNode>> {
         // consume if token
-        self.expect(Token::If);
+        self.expect(Token::If)?;
 
         // get if expression and if body block
-        let expr = self.parse_expr(true);
-        let if_body = self.parse();
+        let expr = self.parse_expr(true).context("failed to parse condition")?;
+        let if_body = self.parse().context("failed to parse if-body")?;
 
         // process else body block, if present
         let mut else_body = ASTNode::Block(vec![]).into();
         if let Some(Token::Else) = self.peek() {
             self.next();
-            else_body = self.parse();
+            else_body = self.parse().context("failed to parse else-body")?;
         }
 
-        ASTNode::Conditional {
+        Ok(ASTNode::Conditional {
             condition: expr,
             if_body,
             else_body,
         }
-        .into()
+        .into())
     }
 
     /// Parses a list index.
-    fn parse_index(&mut self) -> Rc<ASTNode> {
+    fn parse_index(&mut self) -> Result<Rc<ASTNode>> {
         if let Some(Token::Identifier(id)) = self.next() {
             // if id is found, parse index value
-            self.expect(Token::BracketOpen);
-            let index = self.parse_expr(false);
-            self.expect(Token::BracketClose);
+            self.expect(Token::BracketOpen)?;
+            let index = self
+                .parse_expr(false)
+                .context("failed to parse list index")?;
+            self.expect(Token::BracketClose)?;
 
             // return index block
-            ASTNode::Index {
+            Ok(ASTNode::Index {
                 id: ID::new(id),
                 index,
             }
-            .into()
+            .into())
         } else {
-            panic!("expected identifier to index.");
+            bail!("expected identifier to index");
         }
     }
 
     /// Parses a while loop.
-    fn parse_while(&mut self) -> Rc<ASTNode> {
-        self.expect(Token::While);
-        ASTNode::Loop {
-            condition: self.parse_expr(true),
-            body: self.parse(),
+    fn parse_while(&mut self) -> Result<Rc<ASTNode>> {
+        self.expect(Token::While)?;
+        Ok(ASTNode::Loop {
+            condition: self
+                .parse_expr(true)
+                .context("failed to parse loop condition")?,
+            body: self.parse().context("failed to parse loop body")?,
         }
-        .into()
+        .into())
     }
 
     /// Parses a function declaration.
-    fn parse_decl_fn(&mut self) -> Rc<ASTNode> {
-        self.expect(Token::Function);
+    fn parse_decl_fn(&mut self) -> Result<Rc<ASTNode>> {
+        self.expect(Token::Function)?;
         let next = self.next();
         if let Some(Token::Identifier(name)) = next {
             // gather arguments
@@ -284,30 +292,30 @@ impl Parser {
                 args.push(arg.clone());
                 self.next();
             }
-            self.expect(Token::BlockStart);
-            ASTNode::Function {
+            self.expect(Token::BlockStart)?;
+            Ok(ASTNode::Function {
                 id: ID::new(name),
-                body: self.parse(),
+                body: self.parse().context("failed to parse function body")?,
                 arguments: args,
             }
-            .into()
+            .into())
         } else {
-            panic!("expected identifier, found {:?}", next);
+            bail!("expected identifier, found {:?}", next);
         }
     }
 
     /// Parses a function call.
-    fn parse_call_fn(&mut self) -> Rc<ASTNode> {
+    fn parse_call_fn(&mut self) -> Result<Rc<ASTNode>> {
         // parse identifier
         let id;
         if let Some(Token::Identifier(fn_id)) = self.next() {
             id = fn_id;
         } else {
-            panic!("function identifier not found.");
+            bail!("function identifier not found.");
         }
 
         // parse arguments
-        self.expect(Token::ParenOpen);
+        self.expect(Token::ParenOpen)?;
         let mut args = vec![];
         loop {
             match self.peek() {
@@ -316,76 +324,82 @@ impl Parser {
                     break;
                 }
                 Some(_) => {
-                    args.push(self.parse_expr(false));
+                    args.push(self.parse_expr(false).context("failed to parse argument")?);
                 }
                 _ => {
-                    panic!("unexpected token in argument position");
+                    bail!("unexpected token in argument position");
                 }
             }
         }
 
-        ASTNode::FunctionCall {
+        Ok(ASTNode::FunctionCall {
             id: ID::new(id),
             arguments: args,
         }
-        .into()
+        .into())
     }
 
     /// Parses a return statement.
-    fn parse_return(&mut self) -> Rc<ASTNode> {
-        self.expect(Token::Return);
-        ASTNode::Return(self.parse_expr(true)).into()
+    fn parse_return(&mut self) -> Result<Rc<ASTNode>> {
+        self.expect(Token::Return)?;
+        Ok(ASTNode::Return(
+            self.parse_expr(true)
+                .context("failed to parse return value")?,
+        )
+        .into())
     }
 
     /// Parses a variable assignment.
-    fn parse_assign_var(&mut self) -> Rc<ASTNode> {
+    fn parse_assign_var(&mut self) -> Result<Rc<ASTNode>> {
         let next = self.next();
         if let Some(Token::Identifier(id)) = next {
-            self.expect(Token::Equal);
-            ASTNode::Assign {
+            self.expect(Token::Equal)?;
+            Ok(ASTNode::Assign {
                 id: ID::new(id),
-                value: self.parse_expr(true),
+                value: self.parse_expr(true)?,
             }
-            .into()
+            .into())
         } else {
-            panic!("expected identifier, found {:?}", next);
+            bail!("expected identifier, found {:?}", next);
         }
     }
 
     /// Parses a variable declaration.
-    fn parse_decl_var(&mut self) -> Rc<ASTNode> {
-        self.expect(Token::Let);
+    fn parse_decl_var(&mut self) -> Result<Rc<ASTNode>> {
+        self.expect(Token::Let)?;
         let next = self.next();
         if let Some(Token::Identifier(id)) = next {
-            self.expect(Token::Equal);
-            ASTNode::Declare {
+            self.expect(Token::Equal)?;
+            Ok(ASTNode::Declare {
                 id: ID::new(id),
-                value: self.parse_expr(true),
+                value: self.parse_expr(true)?,
             }
-            .into()
+            .into())
         } else {
-            panic!("expected identifier, found {:?}", next);
+            bail!("expected identifier, found {:?}", next);
         }
     }
 
     /// Parses raw expressions, such as math or comparisons.
-    fn parse_expr(&mut self, consume_delimiters: bool) -> Rc<ASTNode> {
+    fn parse_expr(&mut self, consume_delimiters: bool) -> Result<Rc<ASTNode>> {
         // tracks if a paren has been opened for error messages
         let parens_open;
 
         // evaluate primary value
-        let primary;
+        let primary: Rc<ASTNode>;
         match self.peek() {
             Some(Token::ParenOpen) => {
                 // if parenthesis are present, parse them as an expression
                 self.next();
                 parens_open = true;
-                primary = self.parse_expr(true);
+                primary = self
+                    .parse_expr(true)
+                    .context("failed to parse parenthesised expression")?;
             }
             _ => {
                 // otherwise, parse as a primary/literal
                 parens_open = false;
-                primary = self.parse_primary();
+                primary = self.parse_primary().context("failed to parse expression")?;
             }
         }
 
@@ -400,34 +414,36 @@ impl Parser {
             | Some(Token::LogicalLe)
             | Some(Token::LogicalG)
             | Some(Token::LogicalGe)
-            | Some(Token::LogicalEq) => ASTNode::Op {
+            | Some(Token::LogicalEq) => Ok(ASTNode::Op {
                 lhs: primary,
                 op: self.next().unwrap(), // safety: peek
-                rhs: self.parse_expr(parens_open || consume_delimiters),
+                rhs: self
+                    .parse_expr(parens_open || consume_delimiters)
+                    .context("failed to parse member of op")?,
             }
-            .into(),
+            .into()),
             Some(Token::ParenClose) | Some(Token::BracketClose) => {
                 if consume_delimiters {
                     self.next();
                 }
-                primary
+                Ok(primary)
             }
             Some(Token::Endl) | Some(Token::BlockStart) | Some(Token::Comma) => {
                 self.next();
-                primary
+                Ok(primary)
             }
             _ => {
                 if parens_open {
-                    panic!("unclosed delimiter found.");
+                    bail!("unclosed delimiter found.");
                 } else {
-                    panic!("unexpected member of expression.")
+                    bail!("unexpected member of expression.")
                 }
             }
         }
     }
 
     /// Parses primaries, such as literals and function calls.
-    fn parse_primary(&mut self) -> Rc<ASTNode> {
+    fn parse_primary(&mut self) -> Result<Rc<ASTNode>> {
         match self.peek() {
             // process negative numbers
             Some(Token::Sub) => {
@@ -438,9 +454,9 @@ impl Parser {
                     self.next();
 
                     // negate literal and return
-                    ASTNode::Literal(Token::Number(-1. * (value.to_owned()))).into()
+                    Ok(ASTNode::Literal(Token::Number(-1. * (value.to_owned()))).into())
                 } else {
-                    panic!("expected number after '-', found {:?}.", self.peek());
+                    bail!("expected number after '-', found {:?}.", self.peek());
                 }
             }
 
@@ -449,25 +465,26 @@ impl Parser {
             | Some(Token::Str(_))
             | Some(Token::Bool(_))
             | Some(Token::Char(_)) => {
-                ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
+                Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into())
             }
 
             // lists
-            Some(Token::BracketOpen) => self.parse_list(),
+            Some(Token::BracketOpen) => self.parse_list().context("failed to parse list"),
 
             // variables, function calls
             Some(Token::Identifier(_)) => match self.peek_n(1) {
                 Some(Token::ParenOpen) => {
                     // if the future token is a parenthesis, this is a function call
-                    self.parse_call_fn().into()
+                    self.parse_call_fn()
+                        .context("failed to parse function call")
                 }
                 Some(Token::BracketOpen) => {
                     // if the future token is a bracket, this is an index
-                    self.parse_index().into()
+                    self.parse_index().context("failed to parse index operator")
                 }
                 _ => {
                     // otherwise, it's safe to assume that the token is a literal
-                    ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into()
+                    Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into())
                 }
             },
             _ => {
@@ -477,9 +494,9 @@ impl Parser {
     }
 
     /// Parses lists.
-    fn parse_list(&mut self) -> Rc<ASTNode> {
+    fn parse_list(&mut self) -> Result<Rc<ASTNode>> {
         // consume open bracket
-        self.expect(Token::BracketOpen);
+        self.expect(Token::BracketOpen)?;
 
         // parse items individually
         let mut items = vec![];
@@ -490,11 +507,14 @@ impl Parser {
             }
 
             // add item to the list
-            if let ASTNode::Literal(value) = &*self.parse_expr(false) {
+            if let ASTNode::Literal(value) = &*self
+                .parse_expr(false)
+                .context("failed to parse list item")?
+            {
                 items.push(value.clone());
             }
         }
 
-        ASTNode::List(items).into()
+        Ok(ASTNode::List(items).into())
     }
 }

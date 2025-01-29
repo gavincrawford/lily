@@ -10,9 +10,13 @@ mod feature {
     #[test]
     fn global_variables() {
         let mut i = Interpreter::new();
-        let ast =
-            Parser::new(Lexer::new().lex(include_str!("tests/global_variables.ly").to_string()))
-                .parse();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/global_variables.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         i.execute(&ast);
 
         assert_eq!(
@@ -36,7 +40,13 @@ mod feature {
     #[test]
     fn math() {
         let mut i = Interpreter::new();
-        let ast = Parser::new(Lexer::new().lex(include_str!("tests/math.ly").to_string())).parse();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/math.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         i.execute(&ast);
 
         assert_eq!(
@@ -56,8 +66,13 @@ mod feature {
     #[test]
     fn conditionals() {
         let mut i = Interpreter::new();
-        let ast = Parser::new(Lexer::new().lex(include_str!("tests/conditionals.ly").to_string()))
-            .parse();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/conditionals.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         i.execute(&ast);
 
         assert_eq!(
@@ -69,8 +84,13 @@ mod feature {
     #[test]
     fn functions() {
         let mut i = Interpreter::new();
-        let ast =
-            Parser::new(Lexer::new().lex(include_str!("tests/functions.ly").to_string())).parse();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/functions.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         i.execute(&ast);
 
         assert_eq!(
@@ -90,7 +110,13 @@ mod feature {
     #[test]
     fn loops() {
         let mut i = Interpreter::new();
-        let ast = Parser::new(Lexer::new().lex(include_str!("tests/loops.ly").to_string())).parse();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/loops.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         i.execute(&ast);
 
         assert_eq!(
@@ -106,7 +132,13 @@ mod feature {
     #[test]
     fn lists() {
         let mut i = Interpreter::new();
-        let ast = Parser::new(Lexer::new().lex(include_str!("tests/lists.ly").to_string())).parse();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/lists.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         i.execute(&ast);
 
         assert_eq!(
@@ -130,9 +162,13 @@ mod feature {
     #[test]
     fn imports() {
         let mut i = Interpreter::new();
-        let mut p = Parser::new(Lexer::new().lex(include_str!("tests/imports.ly").to_string()));
+        let mut p = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/imports.ly").to_string())
+                .unwrap(),
+        );
         p.set_pwd(PathBuf::from("src/interpreter/tests/"));
-        let ast = p.parse();
+        let ast = p.parse().unwrap();
         i.execute(&ast);
 
         assert_eq!(
@@ -149,8 +185,13 @@ mod implementation {
     #[test]
     fn fibonacci() {
         let mut i = Interpreter::new();
-        let ast =
-            Parser::new(Lexer::new().lex(include_str!("tests/fibonacci.ly").to_string())).parse();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/fibonacci.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         i.execute(&ast);
 
         assert_eq!(
@@ -162,8 +203,13 @@ mod implementation {
     #[test]
     fn factorial() {
         let mut i = Interpreter::new();
-        let ast =
-            Parser::new(Lexer::new().lex(include_str!("tests/factorial.ly").to_string())).parse();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/factorial.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
         i.execute(&ast);
 
         assert_eq!(

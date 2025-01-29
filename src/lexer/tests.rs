@@ -9,8 +9,10 @@ use Token::*;
 
 #[test]
 fn variable_assignment() {
+    let result = Lexer::new().lex("let var1 = 1; let var2 = 2;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("let var1 = 1; let var2 = 2;".into()),
+        result.unwrap(),
         vec![
             Let,
             Identifier("var1".into()),
@@ -28,8 +30,10 @@ fn variable_assignment() {
 
 #[test]
 fn math() {
+    let result = Lexer::new().lex("1+1+1+1;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("1+1+1+1;".into()),
+        result.unwrap(),
         vec![
             Number(1.),
             Add,
@@ -41,12 +45,18 @@ fn math() {
             Endl
         ]
     );
+
+    let result = Lexer::new().lex("32+12-7;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("32+12-7;".into()),
+        result.unwrap(),
         vec![Number(32.), Add, Number(12.), Sub, Number(7.), Endl]
     );
+
+    let result = Lexer::new().lex("0.5731 * 0.222 / 1^3;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("0.5731 * 0.222 / 1^3;".into()),
+        result.unwrap(),
         vec![
             Number(0.5731),
             Mul,
@@ -62,16 +72,24 @@ fn math() {
 
 #[test]
 fn logic() {
+    let result = Lexer::new().lex("1 == 2;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("1 == 2;".into()),
+        result.unwrap(),
         vec![Number(1.), LogicalEq, Number(2.), Endl]
     );
+
+    let result = Lexer::new().lex("1 != 2;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("1 != 2;".into()),
+        result.unwrap(),
         vec![Number(1.), LogicalNeq, Number(2.), Endl]
     );
+
+    let result = Lexer::new().lex("1 > 2 >= 3;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("1 > 2 >= 3;".into()),
+        result.unwrap(),
         vec![
             Number(1.),
             LogicalG,
@@ -81,8 +99,11 @@ fn logic() {
             Endl
         ]
     );
+
+    let result = Lexer::new().lex("1 < 2 <= 3;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("1 < 2 <= 3;".into()),
+        result.unwrap(),
         vec![
             Number(1.),
             LogicalL,
@@ -96,8 +117,10 @@ fn logic() {
 
 #[test]
 fn conditionals() {
+    let result = Lexer::new().lex("if 1 > 2 do end;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("if 1 > 2 do end;".into()),
+        result.unwrap(),
         vec![
             If,
             Number(1.),
@@ -108,8 +131,11 @@ fn conditionals() {
             Endl
         ]
     );
+
+    let result = Lexer::new().lex("if 1 < 2 do; 1 + 1; end;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("if 1 < 2 do; 1 + 1; end;".into()),
+        result.unwrap(),
         vec![
             If,
             Number(1.),
@@ -129,8 +155,11 @@ fn conditionals() {
 
 #[test]
 fn functions() {
+    let result =
+        Lexer::new().lex("func func_name a b do; return a + b; end; func_name(a, b)".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("func func_name a b do; return a + b; end; func_name(a, b)".into()),
+        result.unwrap(),
         vec![
             Function,
             Identifier("func_name".into()),
@@ -153,8 +182,11 @@ fn functions() {
             ParenClose,
         ]
     );
+
+    let result = Lexer::new().lex("func(1 + 2, 3 + 4)".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("func(1 + 2, 3 + 4)".into()),
+        result.unwrap(),
         vec![
             Identifier("func".into()),
             ParenOpen,
@@ -172,32 +204,37 @@ fn functions() {
 
 #[test]
 fn strings() {
+    let result = Lexer::new().lex("\"this is a string\";".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("\"this is a string\";".into()),
+        result.unwrap(),
         vec![Str(String::from("this is a string")), Endl,]
-    )
+    );
 }
 
 #[test]
 fn chars() {
+    let result = Lexer::new().lex("'a' 'b' 'c';".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("'a' 'b' 'c';".into()),
+        result.unwrap(),
         vec![Char('a'), Char('b'), Char('c'), Endl,]
-    )
+    );
 }
 
 #[test]
 fn bools() {
-    assert_eq!(
-        Lexer::new().lex("true false;".into()),
-        vec![Bool(true), Bool(false), Endl,]
-    )
+    let result = Lexer::new().lex("true false;".into());
+    assert!(result.is_ok());
+    assert_eq!(result.unwrap(), vec![Bool(true), Bool(false), Endl,]);
 }
 
 #[test]
 fn parens() {
+    let result = Lexer::new().lex("(1 + 1) + 1;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("(1 + 1) + 1;".into()),
+        result.unwrap(),
         vec![
             ParenOpen,
             Number(1.),
@@ -208,13 +245,15 @@ fn parens() {
             Number(1.),
             Endl,
         ]
-    )
+    );
 }
 
 #[test]
 fn lists() {
+    let result = Lexer::new().lex("let list = [1, 2, 3]; list[0];".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("let list = [1, 2, 3]; list[0];".into()),
+        result.unwrap(),
         vec![
             Let,
             Identifier("list".into()),
@@ -233,21 +272,26 @@ fn lists() {
             BracketClose,
             Endl,
         ]
-    )
+    );
 }
 
 #[test]
 fn loops() {
+    let result = Lexer::new().lex("while true do; end;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("while true do; end;".into()),
+        result.unwrap(),
         vec![While, Bool(true), BlockStart, Endl, BlockEnd, Endl]
-    )
+    );
 }
 
 #[test]
 fn modules() {
+    let result =
+        Lexer::new().lex("import \"./module.ly\"; import \"./module.ly\" as alias;".into());
+    assert!(result.is_ok());
     assert_eq!(
-        Lexer::new().lex("import \"./module.ly\"; import \"./module.ly\" as alias;".into()),
+        result.unwrap(),
         vec![
             Import,
             Str("./module.ly".into()),
@@ -258,5 +302,5 @@ fn modules() {
             Identifier("alias".into()),
             Endl
         ]
-    )
+    );
 }

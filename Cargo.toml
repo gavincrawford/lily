@@ -1,6 +1,6 @@
 [package]
 name = "lily"
-version = "0.8.5"
+version = "0.9.0"
 edition = "2021"
 
 [[bin]]
@@ -8,3 +8,4 @@ name = "ly"
 path = "bin/ly.rs"
 
 [dependencies]
+anyhow = "1.0"

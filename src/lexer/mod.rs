@@ -1,5 +1,6 @@
 //! The lexer breaks down text information into tokens, which can be used to assemble syntax.
 
+use anyhow::{bail, Context, Result};
 mod tests;
 
 /// Represents all possible tokens.
@@ -86,13 +87,13 @@ impl Lexer {
     }
 
     /// Lexes the provided file, as a string, into a vector of tokens.
-    pub fn lex(&mut self, buf: String) -> Vec<Token> {
+    pub fn lex(&mut self, buf: String) -> Result<Vec<Token>> {
         use Token::*;
         let buf = buf.replace("\n", ";");
         let mut chars = buf.chars().peekable();
         let mut tokens = vec![];
         let mut mode = CaptureMode::General;
-        let mut c = chars.next().expect("source file empty.");
+        let mut c = chars.next().context("source file empty.")?;
         loop {
             match mode {
                 CaptureMode::General => {
@@ -157,7 +158,7 @@ impl Lexer {
                                 '[' => tokens.push(BracketOpen),
                                 ']' => tokens.push(BracketClose),
                                 ',' => tokens.push(Comma),
-                                _ => panic!(),
+                                _ => {}
                             }
                         }
                         c if c.is_alphanumeric() || c == '_' || c == '.' => {
@@ -226,8 +227,8 @@ impl Lexer {
                             tokens.push(Number(number));
                             self.number_register.clear();
                         } else {
-                            // number failed to parse, panic
-                            panic!("cannot coerce {} to number.", self.number_register);
+                            // number failed to parse, bail
+                            bail!("cannot coerce {} to number.", self.number_register);
                         }
                         mode = CaptureMode::General;
                         continue;
@@ -244,24 +245,28 @@ impl Lexer {
                     }
                 },
                 CaptureMode::Char => {
-                    // peek ahead to make sure the char is 1 in length
-                    let next = chars.peek().expect("expected char, found EOF.");
-                    if *next != '\'' {
-                        panic!("literals can only be one character long.");
+                    if let Some(next) = chars.peek() {
+                        // peek ahead to make sure the char is 1 in length
+                        if *next != '\'' {
+                            bail!("literals can only be one character long.");
+                        }
+
+                        // skip second quote
+                        chars.next();
+
+                        // push char token
+                        tokens.push(Char(c));
+                        mode = CaptureMode::General;
+                    } else {
+                        // if no char is found, this is an EOF
+                        bail!("expected char, found EOF.");
                     }
-
-                    // skip second quote
-                    chars.next();
-
-                    // push char token
-                    tokens.push(Char(c));
-                    mode = CaptureMode::General;
                 }
             }
             if let Some(next_c) = chars.next() {
                 c = next_c;
             } else {
-                return tokens;
+                return Ok(tokens);
             }
         }
     }
