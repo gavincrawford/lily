@@ -17,7 +17,7 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("a")),
@@ -47,7 +47,7 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("a")),
@@ -73,7 +73,7 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("a")),
@@ -91,7 +91,7 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("a")),
@@ -117,7 +117,7 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("i")),
@@ -139,7 +139,7 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("idx_a")),
@@ -169,7 +169,7 @@ mod feature {
         );
         p.set_pwd(PathBuf::from("src/interpreter/tests/"));
         let ast = p.parse().unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("res")),
@@ -192,7 +192,7 @@ mod implementation {
         )
         .parse()
         .unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("result")),
@@ -210,7 +210,7 @@ mod implementation {
         )
         .parse()
         .unwrap();
-        i.execute(&ast);
+        i.execute(&ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("six_fac")),
