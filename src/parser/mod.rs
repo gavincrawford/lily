@@ -327,7 +327,7 @@ impl Parser {
                     args.push(self.parse_expr(false).context("failed to parse argument")?);
                 }
                 _ => {
-                    bail!("unexpected token in argument position");
+                    break;
                 }
             }
         }
@@ -435,9 +435,13 @@ impl Parser {
             _ => {
                 if parens_open {
                     bail!("unclosed delimiter found.");
-                } else {
-                    bail!("unexpected member of expression.")
                 }
+
+                // XXX
+                // returning the primary here is a half-ass fix for the way that parenthesis are
+                // handled. the consume_delimiters functionality causes lots of issues and
+                // conflicts with funciton calls.
+                Ok(primary)
             }
         }
     }

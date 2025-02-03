@@ -190,6 +190,40 @@ fn conditionals() {
 }
 
 #[test]
+fn arguments() {
+    let result = Parser::new(
+        Lexer::new()
+            .lex("let result = func((1 + 1) * 2)".into())
+            .unwrap(),
+    )
+    .parse();
+    assert!(result.is_ok(), "Parser failed: {:?}", result);
+    assert_eq!(
+        result.unwrap(),
+        ASTNode::Block(vec![ASTNode::Declare {
+            id: "result".into(),
+            value: ASTNode::FunctionCall {
+                id: "func".into(),
+                arguments: vec![ASTNode::Op {
+                    lhs: ASTNode::Op {
+                        lhs: ASTNode::Literal(Token::Number(1.)).into(),
+                        op: Token::Add,
+                        rhs: ASTNode::Literal(Token::Number(1.)).into(),
+                    }
+                    .into(),
+                    op: Token::Mul,
+                    rhs: ASTNode::Literal(Token::Number(2.)).into()
+                }
+                .into()],
+            }
+            .into()
+        }
+        .into()])
+        .into()
+    );
+}
+
+#[test]
 fn functions() {
     let result = Parser::new(
         Lexer::new()
@@ -243,7 +277,6 @@ fn functions() {
 
 #[test]
 fn import() {
-    // TODO test aliases once they're implemented
     let mut parser = Parser::new(
         Lexer::new()
             .lex("import \"./module.ly\" as math;".into())
