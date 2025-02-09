@@ -52,8 +52,26 @@ impl ID {
 
 impl From<&str> for ID {
     fn from(value: &str) -> Self {
-        Self {
-            id: IDKind::Literal(value.into()),
+        if value.contains('.') {
+            let mut parts = value
+                .split('.')
+                .map(|s| Rc::new(IDKind::Literal(s.to_string())));
+            let mut parent = parts.next().expect("expected identifier");
+
+            for member in parts {
+                parent = Rc::new(IDKind::Member {
+                    parent,
+                    member: member.clone(),
+                });
+            }
+
+            Self {
+                id: (*parent).clone(),
+            }
+        } else {
+            Self {
+                id: IDKind::Literal(value.into()),
+            }
         }
     }
 }
@@ -66,3 +84,4 @@ pub enum IDKind {
         member: Rc<IDKind>,
     },
 }
+

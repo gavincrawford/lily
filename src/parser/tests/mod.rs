@@ -279,32 +279,68 @@ fn functions() {
 fn import() {
     let mut parser = Parser::new(
         Lexer::new()
-            .lex("import \"./module.ly\" as math;".into())
+            .lex("import \"./module1.ly\" as mod1; let ten = mod1.mod2.add2(5, 5);".into())
             .unwrap(),
     );
     parser.set_pwd(PathBuf::from("src/parser/tests"));
     assert_eq!(
         parser.parse().unwrap(),
-        ASTNode::Block(vec![ASTNode::Module {
-            alias: Some("math".into()),
-            body: ASTNode::Block(vec![ASTNode::Function {
-                id: "add".into(),
-                arguments: vec!["a".into(), "b".into()],
-                body: ASTNode::Block(vec![ASTNode::Return(
-                    ASTNode::Op {
-                        lhs: ASTNode::Literal(Token::Identifier("a".into())).into(),
-                        op: Token::Add,
-                        rhs: ASTNode::Literal(Token::Identifier("b".into())).into(),
+        ASTNode::Block(vec![
+            ASTNode::Module {
+                alias: Some("mod1".into()),
+                body: ASTNode::Block(vec![
+                    ASTNode::Module {
+                        alias: Some("mod2".into()),
+                        body: ASTNode::Block(vec![ASTNode::Function {
+                            id: "add2".into(),
+                            arguments: vec!["a".into(), "b".into()],
+                            body: ASTNode::Block(vec![ASTNode::Return(
+                                ASTNode::Op {
+                                    lhs: ASTNode::Literal(Token::Identifier("a".into())).into(),
+                                    op: Token::Add,
+                                    rhs: ASTNode::Literal(Token::Identifier("b".into())).into(),
+                                }
+                                .into()
+                            )
+                            .into(),])
+                            .into()
+                        }
+                        .into()])
+                        .into()
                     }
-                    .into()
-                )
-                .into(),])
+                    .into(),
+                    ASTNode::Function {
+                        id: "add1".into(),
+                        arguments: vec!["a".into(), "b".into()],
+                        body: ASTNode::Block(vec![ASTNode::Return(
+                            ASTNode::Op {
+                                lhs: ASTNode::Literal(Token::Identifier("a".into())).into(),
+                                op: Token::Add,
+                                rhs: ASTNode::Literal(Token::Identifier("b".into())).into(),
+                            }
+                            .into()
+                        )
+                        .into(),])
+                        .into()
+                    }
+                    .into(),
+                ])
                 .into()
             }
-            .into()])
+            .into(),
+            ASTNode::Declare {
+                id: "ten".into(),
+                value: ASTNode::FunctionCall {
+                    id: "mod1.mod2.add2".into(),
+                    arguments: vec![
+                        ASTNode::Literal(Token::Number(5.)).into(),
+                        ASTNode::Literal(Token::Number(5.)).into()
+                    ]
+                }
+                .into()
+            }
             .into()
-        }
-        .into()])
+        ])
         .into()
     );
 }
