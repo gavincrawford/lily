@@ -94,8 +94,6 @@ impl<'a> Interpreter<'a> {
         bail!("failed to get owned value {:?}", id)
     }
 
-    // TODO clean up declare and assign duplicate code
-
     /// Declares a new variable.
     pub fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get relevant module pointer
@@ -104,28 +102,9 @@ impl<'a> Interpreter<'a> {
             None => self.memory.clone(),
         };
 
-        match id.get_kind() {
-            IDKind::Literal(id) => {
-                // borrow module mutably to make changes
-                let mut module = module.borrow_mut();
-
-                // add scopes if necessary
-                while module.scopes() <= self.scope_id {
-                    module.add_scope();
-                }
-
-                // if this variable already exists in this scope, bail
-                let var_map = module
-                    .get_scope(self.scope_id)
-                    .context(format!("cannot delcare at scope {}", self.scope_id,))
-                    .unwrap();
-                if var_map.contains_key(&id) {
-                    bail!("variable '{}' already exists", id);
-                }
-
-                // otherwise, insert
-                var_map.insert(id, RefCell::new(value).into());
-            }
+        // get variable identifier
+        let id = match id.get_kind() {
+            IDKind::Literal(id) => id,
             IDKind::Member {
                 parent: _,
                 member: _,
@@ -139,28 +118,25 @@ impl<'a> Interpreter<'a> {
                         .context("failed to get value")
                         .unwrap();
                 }
-                let id = path.last().unwrap().to_owned();
-
-                // borrow module mutably to make changes
-                let mut module = module.borrow_mut();
-
-                // add scopes if necessary
-                while module.scopes() <= self.scope_id {
-                    module.add_scope();
-                }
-
-                // if this variable already exists in this scope, bail
-                let var_map = module
-                    .get_scope(self.scope_id)
-                    .context(format!("cannot delcare at scope {}", self.scope_id,))
-                    .unwrap();
-                if var_map.contains_key(&id) {
-                    bail!("variable '{}' already exists", id);
-                }
-
-                // otherwise, insert
-                var_map.insert(id, RefCell::new(value).into());
+                path.last().unwrap().to_owned()
             }
+        };
+
+        // borrow module mutably to make changes
+        let mut module = module.borrow_mut();
+
+        // add scopes if necessary
+        while module.scopes() <= self.scope_id {
+            module.add_scope();
+        }
+
+        // get variable map and insert new value. if the value already exists, bail
+        let var_map = module
+            .get_scope(self.scope_id)
+            .context(format!("cannot delcare at scope {}", self.scope_id,))
+            .unwrap();
+        if let Some(_) = var_map.insert(id.clone(), RefCell::new(value).into()) {
+            bail!("variable '{}' already exists", id);
         }
         Ok(())
     }
@@ -173,28 +149,9 @@ impl<'a> Interpreter<'a> {
             None => self.memory.clone(),
         };
 
-        match id.get_kind() {
-            IDKind::Literal(id) => {
-                // borrow module mutably to make changes
-                let mut module = module.borrow_mut();
-
-                // get currently selected scope id
-                let mut scope_idx = self.scope_id;
-                for (idx, scope) in module.iter().enumerate() {
-                    if scope.contains_key(&id) {
-                        scope_idx = idx;
-                    }
-                }
-
-                // get variable map at specified scope id
-                let var_map = module
-                    .get_scope(scope_idx)
-                    .context(format!("cannot assign at scope {}", scope_idx,))
-                    .unwrap();
-
-                // insert new value
-                var_map.insert(id, RefCell::new(value).into());
-            }
+        // get variable identifier
+        let id = match id.get_kind() {
+            IDKind::Literal(id) => id,
             IDKind::Member {
                 parent: _,
                 member: _,
@@ -208,29 +165,29 @@ impl<'a> Interpreter<'a> {
                         .context("failed to get value")
                         .unwrap();
                 }
-                let id = path.last().unwrap().to_owned();
+                path.last().unwrap().to_owned()
+            }
+        };
 
-                // borrow module mutably to make changes
-                let mut module = module.borrow_mut();
+        // borrow module mutably to make changes
+        let mut module = module.borrow_mut();
 
-                // get currently selected scope id
-                let mut scope_idx = self.scope_id;
-                for (idx, scope) in module.iter().enumerate() {
-                    if scope.contains_key(&id) {
-                        scope_idx = idx;
-                    }
-                }
-
-                // get variable map at specified scope id
-                let var_map = module
-                    .get_scope(scope_idx)
-                    .context(format!("cannot assign at scope {}", scope_idx,))
-                    .unwrap();
-
-                // insert new value
-                var_map.insert(id, RefCell::new(value).into());
+        // get currently selected scope id
+        let mut scope_idx = self.scope_id;
+        for (idx, scope) in module.iter().enumerate() {
+            if scope.contains_key(&id) {
+                scope_idx = idx;
             }
         }
+
+        // get variable map at specified scope id
+        let var_map = module
+            .get_scope(scope_idx)
+            .context(format!("cannot assign at scope {}", scope_idx,))
+            .unwrap();
+
+        // insert new value
+        var_map.insert(id, RefCell::new(value).into());
         Ok(())
     }
 }
