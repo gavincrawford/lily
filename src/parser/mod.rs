@@ -195,11 +195,10 @@ impl Parser {
 
             // read the file to be imported to a buffer
             let mut buffer = String::new();
-            // TODO handle unwrap
             File::open(path.to_owned())
-                .unwrap()
+                .context("failed to created file buffer")?
                 .read_to_string(&mut buffer)
-                .unwrap();
+                .context("failed to read file data")?;
 
             // lex buffer into tokens
             let tokens = Lexer::new().lex(buffer)?;
@@ -210,10 +209,7 @@ impl Parser {
             parser.set_pwd(path);
 
             // parse the module
-            let module = parser
-                .parse()
-                .context("failed to parse module body")
-                .unwrap();
+            let module = parser.parse().context("failed to parse module body")?;
             Ok(ASTNode::Module {
                 alias,
                 body: module.into(),
