@@ -10,17 +10,17 @@ pub mod svtable;
 pub mod variable;
 
 impl<'a> Interpreter<'a> {
-    // TODO get functions could be simplified by unifying variable fetch from any module
-
     /// Gets the value of a variable.
     pub fn get(&self, id: &ID) -> Result<Rc<RefCell<Variable>>> {
+        // get relevant module pointer
+        let mut module = match &self.mod_id {
+            Some(mod_id) => mod_id.clone(),
+            None => self.memory.clone(),
+        };
+
         match id.get_kind() {
             IDKind::Literal(id) => {
-                let module = match &self.mod_id {
-                    Some(mod_id) => mod_id.borrow(),
-                    None => (&self.memory).borrow(),
-                };
-                for scope in module.iter().rev() {
+                for scope in module.borrow().iter().rev() {
                     if scope.contains_key(&id) {
                         let variable = scope.get(&id).unwrap();
                         return Ok(variable.to_owned());
@@ -32,7 +32,6 @@ impl<'a> Interpreter<'a> {
                 member: _,
             } => {
                 let path = id.to_path();
-                let mut module = self.memory.clone();
                 for item in &path[0..(path.len() - 1)] {
                     let module_copy = module.clone();
                     module = module_copy
@@ -55,13 +54,15 @@ impl<'a> Interpreter<'a> {
 
     /// Gets the value of a variable, and clones it in the process.
     pub fn get_owned(&self, id: &ID) -> Result<Variable> {
+        // get relevant module pointer
+        let mut module = match &self.mod_id {
+            Some(mod_id) => mod_id.clone(),
+            None => self.memory.clone(),
+        };
+
         match id.get_kind() {
             IDKind::Literal(id) => {
-                let module = match &self.mod_id {
-                    Some(mod_id) => mod_id.borrow(),
-                    None => (&self.memory).borrow(),
-                };
-                for scope in module.iter().rev() {
+                for scope in module.borrow().iter().rev() {
                     if scope.contains_key(&id) {
                         let variable = scope.get(&id).unwrap();
                         return Ok(variable.borrow().clone());
@@ -73,8 +74,6 @@ impl<'a> Interpreter<'a> {
                 member: _,
             } => {
                 let path = id.to_path();
-                // PERF this is likely slow due to three different clones, even of pointers
-                let mut module = self.mod_id.clone().unwrap_or(self.memory.clone()).clone();
                 for item in &path[0..(path.len() - 1)] {
                     let module_copy = module.clone();
                     module = module_copy
@@ -97,12 +96,16 @@ impl<'a> Interpreter<'a> {
 
     /// Declares a new variable.
     pub fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
+        // get relevant module pointer
+        let module = match &self.mod_id {
+            Some(mod_id) => mod_id.clone(),
+            None => self.memory.clone(),
+        };
+
         match id.get_kind() {
             IDKind::Literal(id) => {
-                let mut module = match &self.mod_id {
-                    Some(mod_id) => mod_id.borrow_mut(),
-                    None => (&self.memory).borrow_mut(),
-                };
+                // borrow module mutably to make changes
+                let mut module = module.borrow_mut();
 
                 // add scopes if necessary
                 while module.scopes() <= self.scope_id {
@@ -134,12 +137,16 @@ impl<'a> Interpreter<'a> {
 
     /// Assigns to an existing variable.
     pub fn assign(&mut self, id: &ID, value: Variable) -> Result<()> {
+        // get relevant module pointer
+        let module = match &self.mod_id {
+            Some(mod_id) => mod_id.clone(),
+            None => self.memory.clone(),
+        };
+
         match id.get_kind() {
             IDKind::Literal(id) => {
-                let mut module = match &self.mod_id {
-                    Some(mod_id) => mod_id.borrow_mut(),
-                    None => (&self.memory).borrow_mut(),
-                };
+                // borrow module mutably to make changes
+                let mut module = module.borrow_mut();
 
                 // get currently selected scope id
                 let mut scope_idx = self.scope_id;
