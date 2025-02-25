@@ -20,7 +20,7 @@ impl<'a> Interpreter<'a> {
 
         match id.get_kind() {
             IDKind::Literal(id) => {
-                for scope in module.borrow().iter().rev() {
+                for scope in (&*module).borrow().iter().rev() {
                     if scope.contains_key(&id) {
                         let variable = scope.get(&id).unwrap();
                         return Ok(variable.to_owned());
@@ -33,7 +33,7 @@ impl<'a> Interpreter<'a> {
             } => {
                 let path = id.to_path();
                 for item in &path[0..(path.len() - 1)] {
-                    let module_copy = module.clone();
+                    let module_copy = &*module.clone();
                     module = module_copy
                         .borrow()
                         .get_module(item)
@@ -41,7 +41,7 @@ impl<'a> Interpreter<'a> {
                         .unwrap();
                 }
                 let id = path.last().unwrap().to_owned();
-                for scope in module.borrow().iter().rev() {
+                for scope in (&*module).borrow().iter().rev() {
                     if scope.contains_key(&id) {
                         let variable = scope.get(&id).unwrap();
                         return Ok(variable.to_owned());
@@ -62,10 +62,10 @@ impl<'a> Interpreter<'a> {
 
         match id.get_kind() {
             IDKind::Literal(id) => {
-                for scope in module.borrow().iter().rev() {
+                for scope in (&*module).borrow().iter().rev() {
                     if scope.contains_key(&id) {
                         let variable = scope.get(&id).unwrap();
-                        return Ok(variable.borrow().clone());
+                        return Ok((&**variable).borrow().clone());
                     }
                 }
             }
@@ -75,7 +75,7 @@ impl<'a> Interpreter<'a> {
             } => {
                 let path = id.to_path();
                 for item in &path[0..(path.len() - 1)] {
-                    let module_copy = module.clone();
+                    let module_copy = &*module.clone();
                     module = module_copy
                         .borrow()
                         .get_module(item)
@@ -83,10 +83,10 @@ impl<'a> Interpreter<'a> {
                         .unwrap();
                 }
                 let id = path.last().unwrap().to_owned();
-                for scope in module.borrow().iter().rev() {
+                for scope in (&*module).borrow().iter().rev() {
                     if scope.contains_key(&id) {
                         let variable = scope.get(&id).unwrap();
-                        return Ok(variable.borrow().clone());
+                        return Ok((&**variable).borrow().clone());
                     }
                 }
             }
@@ -111,7 +111,7 @@ impl<'a> Interpreter<'a> {
             } => {
                 let path = id.to_path();
                 for item in &path[0..(path.len() - 1)] {
-                    let module_copy = module.clone();
+                    let module_copy = &*module.clone();
                     module = module_copy
                         .borrow()
                         .get_module(item)
@@ -158,7 +158,7 @@ impl<'a> Interpreter<'a> {
             } => {
                 let path = id.to_path();
                 for item in &path[0..(path.len() - 1)] {
-                    let module_copy = module.clone();
+                    let module_copy = &*module.clone();
                     module = module_copy
                         .borrow()
                         .get_module(item)

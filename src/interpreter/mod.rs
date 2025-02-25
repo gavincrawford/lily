@@ -241,19 +241,17 @@ impl<'a> Interpreter<'a> {
                 }
 
                 // get value from list
-                // PERF implement with borrow
-                if let Variable::Owned(list) = self.get_owned(id)? {
-                    if let ASTNode::List(tokens) = &list {
-                        return Ok(Some(
-                            ASTNode::Literal(
-                                tokens
-                                    .get(usize_idx.to_owned() as usize)
-                                    .expect("index out of bounds.")
-                                    .to_owned(),
-                            )
-                            .into(),
-                        ));
-                    }
+                let list = &*(self.get(id)?);
+                if let Variable::Owned(ASTNode::List(tokens)) = &*list.borrow() {
+                    return Ok(Some(
+                        ASTNode::Literal(
+                            tokens
+                                .get(usize_idx.to_owned() as usize)
+                                .expect("index out of bounds.")
+                                .to_owned(),
+                        )
+                        .into(),
+                    ));
                 }
 
                 // if return hasn't been reached, panic
@@ -278,10 +276,6 @@ impl<'a> Interpreter<'a> {
                     .expect("expected return expression."),
             )),
             ASTNode::Module { alias, body } => {
-                // TODO keep proper track of these things. i think it might be adventageous to just
-                // merge the variable table with the module table and have the default scope be
-                // named something reserved
-
                 if let Some(mod_name) = alias {
                     // insert named modules
                     let temp = self.mod_id.to_owned();
