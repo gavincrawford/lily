@@ -10,15 +10,18 @@ pub mod svtable;
 pub mod variable;
 
 impl<'a> Interpreter<'a> {
-    /// Gets the value of a variable.
-    pub fn get(&self, id: &ID) -> Result<Rc<RefCell<Variable>>> {
+    /// Helper function to get the absolute module and variable name from an ID.
+    ///
+    /// Some identifiers reference variables within stacks of modules, and this function resolves
+    /// these long chains of reference into the relevant module and variable name, respectively.
+    fn resolve_identifier(&self, id: &ID) -> Result<(Rc<RefCell<SVTable<'a>>>, String)> {
         // get relevant module pointer
         let mut module = match &self.mod_id {
             Some(mod_id) => mod_id.clone(),
             None => self.memory.clone(),
         };
 
-        // get variable id
+        // get variable id, stepping down if required
         let id = match id.get_kind() {
             IDKind::Literal(id) => id,
             IDKind::Member {
@@ -37,6 +40,14 @@ impl<'a> Interpreter<'a> {
                 path.last().unwrap().to_owned()
             }
         };
+
+        Ok((module, id))
+    }
+
+    /// Gets the value of a variable.
+    pub fn get(&self, id: &ID) -> Result<Rc<RefCell<Variable>>> {
+        // get absolute module and ID
+        let (module, id) = self.resolve_identifier(id)?;
 
         // find id in any scope
         for scope in (&*module).borrow().iter().rev() {
@@ -52,31 +63,8 @@ impl<'a> Interpreter<'a> {
 
     /// Gets the value of a variable, and clones it in the process.
     pub fn get_owned(&self, id: &ID) -> Result<Variable> {
-        // get relevant module pointer
-        let mut module = match &self.mod_id {
-            Some(mod_id) => mod_id.clone(),
-            None => self.memory.clone(),
-        };
-
-        // get variable id
-        let id = match id.get_kind() {
-            IDKind::Literal(id) => id,
-            IDKind::Member {
-                parent: _,
-                member: _,
-            } => {
-                let path = id.to_path();
-                for item in &path[0..(path.len() - 1)] {
-                    let module_copy = &*module.clone();
-                    module = module_copy
-                        .borrow()
-                        .get_module(item)
-                        .context("failed to get value")
-                        .unwrap();
-                }
-                path.last().unwrap().to_owned()
-            }
-        };
+        // get absolute module and ID
+        let (module, id) = self.resolve_identifier(id)?;
 
         // find id in any scope
         for scope in (&*module).borrow().iter().rev() {
@@ -92,31 +80,8 @@ impl<'a> Interpreter<'a> {
 
     /// Declares a new variable.
     pub fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
-        // get relevant module pointer
-        let mut module = match &self.mod_id {
-            Some(mod_id) => mod_id.clone(),
-            None => self.memory.clone(),
-        };
-
-        // get variable identifier
-        let id = match id.get_kind() {
-            IDKind::Literal(id) => id,
-            IDKind::Member {
-                parent: _,
-                member: _,
-            } => {
-                let path = id.to_path();
-                for item in &path[0..(path.len() - 1)] {
-                    let module_copy = &*module.clone();
-                    module = module_copy
-                        .borrow()
-                        .get_module(item)
-                        .context("failed to get value")
-                        .unwrap();
-                }
-                path.last().unwrap().to_owned()
-            }
-        };
+        // get absolute module and ID
+        let (module, id) = self.resolve_identifier(id)?;
 
         // borrow module mutably to make changes
         let mut module = module.borrow_mut();
@@ -139,31 +104,8 @@ impl<'a> Interpreter<'a> {
 
     /// Assigns to an existing variable.
     pub fn assign(&mut self, id: &ID, value: Variable) -> Result<()> {
-        // get relevant module pointer
-        let mut module = match &self.mod_id {
-            Some(mod_id) => mod_id.clone(),
-            None => self.memory.clone(),
-        };
-
-        // get variable identifier
-        let id = match id.get_kind() {
-            IDKind::Literal(id) => id,
-            IDKind::Member {
-                parent: _,
-                member: _,
-            } => {
-                let path = id.to_path();
-                for item in &path[0..(path.len() - 1)] {
-                    let module_copy = &*module.clone();
-                    module = module_copy
-                        .borrow()
-                        .get_module(item)
-                        .context("failed to get value")
-                        .unwrap();
-                }
-                path.last().unwrap().to_owned()
-            }
-        };
+        // get absolute module and ID
+        let (module, id) = self.resolve_identifier(id)?;
 
         // borrow module mutably to make changes
         let mut module = module.borrow_mut();
