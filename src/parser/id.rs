@@ -3,9 +3,18 @@
 
 use super::*;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct ID {
     id: IDKind,
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub enum IDKind {
+    Literal(String),
+    Member {
+        parent: Rc<IDKind>,
+        member: Rc<IDKind>,
+    },
 }
 
 impl ID {
@@ -48,6 +57,24 @@ impl ID {
     pub fn get_kind_ref(&self) -> &IDKind {
         &self.id
     }
+
+    /// Converts an `ID` into a vector of strings representing the path.
+    pub fn to_path(&self) -> Vec<String> {
+        let mut path = Vec::new();
+        self.collect_path(&self.id, &mut path);
+        path
+    }
+
+    /// Helper function to recursively collect path components.
+    fn collect_path(&self, kind: &IDKind, path: &mut Vec<String>) {
+        match kind {
+            IDKind::Literal(name) => path.push(name.clone()),
+            IDKind::Member { parent, member } => {
+                self.collect_path(parent, path);
+                self.collect_path(member, path);
+            }
+        }
+    }
 }
 
 impl From<&str> for ID {
@@ -75,13 +102,3 @@ impl From<&str> for ID {
         }
     }
 }
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum IDKind {
-    Literal(String),
-    Member {
-        parent: Rc<IDKind>,
-        member: Rc<IDKind>,
-    },
-}
-

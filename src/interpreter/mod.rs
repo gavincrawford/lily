@@ -9,40 +9,36 @@ use crate::{
 };
 use anyhow::{bail, Context, Result};
 use mem::{svtable::SVTable, variable::Variable};
-use std::{collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 pub struct Interpreter<'a> {
-    /// Module storage. Variables at base scope are stored in the `$` module.
-    pub modules: HashMap<String, SVTable<'a>>,
-    /// Current module name.
-    mod_id: String,
+    /// Memory structure. Tracks variables and modules.
+    pub memory: Rc<RefCell<SVTable<'a>>>,
+    /// Current module.
+    mod_id: Option<Rc<RefCell<SVTable<'a>>>>,
     /// Scope level.
-    scope: usize,
+    scope_id: usize,
 }
 impl<'a> Interpreter<'a> {
     pub fn new() -> Self {
-        // create a new module map with default scope
-        let mut modules = HashMap::new();
-        modules.insert("$".into(), SVTable::new());
-
         // return new interpreter
         Self {
-            modules,
-            mod_id: "$".into(),
-            scope: 0,
+            memory: Rc::new(RefCell::new(SVTable::new())),
+            mod_id: None,
+            scope_id: 0,
         }
     }
 
     /// Executes an AST segment, typically the head. Returns `Some` when a return block is reached.
-    pub fn execute(&mut self, ast: &'a Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
-        if let ASTNode::Block(statements) = &**ast {
+    pub fn execute(&mut self, ast: Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
+        if let ASTNode::Block(statements) = &*ast {
             // if this segment is a block, execute all of its statements
             for statement in statements {
                 if let Some(ret_value) = self
-                    .execute_expr(statement)
+                    .execute_expr(statement.clone())
                     .context("failed to evaluate expression")?
                 {
-                    if self.scope > 0 {
+                    if self.scope_id > 0 {
                         return Ok(Some(ret_value));
                     } else {
                         // TODO this still doesn't prevent return from being called inside a
@@ -59,11 +55,11 @@ impl<'a> Interpreter<'a> {
     }
 
     /// Executes an individual expression.
-    fn execute_expr(&mut self, statement: &'a Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
-        match &**statement {
+    fn execute_expr(&mut self, statement: Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
+        match &*statement {
             ASTNode::Assign { id, value } => {
                 let resolved_expr = &self
-                    .execute_expr(&value)
+                    .execute_expr(value.clone())
                     .context("failed to evaluate assignment value")?
                     .unwrap();
                 self.assign(id, Variable::Owned((*resolved_expr.to_owned()).to_owned()))?;
@@ -71,7 +67,7 @@ impl<'a> Interpreter<'a> {
             }
             ASTNode::Declare { id, value } => {
                 let resolved_expr = &self
-                    .execute_expr(&value)
+                    .execute_expr(value.clone())
                     .context("failed to evaluate declaration value")?
                     .unwrap();
                 self.declare(id, Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)))?;
@@ -82,7 +78,7 @@ impl<'a> Interpreter<'a> {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                self.declare(id, Variable::Reference(&*statement))?;
+                self.declare(id, Variable::Reference(statement.to_owned()))?;
                 Ok(None)
             }
             ASTNode::FunctionCall {
@@ -96,15 +92,15 @@ impl<'a> Interpreter<'a> {
                         id: _id,
                         arguments: fn_args,
                         body,
-                    } = &**function
+                    } = &*function
                     {
                         // push arguments
                         assert_eq!(call_args.len(), fn_args.len());
-                        self.scope += 1;
+                        self.scope_id += 1;
                         for (idx, arg) in fn_args.iter().enumerate() {
                             let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
                             let resolved_expr = self
-                                .execute_expr(arg_expr)
+                                .execute_expr(arg_expr.clone())
                                 .context("failed to evaluate argument")?
                                 .unwrap()
                                 .to_owned();
@@ -115,8 +111,8 @@ impl<'a> Interpreter<'a> {
                         }
 
                         // if no return, drop scoped variables anyway
-                        let result = self.execute(body)?;
-                        self.scope -= 1;
+                        let result = self.execute(body.clone())?;
+                        self.scope_id -= 1;
                         self.drop();
                         return Ok(result);
                     }
@@ -124,9 +120,10 @@ impl<'a> Interpreter<'a> {
                 Ok(None)
             }
             ASTNode::Op { lhs, op, rhs } => {
-                if let (Ok(Some(a)), Ok(Some(b))) =
-                    (self.execute_expr(&lhs), self.execute_expr(&rhs))
-                {
+                if let (Ok(Some(a)), Ok(Some(b))) = (
+                    self.execute_expr(lhs.clone()),
+                    self.execute_expr(rhs.clone()),
+                ) {
                     if let (
                         ASTNode::Literal(Token::Number(a)),
                         ASTNode::Literal(Token::Number(b)),
@@ -182,38 +179,38 @@ impl<'a> Interpreter<'a> {
                 else_body,
             } => {
                 if let Some(condition) = self
-                    .execute_expr(&condition)
+                    .execute_expr(condition.clone())
                     .context("failed to evaluate condition")?
                 {
                     // increase scope level and execute body statements
-                    self.scope += 1;
+                    self.scope_id += 1;
                     if let ASTNode::Literal(Token::Bool(true)) = *condition {
-                        if let Some(result) = self.execute(if_body)? {
-                            self.scope -= 1;
+                        if let Some(result) = self.execute(if_body.clone())? {
+                            self.scope_id -= 1;
                             self.drop();
                             return Ok(Some(result));
                         }
                     } else {
-                        if let Some(result) = self.execute(else_body)? {
-                            self.scope -= 1;
+                        if let Some(result) = self.execute(else_body.clone())? {
+                            self.scope_id -= 1;
                             self.drop();
                             return Ok(Some(result));
                         } else {
                         }
                     }
                     // after finishing, decrease scope level and drop locals
-                    self.scope -= 1;
+                    self.scope_id -= 1;
                     self.drop();
                 }
                 Ok(None)
             }
             ASTNode::Loop { condition, body } => {
                 // increase scope level and execute body
-                self.scope += 1;
-                while let Some(condition) = self.execute_expr(&condition)? {
+                self.scope_id += 1;
+                while let Some(condition) = self.execute_expr(condition.clone())? {
                     // run loop body
                     if let ASTNode::Literal(Token::Bool(true)) = *condition {
-                        self.execute(body)?;
+                        self.execute(body.clone())?;
                     } else {
                         break;
                     }
@@ -222,7 +219,7 @@ impl<'a> Interpreter<'a> {
                     self.drop_here();
                 }
                 // after finishing, decrease scope level and drop locals
-                self.scope -= 1;
+                self.scope_id -= 1;
                 self.drop();
                 Ok(None)
             }
@@ -234,7 +231,7 @@ impl<'a> Interpreter<'a> {
                 // get index as a usize
                 let usize_idx;
                 if let ASTNode::Literal(Token::Number(n)) = &*self
-                    .execute_expr(index)
+                    .execute_expr(index.clone())
                     .context("failed to evaluate index value")?
                     .unwrap()
                 {
@@ -244,8 +241,9 @@ impl<'a> Interpreter<'a> {
                 }
 
                 // get value from list
-                if let Variable::Owned(list) = self.get(id)? {
-                    if let ASTNode::List(tokens) = &*list {
+                // PERF implement with borrow
+                if let Variable::Owned(list) = self.get_owned(id)? {
+                    if let ASTNode::List(tokens) = &list {
                         return Ok(Some(
                             ASTNode::Literal(
                                 tokens
@@ -263,7 +261,8 @@ impl<'a> Interpreter<'a> {
             }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
-                    if let Variable::Owned(var) = self.get(&ID::new(identifier))? {
+                    // PERF implement with borrow
+                    if let Variable::Owned(var) = self.get_owned(&ID::new(identifier))? {
                         // reutrn owned variables
                         return Ok(Some(var.to_owned().into()));
                     }
@@ -274,7 +273,7 @@ impl<'a> Interpreter<'a> {
                 }
             }
             ASTNode::Return(ref expr) => Ok(Some(
-                self.execute_expr(expr)
+                self.execute_expr(expr.clone())
                     .context("failed to evaluate return expression")?
                     .expect("expected return expression."),
             )),
@@ -285,21 +284,26 @@ impl<'a> Interpreter<'a> {
 
                 if let Some(mod_name) = alias {
                     // insert named modules
-                    self.modules.insert(mod_name.to_owned(), SVTable::new());
                     let temp = self.mod_id.to_owned();
-                    self.mod_id = mod_name.to_owned();
+                    if let Some(mod_pointer) = temp.to_owned() {
+                        self.mod_id =
+                            Some(mod_pointer.borrow_mut().add_module(mod_name.to_owned()));
+                    } else {
+                        self.mod_id =
+                            Some(self.memory.borrow_mut().add_module(mod_name.to_owned()));
+                    }
 
                     // execute body
-                    self.execute(&*body)
+                    self.execute(body.clone())
                         .context("failed to evaluate module body")?;
                     self.mod_id = temp;
                 } else {
-                    // insert named modules
+                    // insert unnamed modules
                     let temp = self.mod_id.to_owned();
-                    self.mod_id = String::from("$");
+                    self.mod_id = None;
 
                     // execute body
-                    self.execute(&*body)
+                    self.execute(body.clone())
                         .context("failed to evaluate module body")?;
                     self.mod_id = temp;
                 }

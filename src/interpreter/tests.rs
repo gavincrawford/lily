@@ -17,23 +17,23 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("a")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(1.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("b")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Bool(true)))
+            Variable::Owned(ASTNode::Literal(Token::Bool(true))).into()
         );
         assert_eq!(
             *i.get(&ID::new("c")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Str("str".to_string())))
+            Variable::Owned(ASTNode::Literal(Token::Str("str".to_string()))).into()
         );
         assert_eq!(
             *i.get(&ID::new("d")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Char('c')))
+            Variable::Owned(ASTNode::Literal(Token::Char('c'))).into()
         );
     }
 
@@ -47,19 +47,19 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("a")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(1.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("b")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(2.5)))
+            Variable::Owned(ASTNode::Literal(Token::Number(2.5))).into()
         );
         assert_eq!(
             *i.get(&ID::new("c")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(6.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(6.))).into()
         );
     }
 
@@ -73,11 +73,11 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("a")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(5.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(5.))).into()
         );
     }
 
@@ -91,19 +91,19 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("a")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(10.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(10.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("b")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(20.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(20.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("c")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Bool(true)))
+            Variable::Owned(ASTNode::Literal(Token::Bool(true))).into()
         );
     }
 
@@ -117,15 +117,15 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("i")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(25.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(25.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("a")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(25.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(25.))).into()
         );
     }
 
@@ -139,23 +139,23 @@ mod feature {
         )
         .parse()
         .unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("idx_a")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(1.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("idx_b")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(2.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(2.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("idx_c")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(3.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(3.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("idx_d")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(4.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(4.))).into()
         );
     }
 
@@ -169,11 +169,29 @@ mod feature {
         );
         p.set_pwd(PathBuf::from("src/interpreter/tests/"));
         let ast = p.parse().unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("res")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(4.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(4.))).into()
+        );
+    }
+
+    #[test]
+    fn nested_imports() {
+        let mut i = Interpreter::new();
+        let mut p = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/nested_imports.ly").to_string())
+                .unwrap(),
+        );
+        p.set_pwd(PathBuf::from("src/interpreter/tests/"));
+        let ast = p.parse().unwrap();
+        i.execute(ast).unwrap();
+
+        assert_eq!(
+            *i.get(&ID::new("res")).unwrap(),
+            Variable::Owned(ASTNode::Literal(Token::Number(4.))).into()
         );
     }
 }
@@ -192,11 +210,11 @@ mod implementation {
         )
         .parse()
         .unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("result")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(21.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(21.))).into()
         );
     }
 
@@ -210,19 +228,19 @@ mod implementation {
         )
         .parse()
         .unwrap();
-        i.execute(&ast).unwrap();
+        i.execute(ast).unwrap();
 
         assert_eq!(
             *i.get(&ID::new("six_fac")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(720.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(720.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("one_fac")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(1.))).into()
         );
         assert_eq!(
             *i.get(&ID::new("zero_fac")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(1.)))
+            Variable::Owned(ASTNode::Literal(Token::Number(1.))).into()
         );
     }
 }

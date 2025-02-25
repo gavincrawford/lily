@@ -39,7 +39,7 @@ fn main() {
 
     // execute interpreter
     let mut interp = Interpreter::new();
-    match interp.execute(&ast) {
+    match interp.execute(ast) {
         Ok(_) => {}
         Err(e) => {
             eprintln!("EXEC ERR: {:?}\n", e);
@@ -49,7 +49,7 @@ fn main() {
 
     // for debugging
     #[cfg(debug_assertions)]
-    dbg!(interp.modules.get("$").unwrap());
+    dbg!(interp.memory.borrow().inner());
 }
 
 /// Creates STD module import.

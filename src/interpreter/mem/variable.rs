@@ -2,7 +2,7 @@ use super::ASTNode;
 use std::rc::Rc;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Variable<'a> {
+pub enum Variable {
     Owned(ASTNode),
-    Reference(&'a Rc<ASTNode>),
+    Reference(Rc<ASTNode>),
 }
