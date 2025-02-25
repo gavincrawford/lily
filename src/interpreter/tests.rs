@@ -172,8 +172,16 @@ mod feature {
         i.execute(ast).unwrap();
 
         assert_eq!(
-            *i.get(&ID::new("res")).unwrap(),
+            *i.get(&ID::new("get_res")).unwrap(),
             Variable::Owned(ASTNode::Literal(Token::Number(4.))).into()
+        );
+        assert_eq!(
+            *i.get(&ID::new("assign_res")).unwrap(),
+            Variable::Owned(ASTNode::Literal(Token::Str("reassignment value".into()))).into()
+        );
+        assert_eq!(
+            *i.get(&ID::new("decl_res")).unwrap(),
+            Variable::Owned(ASTNode::Literal(Token::Str("declaration value".into()))).into()
         );
     }
 
