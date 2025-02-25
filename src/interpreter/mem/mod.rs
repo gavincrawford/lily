@@ -18,15 +18,9 @@ impl<'a> Interpreter<'a> {
             None => self.memory.clone(),
         };
 
-        match id.get_kind() {
-            IDKind::Literal(id) => {
-                for scope in (&*module).borrow().iter().rev() {
-                    if scope.contains_key(&id) {
-                        let variable = scope.get(&id).unwrap();
-                        return Ok(variable.to_owned());
-                    }
-                }
-            }
+        // get variable id
+        let id = match id.get_kind() {
+            IDKind::Literal(id) => id,
             IDKind::Member {
                 parent: _,
                 member: _,
@@ -40,15 +34,19 @@ impl<'a> Interpreter<'a> {
                         .context("failed to get value")
                         .unwrap();
                 }
-                let id = path.last().unwrap().to_owned();
-                for scope in (&*module).borrow().iter().rev() {
-                    if scope.contains_key(&id) {
-                        let variable = scope.get(&id).unwrap();
-                        return Ok(variable.to_owned());
-                    }
-                }
+                path.last().unwrap().to_owned()
+            }
+        };
+
+        // find id in any scope
+        for scope in (&*module).borrow().iter().rev() {
+            if scope.contains_key(&id) {
+                let variable = scope.get(&id).unwrap();
+                return Ok(variable.to_owned());
             }
         }
+
+        // if no value is found, bail
         bail!("failed to get value {:?}", id)
     }
 
@@ -60,15 +58,9 @@ impl<'a> Interpreter<'a> {
             None => self.memory.clone(),
         };
 
-        match id.get_kind() {
-            IDKind::Literal(id) => {
-                for scope in (&*module).borrow().iter().rev() {
-                    if scope.contains_key(&id) {
-                        let variable = scope.get(&id).unwrap();
-                        return Ok((&**variable).borrow().clone());
-                    }
-                }
-            }
+        // get variable id
+        let id = match id.get_kind() {
+            IDKind::Literal(id) => id,
             IDKind::Member {
                 parent: _,
                 member: _,
@@ -82,15 +74,19 @@ impl<'a> Interpreter<'a> {
                         .context("failed to get value")
                         .unwrap();
                 }
-                let id = path.last().unwrap().to_owned();
-                for scope in (&*module).borrow().iter().rev() {
-                    if scope.contains_key(&id) {
-                        let variable = scope.get(&id).unwrap();
-                        return Ok((&**variable).borrow().clone());
-                    }
-                }
+                path.last().unwrap().to_owned()
+            }
+        };
+
+        // find id in any scope
+        for scope in (&*module).borrow().iter().rev() {
+            if scope.contains_key(&id) {
+                let variable = scope.get(&id).unwrap();
+                return Ok((&**variable).borrow().clone());
             }
         }
+
+        // if no value is found, bail
         bail!("failed to get owned value {:?}", id)
     }
 
