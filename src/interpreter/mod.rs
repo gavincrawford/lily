@@ -41,8 +41,6 @@ impl Interpreter {
                     if self.scope_id > 0 {
                         return Ok(Some(ret_value));
                     } else {
-                        // TODO this still doesn't prevent return from being called inside a
-                        // conditional, so maybe add a syntax error for that too
                         bail!("return cannot be called outside of a function");
                     }
                 }
@@ -150,6 +148,9 @@ impl Interpreter {
                             // logical operators
                             Token::LogicalEq => {
                                 return Ok(Some(ASTNode::Literal(Token::Bool(a == b)).into()))
+                            }
+                            Token::LogicalNeq => {
+                                return Ok(Some(ASTNode::Literal(Token::Bool(a != b)).into()))
                             }
                             Token::LogicalG => {
                                 return Ok(Some(ASTNode::Literal(Token::Bool(a > b)).into()))
