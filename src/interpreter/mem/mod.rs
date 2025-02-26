@@ -9,12 +9,12 @@ pub mod drop;
 pub mod svtable;
 pub mod variable;
 
-impl<'a> Interpreter<'a> {
+impl Interpreter {
     /// Helper function to get the absolute module and variable name from an ID.
     ///
     /// Some identifiers reference variables within stacks of modules, and this function resolves
     /// these long chains of reference into the relevant module and variable name, respectively.
-    fn resolve_identifier(&self, id: &ID) -> Result<(Rc<RefCell<SVTable<'a>>>, String)> {
+    fn resolve_identifier(&self, id: &ID) -> Result<(Rc<RefCell<SVTable>>, String)> {
         // get relevant module pointer
         let mut module = match &self.mod_id {
             Some(mod_id) => mod_id.clone(),

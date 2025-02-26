@@ -5,14 +5,14 @@ use anyhow::{bail, Result};
 use std::{cell::RefCell, collections::HashMap, rc::Rc, slice::Iter};
 
 #[derive(Debug)]
-pub struct SVTable<'a> {
+pub struct SVTable {
     /// Holds all the scope frames, each of which hold their respective variables.
     table: Vec<HashMap<String, Rc<RefCell<Variable>>>>,
     /// Holds all the modules defined at this SVTable's scope.
-    modules: HashMap<String, Rc<RefCell<SVTable<'a>>>>,
+    modules: HashMap<String, Rc<RefCell<SVTable>>>,
 }
 
-impl<'a> SVTable<'a> {
+impl SVTable {
     /// Creates a new scoped-variable table
     pub fn new() -> Self {
         Self {
@@ -37,7 +37,7 @@ impl<'a> SVTable<'a> {
     }
 
     /// Adds a new module. Returns a reference to the newly created module.
-    pub fn add_module(&mut self, name: impl Into<String>) -> Rc<RefCell<SVTable<'a>>> {
+    pub fn add_module(&mut self, name: impl Into<String>) -> Rc<RefCell<SVTable>> {
         let name = name.into();
         self.modules
             .insert(name.to_owned(), RefCell::new(SVTable::new()).into());
@@ -45,7 +45,7 @@ impl<'a> SVTable<'a> {
     }
 
     /// Gets a module by name. Returns an immutable reference to the module if found.
-    pub fn get_module(&self, name: impl Into<String>) -> Result<Rc<RefCell<SVTable<'a>>>> {
+    pub fn get_module(&self, name: impl Into<String>) -> Result<Rc<RefCell<SVTable>>> {
         let name = name.into();
         if let Some(module) = self.modules.get(&name) {
             return Ok(module.clone());

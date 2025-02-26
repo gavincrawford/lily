@@ -11,15 +11,15 @@ use anyhow::{bail, Context, Result};
 use mem::{svtable::SVTable, variable::Variable};
 use std::{cell::RefCell, rc::Rc};
 
-pub struct Interpreter<'a> {
+pub struct Interpreter {
     /// Memory structure. Tracks variables and modules.
-    pub memory: Rc<RefCell<SVTable<'a>>>,
+    pub memory: Rc<RefCell<SVTable>>,
     /// Current module.
-    mod_id: Option<Rc<RefCell<SVTable<'a>>>>,
+    mod_id: Option<Rc<RefCell<SVTable>>>,
     /// Scope level.
     scope_id: usize,
 }
-impl<'a> Interpreter<'a> {
+impl Interpreter {
     pub fn new() -> Self {
         // return new interpreter
         Self {

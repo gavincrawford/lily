@@ -2,7 +2,7 @@
 
 use super::Interpreter;
 
-impl<'a> Interpreter<'a> {
+impl Interpreter {
     /// Drops all out-of-scope variables.
     pub fn drop(&mut self) {
         if let Some(mod_pointer) = &self.mod_id {
