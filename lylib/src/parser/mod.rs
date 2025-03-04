@@ -164,7 +164,7 @@ impl Parser {
             },
             Some(Token::Return) => self.parse_return(),
             _ => {
-                bail!("expected statement, found {:?}.", self.peek().unwrap());
+                bail!("expected statement, found {:?}", self.peek().unwrap());
             }
         }
     }
@@ -307,7 +307,7 @@ impl Parser {
         if let Some(Token::Identifier(fn_id)) = self.next() {
             id = fn_id;
         } else {
-            bail!("function identifier not found.");
+            bail!("function identifier not found");
         }
 
         // parse arguments
@@ -430,7 +430,7 @@ impl Parser {
             }
             _ => {
                 if parens_open {
-                    bail!("unclosed delimiter found.");
+                    bail!("unclosed delimiter found");
                 }
 
                 // XXX
@@ -456,7 +456,7 @@ impl Parser {
                     // negate literal and return
                     Ok(ASTNode::Literal(Token::Number(-1. * (value.to_owned()))).into())
                 } else {
-                    bail!("expected number after '-', found {:?}.", self.peek());
+                    bail!("expected number after '-', found {:?}", self.peek());
                 }
             }
 
@@ -465,7 +465,7 @@ impl Parser {
             | Some(Token::Str(_))
             | Some(Token::Bool(_))
             | Some(Token::Char(_)) => {
-                Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into())
+                Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF")).into())
             }
 
             // lists
@@ -484,7 +484,7 @@ impl Parser {
                 }
                 _ => {
                     // otherwise, it's safe to assume that the token is a literal
-                    Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF.")).into())
+                    Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF")).into())
                 }
             },
             _ => {

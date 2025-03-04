@@ -93,7 +93,7 @@ impl Lexer {
         let mut chars = buf.chars().peekable();
         let mut tokens = vec![];
         let mut mode = CaptureMode::General;
-        let mut c = chars.next().context("source file empty.")?;
+        let mut c = chars.next().context("source file empty")?;
         loop {
             match mode {
                 CaptureMode::General => {
@@ -228,7 +228,7 @@ impl Lexer {
                             self.number_register.clear();
                         } else {
                             // number failed to parse, bail
-                            bail!("cannot coerce {} to number.", self.number_register);
+                            bail!("cannot coerce {} to number", self.number_register);
                         }
                         mode = CaptureMode::General;
                         continue;
@@ -248,7 +248,7 @@ impl Lexer {
                     if let Some(next) = chars.peek() {
                         // peek ahead to make sure the char is 1 in length
                         if *next != '\'' {
-                            bail!("literals can only be one character long.");
+                            bail!("literals can only be one character long");
                         }
 
                         // skip second quote
@@ -259,7 +259,7 @@ impl Lexer {
                         mode = CaptureMode::General;
                     } else {
                         // if no char is found, this is an EOF
-                        bail!("expected char, found EOF.");
+                        bail!("expected char, found EOF");
                     }
                 }
             }
