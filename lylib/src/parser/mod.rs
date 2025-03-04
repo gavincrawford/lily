@@ -501,9 +501,16 @@ impl Parser {
         // parse items individually
         let mut items = vec![];
         loop {
-            // end when bracket close is reached
-            if let Some(Token::BracketClose) = self.peek() {
-                break;
+            // check for exceptions
+            match self.peek() {
+                // break on bracket close, indicating list end
+                Some(Token::BracketClose) => break,
+                // continue if list is interrupted by endline
+                Some(Token::Endl) => {
+                    self.next();
+                    continue;
+                }
+                _ => {}
             }
 
             // add item to the list
