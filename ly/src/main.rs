@@ -1,14 +1,18 @@
+use clap::{arg, Command};
 use lylib::{
     anyhow::{Context, Result},
     interpreter::*,
     lexer::*,
     parser::*,
 };
-use std::{env, fs, path::PathBuf, rc::Rc};
+use std::{fs, path::PathBuf, rc::Rc};
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let file_path = &args.get(1).expect("no file provided.");
+    // specify and parse arguments
+    let cmd = Command::new("ly").arg(arg!(<file>)).get_matches();
+
+    //execute file
+    let file_path: &String = cmd.get_one("file").unwrap();
     match run_file(file_path) {
         Err(e) => {
             eprintln!("{:?}", e);
@@ -18,7 +22,7 @@ fn main() {
 }
 
 /// Runs a file.
-fn run_file(file_path: &&String) -> Result<()> {
+fn run_file(file_path: &String) -> Result<()> {
     //read file to buffer
     let buf = fs::read_to_string(file_path).context("failed to open file")?;
 
