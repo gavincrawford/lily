@@ -1,4 +1,4 @@
-use lily::{interpreter::*, lexer::*, parser::*};
+use lylib::{interpreter::*, lexer::*, parser::*};
 use std::{env, fs, path::PathBuf, process, rc::Rc};
 
 fn main() {
