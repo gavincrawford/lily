@@ -56,7 +56,7 @@ pub enum ASTNode {
     },
     Return(Rc<ASTNode>),
     Literal(Token),
-    List(Vec<Token>),
+    List(Vec<Rc<ASTNode>>),
 }
 
 impl ASTNode {
@@ -503,10 +503,13 @@ impl Parser {
         loop {
             // check for exceptions
             match self.peek() {
-                // break on bracket close, indicating list end
-                Some(Token::BracketClose) => break,
-                // continue if list is interrupted by endline
+                Some(Token::BracketClose) => {
+                    // break on bracket close, indicating list end
+                    self.next();
+                    break;
+                }
                 Some(Token::Endl) => {
+                    // continue if list is interrupted by endline
                     self.next();
                     continue;
                 }
@@ -514,12 +517,10 @@ impl Parser {
             }
 
             // add item to the list
-            if let ASTNode::Literal(value) = &*self
-                .parse_expr(false)
-                .context("failed to parse list item")?
-            {
-                items.push(value.clone());
-            }
+            items.push(Rc::from(
+                self.parse_expr(false)
+                    .context("failed to parse list item")?,
+            ))
         }
 
         Ok(ASTNode::List(items).into())

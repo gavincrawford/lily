@@ -245,13 +245,10 @@ impl Interpreter {
                 let list = &*(self.get(id)?);
                 if let Variable::Owned(ASTNode::List(tokens)) = &*list.borrow() {
                     return Ok(Some(
-                        ASTNode::Literal(
-                            tokens
-                                .get(usize_idx.to_owned() as usize)
-                                .expect("index out of bounds.")
-                                .to_owned(),
-                        )
-                        .into(),
+                        tokens
+                            .get(usize_idx.to_owned() as usize)
+                            .expect("index out of bounds.")
+                            .to_owned(),
                     ));
                 }
 

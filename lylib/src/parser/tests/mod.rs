@@ -46,9 +46,9 @@ fn lists() {
             ASTNode::Declare {
                 id: "list".into(),
                 value: ASTNode::List(vec![
-                    Token::Number(1.),
-                    Token::Number(2.),
-                    Token::Number(3.)
+                    ASTNode::Literal(Token::Number(1.)).into(),
+                    ASTNode::Literal(Token::Number(2.)).into(),
+                    ASTNode::Literal(Token::Number(3.)).into(),
                 ])
                 .into(),
             }
