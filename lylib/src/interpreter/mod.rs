@@ -1,6 +1,7 @@
 //! The interpreter executes an abstract syntax tree.
 
 mod mem;
+mod resolve_refs;
 mod tests;
 
 use crate::{
@@ -268,11 +269,29 @@ impl Interpreter {
                     Ok(Some(statement.to_owned()))
                 }
             }
-            ASTNode::Return(ref expr) => Ok(Some(
-                self.execute_expr(expr.clone())
+            ASTNode::Return(ref expr) => {
+                // resolve expression
+                let expr = self
+                    .execute_expr(expr.clone())
                     .context("failed to evaluate return expression")?
-                    .expect("expected return expression."),
-            )),
+                    .expect("expected return expression");
+
+                // if there are indicies, flatten them
+                let expr = match *expr {
+                    ASTNode::Index { id: _, index: _ } => self
+                        .execute_expr(expr)
+                        .context("could not flatten index")?
+                        .unwrap(),
+                    ASTNode::List(_) => {
+                        self.resolve_refs(ASTNode::inner_to_owned(&expr))
+                            .context("could not flatten list")?;
+                        expr.into()
+                    }
+                    _ => expr.clone(),
+                };
+
+                Ok(Some(expr))
+            }
             ASTNode::Module { alias, body } => {
                 if let Some(mod_name) = alias {
                     // insert named modules
