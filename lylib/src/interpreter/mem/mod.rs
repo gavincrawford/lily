@@ -94,8 +94,7 @@ impl Interpreter {
         // get variable map and insert new value. if the value already exists, bail
         let var_map = module
             .get_scope(self.scope_id)
-            .context(format!("cannot delcare at scope {}", self.scope_id,))
-            .unwrap();
+            .context(format!("cannot delcare at scope {}", self.scope_id,))?;
         if let Some(_) = var_map.insert(id.clone(), RefCell::new(value).into()) {
             bail!("variable '{}' already exists", id);
         }
@@ -121,8 +120,7 @@ impl Interpreter {
         // get variable map at specified scope id
         let var_map = module
             .get_scope(scope_idx)
-            .context(format!("cannot assign at scope {}", scope_idx,))
-            .unwrap();
+            .context(format!("cannot assign at scope {}", scope_idx,))?;
 
         // insert new value
         var_map.insert(id, RefCell::new(value).into());

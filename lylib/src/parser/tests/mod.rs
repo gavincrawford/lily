@@ -344,3 +344,37 @@ fn import() {
         .into()
     );
 }
+
+#[test]
+fn structs() {
+    let mut parser = Parser::new(
+        Lexer::new()
+            .lex("struct Number do; let value = 0; end; let instance = new Number();".into())
+            .unwrap(),
+    );
+    assert_eq!(
+        parser.parse().unwrap(),
+        ASTNode::Block(vec![
+            ASTNode::Struct {
+                id: "Number".into(),
+                body: ASTNode::Block(vec![ASTNode::Declare {
+                    id: ID::new("value"),
+                    value: ASTNode::Literal(Token::Number(0.)).into()
+                }
+                .into()])
+                .into()
+            }
+            .into(),
+            ASTNode::Declare {
+                id: "instance".into(),
+                value: ASTNode::FunctionCall {
+                    id: "Number".into(),
+                    arguments: vec![]
+                }
+                .into()
+            }
+            .into()
+        ])
+        .into()
+    );
+}

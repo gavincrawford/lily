@@ -9,8 +9,10 @@ use crate::{
     parser::{ASTNode, ID},
 };
 use anyhow::{bail, Context, Result};
-use mem::{svtable::SVTable, variable::Variable};
+use mem::svtable::SVTable;
 use std::{cell::RefCell, rc::Rc};
+
+pub use mem::variable::Variable;
 
 pub struct Interpreter {
     /// Memory structure. Tracks variables and modules.
@@ -84,38 +86,82 @@ impl Interpreter {
                 id,
                 arguments: call_args,
             } => {
-                // execute function
+                // get function reference, bail if none found
                 let variable = self.get_owned(id)?;
-                if let Variable::Reference(function) = variable {
-                    if let ASTNode::Function {
-                        id: _id,
-                        arguments: fn_args,
-                        body,
-                    } = &*function
-                    {
-                        // push arguments
-                        assert_eq!(call_args.len(), fn_args.len());
-                        self.scope_id += 1;
-                        for (idx, arg) in fn_args.iter().enumerate() {
-                            let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
-                            let resolved_expr = self
-                                .execute_expr(arg_expr.clone())
-                                .context("failed to evaluate argument")?
-                                .unwrap()
-                                .to_owned();
-                            self.declare(
-                                &ID::new(arg),
-                                Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
-                            )?;
+                let function = match variable {
+                    // this branch should trigger on raw, local functions
+                    Variable::Reference(function) => {
+                        if let ASTNode::Function {
+                            id: _,
+                            arguments: _,
+                            body: _,
+                        } = &*function
+                        {
+                            function
+                        } else {
+                            bail!("no function `{:?}` found", id);
                         }
-
-                        // if no return, drop scoped variables anyway
-                        let result = self.execute(body.clone())?;
-                        self.scope_id -= 1;
-                        self.drop();
-                        return Ok(result);
                     }
+
+                    // this branch should trigger when constructors are called
+                    Variable::Type(ref structure) => match structure.constructor() {
+                        Some(v) => v,
+                        None => {
+                            let fields = structure
+                                .default_fields()
+                                .context("no default fields specified")
+                                .unwrap();
+                            return Ok(Some(
+                                ASTNode::Instance {
+                                    kind: variable.into(),
+                                    id: id.clone(),
+                                    fields,
+                                }
+                                .into(),
+                            ));
+                        }
+                    },
+
+                    // catch others
+                    _ => {
+                        bail!("no function `{:?}` found", id);
+                    }
+                };
+
+                // execute function body
+                if let ASTNode::Function {
+                    id: _id,
+                    arguments: fn_args,
+                    body,
+                } = &*function
+                {
+                    // push arguments
+                    assert_eq!(call_args.len(), fn_args.len());
+                    self.scope_id += 1;
+                    for (idx, arg) in fn_args.iter().enumerate() {
+                        let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
+                        let resolved_expr = self
+                            .execute_expr(arg_expr.clone())
+                            .context("failed to evaluate argument")?
+                            .unwrap()
+                            .to_owned();
+                        self.declare(
+                            &ID::new(arg),
+                            Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                        )?;
+                    }
+
+                    // get result and clear scoped vars
+                    let result = self.execute(body.clone())?;
+                    self.scope_id -= 1;
+                    self.drop();
+                    return Ok(result);
                 }
+                Ok(None)
+            }
+            ASTNode::Struct { id, body: _ } => {
+                self.declare(id, Variable::Type(statement.to_owned()))
+                    .context("failed to declare type for structure")?;
                 Ok(None)
             }
             ASTNode::Op { lhs, op, rhs } => {

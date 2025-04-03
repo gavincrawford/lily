@@ -10,6 +10,7 @@ pub enum Token {
     Equal,
     Identifier(String),
     Function,
+    Struct,
     Return,
     Let,
 
@@ -55,6 +56,7 @@ pub enum Token {
 
     // other
     Comma,
+    New,
     Endl,
 }
 
@@ -276,7 +278,9 @@ impl Lexer {
         use Token::*;
         match &*self.keyword_register {
             "let" => Some(Let),
+            "new" => Some(New),
             "func" => Some(Function),
+            "struct" => Some(Struct),
             "return" => Some(Return),
             "if" => Some(If),
             "else" => Some(Else),

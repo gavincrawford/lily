@@ -4,66 +4,11 @@ use crate::lexer::{Lexer, Token};
 use anyhow::{bail, Context, Result};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
 
+pub mod astnode;
+pub use astnode::*;
 pub mod id;
 pub use id::*;
-
 mod tests;
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum ASTNode {
-    /// Represents a block of statements, grouped in a scope.
-    Block(Vec<Rc<ASTNode>>),
-    /// Holds a block, but represents a separate module.
-    Module {
-        alias: Option<String>,
-        body: Rc<ASTNode>,
-    },
-
-    Index {
-        id: ID,
-        index: Rc<ASTNode>,
-    },
-    Assign {
-        id: ID,
-        value: Rc<ASTNode>,
-    },
-    Declare {
-        id: ID,
-        value: Rc<ASTNode>,
-    },
-    Function {
-        id: ID,
-        arguments: Vec<String>,
-        body: Rc<ASTNode>,
-    },
-    FunctionCall {
-        id: ID,
-        arguments: Vec<Rc<ASTNode>>,
-    },
-    Conditional {
-        condition: Rc<ASTNode>,
-        if_body: Rc<ASTNode>,
-        else_body: Rc<ASTNode>,
-    },
-    Loop {
-        condition: Rc<ASTNode>,
-        body: Rc<ASTNode>,
-    },
-    Op {
-        lhs: Rc<ASTNode>,
-        op: Token,
-        rhs: Rc<ASTNode>,
-    },
-    Return(Rc<ASTNode>),
-    Literal(Token),
-    List(Vec<Rc<ASTNode>>),
-}
-
-impl ASTNode {
-    pub fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {
-        (&*rc.clone()).clone()
-    }
-}
 
 pub struct Parser {
     tokens: Vec<Token>,
@@ -156,6 +101,7 @@ impl Parser {
             Some(Token::Let) => self.parse_decl_var(),
             Some(Token::If) => self.parse_cond(),
             Some(Token::Function) => self.parse_decl_fn(),
+            Some(Token::Struct) => self.parse_decl_struct(),
             Some(Token::While) => self.parse_while(),
             Some(Token::Identifier(_)) => match self.peek_n(1) {
                 Some(Token::ParenOpen) => self.parse_call_fn(),
@@ -275,6 +221,36 @@ impl Parser {
             body: self.parse().context("failed to parse loop body")?,
         }
         .into())
+    }
+
+    /// Parses the creation of structure instances, which are simply function calls with an extra
+    /// keyword tacked on to the front.
+    fn parse_struct_instance(&mut self) -> Result<Rc<ASTNode>> {
+        // consume new keyword
+        self.expect(Token::New)?;
+
+        // parse as a function call to be handled at runtime
+        self.parse_call_fn()
+            .context("failed to parse constructor call")
+    }
+
+    /// Parses a structure declaration.
+    fn parse_decl_struct(&mut self) -> Result<Rc<ASTNode>> {
+        self.expect(Token::Struct)?;
+        // TODO apply this style to function decl
+        match self.next() {
+            Some(Token::Identifier(name)) => {
+                self.expect(Token::BlockStart)?;
+                Ok(ASTNode::Struct {
+                    id: ID::new(name),
+                    body: self.parse()?,
+                }
+                .into())
+            }
+            other => {
+                bail!("expected identifier, found {:?}", other)
+            }
+        }
     }
 
     /// Parses a function declaration.
@@ -487,6 +463,12 @@ impl Parser {
                     Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF")).into())
                 }
             },
+
+            // structure instances
+            Some(Token::New) => self
+                .parse_struct_instance()
+                .context("failed to parse new structure instance"),
+
             _ => {
                 todo!()
             }

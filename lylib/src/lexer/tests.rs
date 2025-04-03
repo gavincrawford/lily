@@ -304,3 +304,32 @@ fn modules() {
         ]
     );
 }
+
+#[test]
+fn structs() {
+    let result =
+        Lexer::new().lex("struct Number do; let value = 0; end; let instance = new Number;".into());
+    assert!(result.is_ok());
+    assert_eq!(
+        result.unwrap(),
+        vec![
+            Struct,
+            Identifier("Number".into()),
+            BlockStart,
+            Endl,
+            Let,
+            Identifier("value".into()),
+            Equal,
+            Number(0.),
+            Endl,
+            BlockEnd,
+            Endl,
+            Let,
+            Identifier("instance".into()),
+            Equal,
+            New,
+            Identifier("Number".into()),
+            Endl,
+        ]
+    );
+}

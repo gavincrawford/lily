@@ -210,6 +210,21 @@ mod feature {
             Variable::Owned(ASTNode::Literal(Token::Number(4.))).into()
         );
     }
+
+    #[test]
+    fn structs() {
+        let mut i = Interpreter::new();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("tests/structs.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
+        i.execute(ast).unwrap();
+
+        // TODO further tests other than exeuction
+    }
 }
 
 #[cfg(test)]
