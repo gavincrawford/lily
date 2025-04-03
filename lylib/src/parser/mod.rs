@@ -1,13 +1,12 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
+use crate::interpreter::ID;
 use crate::lexer::{Lexer, Token};
 use anyhow::{bail, Context, Result};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
 
 pub mod astnode;
 pub use astnode::*;
-pub mod id;
-pub use id::*;
 mod tests;
 
 pub struct Parser {

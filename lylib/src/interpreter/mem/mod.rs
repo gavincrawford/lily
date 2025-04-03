@@ -2,7 +2,6 @@
 //! This includes getting and setting variables, as well as garbage collection.
 
 use super::*;
-use crate::parser::{IDKind, ID};
 use anyhow::{bail, Result};
 
 pub mod drop;

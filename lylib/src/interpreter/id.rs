@@ -1,5 +1,4 @@
 //! ID structure that allows for many kinds of identifiers.
-// TODO this file should be with the interpreter
 
 use super::*;
 

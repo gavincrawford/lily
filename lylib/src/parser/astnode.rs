@@ -1,5 +1,5 @@
-use super::{IDKind, Rc, Token, ID};
-use crate::interpreter::Variable;
+use super::{Rc, Token};
+use crate::interpreter::{IDKind, Variable, ID};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {

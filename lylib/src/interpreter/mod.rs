@@ -1,18 +1,17 @@
 //! The interpreter executes an abstract syntax tree.
 
+mod id;
 mod mem;
 mod resolve_refs;
 mod tests;
 
-use crate::{
-    lexer::Token,
-    parser::{ASTNode, ID},
-};
+use crate::{lexer::Token, parser::ASTNode};
 use anyhow::{bail, Context, Result};
 use mem::svtable::SVTable;
 use std::{cell::RefCell, rc::Rc};
 
-pub use mem::variable::Variable;
+pub use id::*;
+pub use mem::variable::*;
 
 pub struct Interpreter {
     /// Memory structure. Tracks variables and modules.
