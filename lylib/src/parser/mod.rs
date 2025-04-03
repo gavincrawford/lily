@@ -237,7 +237,6 @@ impl Parser {
     /// Parses a structure declaration.
     fn parse_decl_struct(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Struct)?;
-        // TODO apply this style to function decl
         match self.next() {
             Some(Token::Identifier(name)) => {
                 self.expect(Token::BlockStart)?;
@@ -257,22 +256,25 @@ impl Parser {
     fn parse_decl_fn(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Function)?;
         let next = self.next();
-        if let Some(Token::Identifier(name)) = next {
-            // gather arguments
-            let mut args = vec![];
-            while let Some(Token::Identifier(arg)) = self.peek() {
-                args.push(arg.clone());
-                self.next();
+        match next {
+            Some(Token::Identifier(name)) => {
+                // gather arguments
+                let mut args = vec![];
+                while let Some(Token::Identifier(arg)) = self.peek() {
+                    args.push(arg.clone());
+                    self.next();
+                }
+                self.expect(Token::BlockStart)?;
+                Ok(ASTNode::Function {
+                    id: ID::new(name),
+                    body: self.parse().context("failed to parse function body")?,
+                    arguments: args,
+                }
+                .into())
             }
-            self.expect(Token::BlockStart)?;
-            Ok(ASTNode::Function {
-                id: ID::new(name),
-                body: self.parse().context("failed to parse function body")?,
-                arguments: args,
+            _ => {
+                bail!("expected identifier, found {:?}", next);
             }
-            .into())
-        } else {
-            bail!("expected identifier, found {:?}", next);
         }
     }
 
