@@ -12,7 +12,7 @@ mod feature {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/global_variables.ly").to_string())
+                .lex(include_str!("feature/global_variables.ly").to_string())
                 .unwrap(),
         )
         .parse()
@@ -42,7 +42,7 @@ mod feature {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/math.ly").to_string())
+                .lex(include_str!("feature/math.ly").to_string())
                 .unwrap(),
         )
         .parse()
@@ -68,7 +68,7 @@ mod feature {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/conditionals.ly").to_string())
+                .lex(include_str!("feature/conditionals.ly").to_string())
                 .unwrap(),
         )
         .parse()
@@ -86,7 +86,7 @@ mod feature {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/functions.ly").to_string())
+                .lex(include_str!("feature/functions.ly").to_string())
                 .unwrap(),
         )
         .parse()
@@ -112,7 +112,7 @@ mod feature {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/loops.ly").to_string())
+                .lex(include_str!("feature/loops.ly").to_string())
                 .unwrap(),
         )
         .parse()
@@ -134,7 +134,7 @@ mod feature {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/lists.ly").to_string())
+                .lex(include_str!("feature/lists.ly").to_string())
                 .unwrap(),
         )
         .parse()
@@ -172,10 +172,10 @@ mod feature {
         let mut i = Interpreter::new();
         let mut p = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/imports.ly").to_string())
+                .lex(include_str!("feature/imports.ly").to_string())
                 .unwrap(),
         );
-        p.set_pwd(PathBuf::from("src/interpreter/tests/"));
+        p.set_pwd(PathBuf::from("src/interpreter/tests/feature/"));
         let ast = p.parse().unwrap();
         i.execute(ast).unwrap();
 
@@ -198,10 +198,10 @@ mod feature {
         let mut i = Interpreter::new();
         let mut p = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/nested_imports.ly").to_string())
+                .lex(include_str!("feature/nested_imports.ly").to_string())
                 .unwrap(),
         );
-        p.set_pwd(PathBuf::from("src/interpreter/tests/"));
+        p.set_pwd(PathBuf::from("src/interpreter/tests/feature/"));
         let ast = p.parse().unwrap();
         i.execute(ast).unwrap();
 
@@ -216,7 +216,7 @@ mod feature {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/structs.ly").to_string())
+                .lex(include_str!("feature/structs.ly").to_string())
                 .unwrap(),
         )
         .parse()
@@ -239,7 +239,7 @@ mod implementation {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/fibonacci.ly").to_string())
+                .lex(include_str!("implementation/fibonacci.ly").to_string())
                 .unwrap(),
         )
         .parse()
@@ -257,7 +257,7 @@ mod implementation {
         let mut i = Interpreter::new();
         let ast = Parser::new(
             Lexer::new()
-                .lex(include_str!("tests/factorial.ly").to_string())
+                .lex(include_str!("implementation/factorial.ly").to_string())
                 .unwrap(),
         )
         .parse()
