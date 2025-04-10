@@ -4,7 +4,7 @@ use super::Variable;
 use anyhow::{bail, Result};
 use std::{cell::RefCell, collections::HashMap, rc::Rc, slice::Iter};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SVTable {
     /// Holds all the scope frames, each of which hold their respective variables.
     table: Vec<HashMap<String, Rc<RefCell<Variable>>>>,

@@ -7,11 +7,10 @@ mod tests;
 
 use crate::{lexer::Token, parser::ASTNode};
 use anyhow::{bail, Context, Result};
-use mem::svtable::SVTable;
 use std::{cell::RefCell, rc::Rc};
 
 pub use id::*;
-pub use mem::variable::*;
+pub use mem::{svtable::SVTable, variable::*};
 
 pub struct Interpreter {
     /// Memory structure. Tracks variables and modules.
@@ -106,15 +105,31 @@ impl Interpreter {
                     Variable::Type(ref structure) => match structure.constructor() {
                         Some(v) => v,
                         None => {
+                            // add default fields to internal SVT
+                            // TODO move this to a utility somewhere
+                            //      there's quite a few issues with the way that this works. we
+                            //      ignore the possibility of several levels of initial values, and
+                            //      don't consider variables with longer paths
                             let fields = structure
                                 .default_fields()
                                 .context("no default fields specified")
                                 .unwrap();
+                            let mut svt = SVTable::new();
+                            svt.add_scope();
+                            let inner_table = svt.inner_mut();
+                            fields.first().iter().for_each(|(id, value)| {
+                                inner_table.first_mut().unwrap().insert(
+                                    id.to_path().get(0).unwrap().to_owned(),
+                                    Rc::new(RefCell::new(Variable::Owned(value.to_owned()))),
+                                );
+                            });
+
+                            // return newly made instance
                             return Ok(Some(
                                 ASTNode::Instance {
                                     kind: variable.into(),
                                     id: id.clone(),
-                                    fields,
+                                    svt: RefCell::new(svt).into(),
                                 }
                                 .into(),
                             ));

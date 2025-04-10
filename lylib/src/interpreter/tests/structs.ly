@@ -3,3 +3,4 @@ struct Number do
 end
 
 let instance = new Number()
+let value = instance.value

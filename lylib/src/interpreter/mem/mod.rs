@@ -29,12 +29,31 @@ impl Interpreter {
             } => {
                 let path = id.to_path();
                 for item in &path[0..(path.len() - 1)] {
+                    // get mutable module ref
                     let module_copy = &*module.clone();
-                    module = module_copy
-                        .borrow()
-                        .get_module(item)
-                        .context("failed to get value")
-                        .unwrap();
+                    let mut module_ref = module_copy.borrow_mut();
+
+                    if let Ok(v) = module_ref.get_module(item) {
+                        // if this is a simple module, return that and continue
+                        module = v;
+                    } else {
+                        // otherwise, this is a structure deref, so we have to find its SVT
+                        for (name, value) in module_ref.get_scope(0).unwrap() {
+                            if let Variable::Owned(var) = &*value.borrow() {
+                                match (var, item == name) {
+                                    (
+                                        ASTNode::Instance {
+                                            kind: _,
+                                            id: _,
+                                            svt,
+                                        },
+                                        true,
+                                    ) => module = svt.clone(),
+                                    _ => {}
+                                }
+                            }
+                        }
+                    };
                 }
                 path.last().unwrap().to_owned()
             }

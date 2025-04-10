@@ -223,7 +223,10 @@ mod feature {
         .unwrap();
         i.execute(ast).unwrap();
 
-        // TODO further tests other than exeuction
+        assert_eq!(
+            *i.get(&ID::new("value")).unwrap(),
+            Variable::Owned(ASTNode::Literal(Token::Number(0.))).into()
+        );
     }
 }
 

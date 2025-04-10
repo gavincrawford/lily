@@ -1,5 +1,7 @@
+use std::cell::RefCell;
+
 use super::{Rc, Token};
-use crate::interpreter::{IDKind, Variable, ID};
+use crate::interpreter::{IDKind, SVTable, Variable, ID};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
@@ -39,7 +41,7 @@ pub enum ASTNode {
     Instance {
         kind: Rc<Variable>,
         id: ID,
-        fields: Vec<Rc<ASTNode>>,
+        svt: Rc<RefCell<SVTable>>,
     },
     Conditional {
         condition: Rc<ASTNode>,
@@ -86,13 +88,13 @@ impl ASTNode {
     }
 
     /// Gets the default fields of this struct, if applicable. Returns `None` if otherwise.
-    pub fn default_fields(&self) -> Option<Vec<Rc<ASTNode>>> {
+    pub fn default_fields(&self) -> Option<Vec<(ID, ASTNode)>> {
         if let ASTNode::Struct { id: _, body } = self {
             if let ASTNode::Block(nodes) = &**body {
                 let mut default_fields = vec![];
                 for node in nodes {
-                    if let ASTNode::Declare { id: _, value: _ } = &**node {
-                        default_fields.push(ASTNode::inner_to_owned(node).into());
+                    if let ASTNode::Declare { id, value } = &**node {
+                        default_fields.push((id.clone(), ASTNode::inner_to_owned(value)));
                     }
                 }
                 if !default_fields.is_empty() {
