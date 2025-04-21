@@ -224,8 +224,12 @@ mod feature {
         i.execute(ast).unwrap();
 
         assert_eq!(
-            *i.get(&ID::new("value")).unwrap(),
+            *i.get(&ID::new("av")).unwrap(),
             Variable::Owned(ASTNode::Literal(Token::Number(123.))).into()
+        );
+        assert_eq!(
+            *i.get(&ID::new("bv")).unwrap(),
+            Variable::Owned(ASTNode::Literal(Token::Number(0.))).into()
         );
     }
 }
