@@ -1,0 +1,40 @@
+use super::*;
+
+impl Interpreter {
+    /// Executes a given function with the given arguments.
+    pub fn execute_function(
+        &mut self,
+        call_args: &Vec<Rc<ASTNode>>,
+        function: Rc<ASTNode>,
+    ) -> Result<Option<Rc<ASTNode>>> {
+        if let ASTNode::Function {
+            id: _id,
+            arguments: fn_args,
+            body,
+        } = &*function
+        {
+            // push arguments
+            assert_eq!(call_args.len(), fn_args.len());
+            self.scope_id += 1;
+            for (idx, arg) in fn_args.iter().enumerate() {
+                let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
+                let resolved_expr = self
+                    .execute_expr(arg_expr.clone())
+                    .context("failed to evaluate argument")?
+                    .unwrap()
+                    .to_owned();
+                self.declare(
+                    &ID::new(arg),
+                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                )?;
+            }
+
+            // get result and clear scoped vars
+            let result = self.execute(body.clone())?;
+            self.scope_id -= 1;
+            self.drop();
+            return Ok(result);
+        }
+        bail!("failed to execute non-function value")
+    }
+}
