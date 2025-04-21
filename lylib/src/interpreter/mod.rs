@@ -301,14 +301,13 @@ impl Interpreter {
             }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
-                    // PERF implement with borrow
+                    // if this literal is an identifier, return the internal value
                     if let Variable::Owned(var) = self.get_owned(&ID::new(identifier))? {
-                        // reutrn owned variables
-                        return Ok(Some(var.to_owned().into()));
+                        return Ok(Some(var.into()));
                     }
                     Ok(None)
                 } else {
-                    // otherwise, return raw literal
+                    // otherwise, return raw literal without destructuring
                     Ok(Some(statement.to_owned()))
                 }
             }
