@@ -86,7 +86,7 @@ impl Interpreter {
             } => {
                 // get function reference, bail if none found
                 let variable = self.get_owned(id)?;
-                let function = match variable {
+                match variable {
                     // this branch should trigger on raw, local functions
                     Variable::Reference(function) => {
                         if let ASTNode::Function {
@@ -95,7 +95,7 @@ impl Interpreter {
                             body: _,
                         } = &*function
                         {
-                            function
+                            return Ok(self.execute_function(call_args, function)?);
                         } else {
                             bail!("no function `{:?}` found", id);
                         }
@@ -103,26 +103,40 @@ impl Interpreter {
 
                     // this branch should trigger when constructors are called
                     Variable::Type(ref structure) => match structure.constructor() {
-                        Some(v) => v,
-                        None => {
-                            // add default fields to internal SVT
-                            // TODO move this to a utility somewhere
-                            //      there's quite a few issues with the way that this works. we
-                            //      ignore the possibility of several levels of initial values, and
-                            //      don't consider variables with longer paths
-                            let fields = structure
-                                .default_fields()
-                                .context("no default fields specified")
+                        Some(v) => {
+                            // get default svt
+                            let svt = structure
+                                .default_svt()
+                                .context("cannot add struct default variables")
                                 .unwrap();
-                            let mut svt = SVTable::new();
-                            svt.add_scope();
-                            let inner_table = svt.inner_mut();
-                            fields.first().iter().for_each(|(id, value)| {
-                                inner_table.first_mut().unwrap().insert(
-                                    id.to_path().get(0).unwrap().to_owned(),
-                                    Rc::new(RefCell::new(Variable::Owned(value.to_owned()))),
-                                );
-                            });
+
+                            // use the new structure svt as module for this constructor
+                            let svt = Rc::new(RefCell::new(svt));
+                            let temp = self.mod_id.clone();
+                            self.mod_id = Some(svt.clone());
+
+                            // execute function
+                            self.execute_function(call_args, v)?;
+
+                            // reset module ID
+                            self.mod_id = temp;
+
+                            // return newly made instance
+                            return Ok(Some(
+                                ASTNode::Instance {
+                                    kind: variable.into(),
+                                    id: id.clone(),
+                                    svt,
+                                }
+                                .into(),
+                            ));
+                        }
+                        None => {
+                            // get default svt
+                            let svt = structure
+                                .default_svt()
+                                .context("cannot add struct default variables")
+                                .unwrap();
 
                             // return newly made instance
                             return Ok(Some(
@@ -141,37 +155,6 @@ impl Interpreter {
                         bail!("no function `{:?}` found", id);
                     }
                 };
-
-                // execute function body
-                if let ASTNode::Function {
-                    id: _id,
-                    arguments: fn_args,
-                    body,
-                } = &*function
-                {
-                    // push arguments
-                    assert_eq!(call_args.len(), fn_args.len());
-                    self.scope_id += 1;
-                    for (idx, arg) in fn_args.iter().enumerate() {
-                        let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
-                        let resolved_expr = self
-                            .execute_expr(arg_expr.clone())
-                            .context("failed to evaluate argument")?
-                            .unwrap()
-                            .to_owned();
-                        self.declare(
-                            &ID::new(arg),
-                            Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
-                        )?;
-                    }
-
-                    // get result and clear scoped vars
-                    let result = self.execute(body.clone())?;
-                    self.scope_id -= 1;
-                    self.drop();
-                    return Ok(result);
-                }
-                Ok(None)
             }
             ASTNode::Struct { id, body: _ } => {
                 self.declare(id, Variable::Type(statement.to_owned()))
@@ -384,5 +367,42 @@ impl Interpreter {
                 todo!()
             }
         }
+    }
+
+    /// Executes a given function with the given arguments.
+    fn execute_function(
+        &mut self,
+        call_args: &Vec<Rc<ASTNode>>,
+        function: Rc<ASTNode>,
+    ) -> Result<Option<Rc<ASTNode>>> {
+        if let ASTNode::Function {
+            id: _id,
+            arguments: fn_args,
+            body,
+        } = &*function
+        {
+            // push arguments
+            assert_eq!(call_args.len(), fn_args.len());
+            self.scope_id += 1;
+            for (idx, arg) in fn_args.iter().enumerate() {
+                let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
+                let resolved_expr = self
+                    .execute_expr(arg_expr.clone())
+                    .context("failed to evaluate argument")?
+                    .unwrap()
+                    .to_owned();
+                self.declare(
+                    &ID::new(arg),
+                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                )?;
+            }
+
+            // get result and clear scoped vars
+            let result = self.execute(body.clone())?;
+            self.scope_id -= 1;
+            self.drop();
+            return Ok(result);
+        }
+        bail!("failed to execute non-function value")
     }
 }

@@ -86,9 +86,8 @@ impl ASTNode {
         }
         None
     }
-
-    /// Gets the default fields of this struct, if applicable. Returns `None` if otherwise.
-    pub fn default_fields(&self) -> Option<Vec<(ID, ASTNode)>> {
+    /// Create the default SVT for this struct, if applicable. Returns `None` if otherwise.
+    pub fn default_svt(&self) -> Option<SVTable> {
         if let ASTNode::Struct { id: _, body } = self {
             if let ASTNode::Block(nodes) = &**body {
                 let mut default_fields = vec![];
@@ -97,9 +96,16 @@ impl ASTNode {
                         default_fields.push((id.clone(), ASTNode::inner_to_owned(value)));
                     }
                 }
-                if !default_fields.is_empty() {
-                    return Some(default_fields);
-                }
+                let mut svt = SVTable::new();
+                svt.add_scope();
+                let inner_table = svt.inner_mut();
+                default_fields.first().iter().for_each(|(id, value)| {
+                    inner_table.first_mut().unwrap().insert(
+                        id.to_path().get(0).unwrap().to_owned(),
+                        Rc::new(RefCell::new(Variable::Owned(value.to_owned()))),
+                    );
+                });
+                return Some(svt);
             }
         }
         None

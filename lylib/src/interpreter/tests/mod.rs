@@ -225,7 +225,7 @@ mod feature {
 
         assert_eq!(
             *i.get(&ID::new("value")).unwrap(),
-            Variable::Owned(ASTNode::Literal(Token::Number(0.))).into()
+            Variable::Owned(ASTNode::Literal(Token::Number(123.))).into()
         );
     }
 }
