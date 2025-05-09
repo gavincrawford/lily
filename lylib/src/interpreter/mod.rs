@@ -167,54 +167,49 @@ impl Interpreter {
                     self.execute_expr(lhs.clone()),
                     self.execute_expr(rhs.clone()),
                 ) {
-                    if let (
-                        ASTNode::Literal(Token::Number(a)),
-                        ASTNode::Literal(Token::Number(b)),
-                    ) = (&*a, &*b)
-                    {
-                        match op {
-                            // math operators
-                            Token::Add => {
-                                return Ok(Some(ASTNode::Literal(Token::Number(a + b)).into()))
-                            }
-                            Token::Sub => {
-                                return Ok(Some(ASTNode::Literal(Token::Number(a - b)).into()))
-                            }
-                            Token::Mul => {
-                                return Ok(Some(ASTNode::Literal(Token::Number(a * b)).into()))
-                            }
-                            Token::Div => {
-                                return Ok(Some(ASTNode::Literal(Token::Number(a / b)).into()))
-                            }
-                            Token::Pow => {
-                                return Ok(Some(ASTNode::Literal(Token::Number(a.powf(*b))).into()))
-                            }
+                    use ASTNode::*;
+                    use Token::*;
+                    match (op, &*a, &*b) {
+                        // math operators
+                        (Add, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Number(a + b)).into()))
+                        }
+                        (Sub, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Number(a - b)).into()))
+                        }
+                        (Div, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Number(a / b)).into()))
+                        }
+                        (Mul, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Number(a * b)).into()))
+                        }
+                        (Pow, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Number(a.powf(*b))).into()))
+                        }
 
-                            // logical operators
-                            Token::LogicalEq => {
-                                return Ok(Some(ASTNode::Literal(Token::Bool(a == b)).into()))
-                            }
-                            Token::LogicalNeq => {
-                                return Ok(Some(ASTNode::Literal(Token::Bool(a != b)).into()))
-                            }
-                            Token::LogicalG => {
-                                return Ok(Some(ASTNode::Literal(Token::Bool(a > b)).into()))
-                            }
-                            Token::LogicalGe => {
-                                return Ok(Some(ASTNode::Literal(Token::Bool(a >= b)).into()))
-                            }
-                            Token::LogicalL => {
-                                return Ok(Some(ASTNode::Literal(Token::Bool(a < b)).into()))
-                            }
-                            Token::LogicalLe => {
-                                return Ok(Some(ASTNode::Literal(Token::Bool(a <= b)).into()))
-                            }
-                            _ => {
-                                bail!("operator not implemented");
-                            }
+                        // logical operators
+                        (LogicalEq, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Bool(a == b)).into()))
+                        }
+                        (LogicalNeq, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Bool(a != b)).into()))
+                        }
+                        (LogicalG, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Bool(a > b)).into()))
+                        }
+                        (LogicalGe, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Bool(a >= b)).into()))
+                        }
+                        (LogicalL, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Bool(a < b)).into()))
+                        }
+                        (LogicalLe, Literal(Number(a)), Literal(Number(b))) => {
+                            return Ok(Some(Literal(Bool(a <= b)).into()))
+                        }
+                        _ => {
+                            bail!("operator not implemented")
                         }
                     }
-                    bail!("unimplemented operand types");
                 } else {
                     bail!("failed to evaluate operands")
                 }
