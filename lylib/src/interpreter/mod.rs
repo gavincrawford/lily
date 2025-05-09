@@ -210,13 +210,13 @@ impl Interpreter {
                                 return Ok(Some(ASTNode::Literal(Token::Bool(a <= b)).into()))
                             }
                             _ => {
-                                panic!("operator not implemented.");
+                                bail!("operator not implemented");
                             }
                         }
                     }
-                    return Ok(None);
+                    bail!("unimplemented operand types");
                 } else {
-                    return Ok(None);
+                    bail!("failed to evaluate operands")
                 }
             }
             ASTNode::Conditional {
