@@ -82,80 +82,84 @@ impl Interpreter {
                 Ok(None)
             }
             ASTNode::FunctionCall {
-                id,
+                target,
                 arguments: call_args,
             } => {
                 // get function reference, bail if none found
-                let variable = self.get_owned(id)?;
-                match variable {
-                    // this branch should trigger on raw, local functions
-                    Variable::Reference(function) => {
-                        if let ASTNode::Function {
-                            id: _,
-                            arguments: _,
-                            body: _,
-                        } = &*function
-                        {
-                            return Ok(self.execute_function(call_args, function)?);
-                        } else {
-                            bail!("no function `{:?}` found", id);
+                if let ASTNode::Literal(Token::Identifier(id)) = &**target {
+                    let id = ID::new(id);
+                    let variable = self.get_owned(&id)?;
+                    match variable {
+                        // this branch should trigger on raw, local functions
+                        Variable::Reference(function) => {
+                            if let ASTNode::Function {
+                                id: _,
+                                arguments: _,
+                                body: _,
+                            } = &*function
+                            {
+                                return Ok(self.execute_function(call_args, function)?);
+                            } else {
+                                bail!("attempted to call non-function");
+                            }
                         }
-                    }
 
-                    // this branch should trigger when constructors are called
-                    Variable::Type(ref structure) => match structure.constructor() {
-                        Some(v) => {
-                            // get default svt
-                            let svt = structure
-                                .default_svt()
-                                .context("cannot add struct default variables")
-                                .unwrap();
+                        // this branch should trigger when constructors are called
+                        Variable::Type(ref structure) => match structure.constructor() {
+                            Some(v) => {
+                                // get default svt
+                                let svt = structure
+                                    .default_svt()
+                                    .context("cannot add struct default variables")
+                                    .unwrap();
 
-                            // use the new structure svt as module for this constructor
-                            let svt = Rc::new(RefCell::new(svt));
-                            let temp = self.mod_id.clone();
-                            self.mod_id = Some(svt.clone());
+                                // use the new structure svt as module for this constructor
+                                let svt = Rc::new(RefCell::new(svt));
+                                let temp = self.mod_id.clone();
+                                self.mod_id = Some(svt.clone());
 
-                            // execute function
-                            self.execute_function(call_args, v)?;
+                                // execute function
+                                self.execute_function(call_args, v)?;
 
-                            // reset module ID
-                            self.mod_id = temp;
+                                // reset module ID
+                                self.mod_id = temp;
 
-                            // return newly made instance
-                            return Ok(Some(
-                                ASTNode::Instance {
-                                    kind: variable.into(),
-                                    id: id.clone(),
-                                    svt,
-                                }
-                                .into(),
-                            ));
+                                // return newly made instance
+                                return Ok(Some(
+                                    ASTNode::Instance {
+                                        kind: variable.into(),
+                                        id: id.clone(),
+                                        svt,
+                                    }
+                                    .into(),
+                                ));
+                            }
+                            None => {
+                                // get default svt
+                                let svt = structure
+                                    .default_svt()
+                                    .context("cannot add struct default variables")
+                                    .unwrap();
+
+                                // return newly made instance
+                                return Ok(Some(
+                                    ASTNode::Instance {
+                                        kind: variable.into(),
+                                        id: id.clone(),
+                                        svt: RefCell::new(svt).into(),
+                                    }
+                                    .into(),
+                                ));
+                            }
+                        },
+
+                        // catch others
+                        _ => {
+                            bail!("no function `{:?}` found", target);
                         }
-                        None => {
-                            // get default svt
-                            let svt = structure
-                                .default_svt()
-                                .context("cannot add struct default variables")
-                                .unwrap();
-
-                            // return newly made instance
-                            return Ok(Some(
-                                ASTNode::Instance {
-                                    kind: variable.into(),
-                                    id: id.clone(),
-                                    svt: RefCell::new(svt).into(),
-                                }
-                                .into(),
-                            ));
-                        }
-                    },
-
-                    // catch others
-                    _ => {
-                        bail!("no function `{:?}` found", id);
-                    }
-                };
+                    };
+                }
+                bail!("cannot call non-literal functions")
             }
             ASTNode::Struct { id, body: _ } => {
                 self.declare(id, Variable::Type(statement.to_owned()))

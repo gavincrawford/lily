@@ -271,12 +271,10 @@ impl Parser {
     /// Parses a function call.
     fn parse_call_fn(&mut self) -> Result<Rc<ASTNode>> {
         // parse identifier
-        let id;
-        if let Some(Token::Identifier(fn_id)) = self.next() {
-            id = fn_id;
-        } else {
-            bail!("function identifier not found");
-        }
+        // TODO this snippet, as well as the similar one for the indices, allows any kind of token
+        // to be a valid literal, which we don't want. we should first check if these are
+        // identifiers before continuing to work with them
+        let target = ASTNode::Literal(self.next().context("expected literal")?).into();
 
         // parse arguments
         self.expect(Token::ParenOpen)?;
@@ -297,7 +295,7 @@ impl Parser {
         }
 
         Ok(ASTNode::FunctionCall {
-            id: ID::new(id),
+            target,
             arguments: args,
         }
         .into())

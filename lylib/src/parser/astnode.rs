@@ -31,7 +31,7 @@ pub enum ASTNode {
         body: Rc<ASTNode>,
     },
     FunctionCall {
-        id: ID,
+        target: Rc<ASTNode>,
         arguments: Vec<Rc<ASTNode>>,
     },
     Struct {

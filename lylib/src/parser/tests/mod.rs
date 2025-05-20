@@ -207,7 +207,7 @@ fn arguments() {
         ASTNode::Block(vec![ASTNode::Declare {
             id: "result".into(),
             value: ASTNode::FunctionCall {
-                id: "func".into(),
+                target: ASTNode::Literal(Token::Identifier("func".into())).into(),
                 arguments: vec![ASTNode::Op {
                     lhs: ASTNode::Op {
                         lhs: ASTNode::Literal(Token::Number(1.)).into(),
@@ -335,7 +335,7 @@ fn import() {
             ASTNode::Declare {
                 id: "ten".into(),
                 value: ASTNode::FunctionCall {
-                    id: "mod1.mod2.add2".into(),
+                    target: ASTNode::Literal(Token::Identifier("mod1.mod2.add2".into())).into(),
                     arguments: vec![
                         ASTNode::Literal(Token::Number(5.)).into(),
                         ASTNode::Literal(Token::Number(5.)).into()
@@ -372,7 +372,7 @@ fn structs() {
             ASTNode::Declare {
                 id: "instance".into(),
                 value: ASTNode::FunctionCall {
-                    id: "Number".into(),
+                    target: ASTNode::Literal(Token::Identifier("Number".into())).into(),
                     arguments: vec![]
                 }
                 .into()
