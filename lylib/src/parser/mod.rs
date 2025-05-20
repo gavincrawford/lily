@@ -95,6 +95,7 @@ impl Parser {
 
     /// Parses a statement.
     fn parse_statement(&mut self) -> Result<Rc<ASTNode>> {
+        // process all possible base statements
         match self.peek() {
             Some(Token::Import) => self.parse_import(),
             Some(Token::Let) => self.parse_decl_var(),
@@ -103,7 +104,12 @@ impl Parser {
             Some(Token::Struct) => self.parse_decl_struct(),
             Some(Token::While) => self.parse_while(),
             Some(Token::Identifier(_)) => match self.peek_n(1) {
-                Some(Token::ParenOpen) => self.parse_call_fn(),
+                // parens open after identifier signify base-level function calls
+                Some(Token::ParenOpen) => {
+                    let id = self.next().unwrap();
+                    self.parse_call_fn(ASTNode::Literal(id).into())
+                }
+                // otherwise, this is just a variable assignment
                 _ => self.parse_assign_var(),
             },
             Some(Token::Return) => self.parse_return(),
@@ -219,9 +225,17 @@ impl Parser {
         // consume new keyword
         self.expect(Token::New)?;
 
-        // parse as a function call to be handled at runtime
-        self.parse_call_fn()
-            .context("failed to parse constructor call")
+        // parse as a function call. if none is found, bail
+        let stmnt = self.parse_expr(false)?;
+        if let ASTNode::FunctionCall {
+            target: _,
+            arguments: _,
+        } = &*stmnt
+        {
+            Ok(stmnt)
+        } else {
+            bail!("failed to parse instantiation of structure")
+        }
     }
 
     /// Parses a structure declaration.
@@ -269,17 +283,7 @@ impl Parser {
     }
 
     /// Parses a function call.
-    fn parse_call_fn(&mut self) -> Result<Rc<ASTNode>> {
-        // parse identifier
-        let target = match self.peek() {
-            Some(Token::Identifier(_)) => {
-                ASTNode::Literal(self.next().context("expected literal")?).into()
-            }
-            _ => {
-                bail!("cannot call non-literal function");
-            }
-        };
-
+    fn parse_call_fn(&mut self, target: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
         // parse arguments
         self.expect(Token::ParenOpen)?;
         let mut args = vec![];
@@ -444,31 +448,27 @@ impl Parser {
 
             // variables, function calls, indices
             Some(Token::Identifier(_)) => {
-                // if the future token is a parenthesis, this is a function call
-                if let Some(Token::ParenOpen) = self.peek_n(1) {
-                    return self
-                        .parse_call_fn()
-                        .context("failed to parse function call");
-                }
+                // evaluate the target
+                // safety: branch check
+                let target = ASTNode::Literal(self.next().unwrap()).into();
 
-                // otherwise, we need to evaluate the target
-                // TODO this is so weird because the call function parser expects to process the
-                // target on its own. pass as an argument, pls
-                let target = match self.peek() {
-                    Some(Token::Identifier(_)) => {
-                        ASTNode::Literal(self.next().context("expected literal")?).into()
+                match self.peek() {
+                    // if open parens, this is a function call
+                    Some(Token::ParenOpen) => {
+                        return self
+                            .parse_call_fn(target)
+                            .context("failed to parse function call");
                     }
+                    // if open brackets, this is an index
+                    Some(Token::BracketOpen) => {
+                        return self
+                            .parse_index(target)
+                            .context("failed to parse index operator");
+                    }
+                    // otherwise, return literal as it is
                     _ => {
-                        bail!("cannot call non-literal function");
+                        return Ok(target);
                     }
-                };
-                if let Some(Token::BracketOpen) = self.peek() {
-                    // if the future token is a bracket, this is an index
-                    return self
-                        .parse_index(target)
-                        .context("failed to parse index operator");
-                } else {
-                    return Ok(target);
                 }
             }
 
