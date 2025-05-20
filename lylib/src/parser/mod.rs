@@ -271,10 +271,14 @@ impl Parser {
     /// Parses a function call.
     fn parse_call_fn(&mut self) -> Result<Rc<ASTNode>> {
         // parse identifier
-        // TODO this snippet, as well as the similar one for the indices, allows any kind of token
-        // to be a valid literal, which we don't want. we should first check if these are
-        // identifiers before continuing to work with them
-        let target = ASTNode::Literal(self.next().context("expected literal")?).into();
+        let target = match self.peek() {
+            Some(Token::Identifier(_)) => {
+                ASTNode::Literal(self.next().context("expected literal")?).into()
+            }
+            _ => {
+                bail!("cannot call non-literal function");
+            }
+        };
 
         // parse arguments
         self.expect(Token::ParenOpen)?;
@@ -440,26 +444,31 @@ impl Parser {
 
             // variables, function calls, indices
             Some(Token::Identifier(_)) => {
-                // process function calls and indices
-                match self.peek_n(1) {
-                    Some(Token::ParenOpen) => {
-                        // if the future token is a parenthesis, this is a function call
-                        self.parse_call_fn()
-                            .context("failed to parse function call")
-                    }
-                    Some(Token::BracketOpen) => {
-                        // TODO clean up duplicate code w/ lower branch
-                        let literal_node =
-                            ASTNode::Literal(self.next().expect("expected literal")).into();
+                // if the future token is a parenthesis, this is a function call
+                if let Some(Token::ParenOpen) = self.peek_n(1) {
+                    return self
+                        .parse_call_fn()
+                        .context("failed to parse function call");
+                }
 
-                        // if the future token is a bracket, this is an index
-                        self.parse_index(literal_node)
-                            .context("failed to parse index operator")
+                // otherwise, we need to evaluate the target
+                // TODO this is so weird because the call function parser expects to process the
+                // target on its own. pass as an argument, pls
+                let target = match self.peek() {
+                    Some(Token::Identifier(_)) => {
+                        ASTNode::Literal(self.next().context("expected literal")?).into()
                     }
                     _ => {
-                        // otherwise, it's safe to assume that the token is a literal
-                        Ok(ASTNode::Literal(self.next().expect("expected literal")).into())
+                        bail!("cannot call non-literal function");
                     }
+                };
+                if let Some(Token::BracketOpen) = self.peek() {
+                    // if the future token is a bracket, this is an index
+                    return self
+                        .parse_index(target)
+                        .context("failed to parse index operator");
+                } else {
+                    return Ok(target);
                 }
             }
 

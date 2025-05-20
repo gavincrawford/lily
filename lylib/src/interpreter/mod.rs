@@ -159,7 +159,7 @@ impl Interpreter {
                         }
                     };
                 }
-                bail!("cannot call non-literal functions")
+                bail!("malformed function target")
             }
             ASTNode::Struct { id, body: _ } => {
                 self.declare(id, Variable::Type(statement.to_owned()))
