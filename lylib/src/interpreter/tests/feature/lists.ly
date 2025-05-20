@@ -9,4 +9,5 @@ let idx = 2
 let idx_a = dangling_test()
 let idx_b = list[1]
 let idx_c = list[idx]
-let idx_list = list[3]
+let idx_list_whole = list[3]
+let idx_list_part = list[3][0]

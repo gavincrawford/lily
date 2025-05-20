@@ -40,11 +40,7 @@ impl Interpreter {
                     .execute_expr(statement.clone())
                     .context("failed to evaluate expression")?
                 {
-                    if self.scope_id > 0 {
-                        return Ok(Some(ret_value));
-                    } else {
-                        bail!("return cannot be called outside of a function");
-                    }
+                    return Ok(Some(ret_value));
                 }
             }
         } else {
@@ -285,25 +281,23 @@ impl Interpreter {
                     panic!("index must be positive and a number.");
                 }
 
-                // get value from list
-                if let ASTNode::Literal(Token::Identifier(id)) = &**target {
-                    // get identifier and then list from memory
-                    let id: ID = id.as_str().into();
-                    let list = &*(self.get(&id)?);
+                // get list
+                let list = self
+                    .execute_expr(target.to_owned())
+                    .context("failed to evaluate index target")?
+                    .unwrap();
 
-                    // clone list ref cell to avoid borrow checker drama & get desired value
-                    if let Variable::Owned(ASTNode::List(tokens)) = &*list.clone().borrow() {
-                        return Ok(Some(
-                            tokens
-                                .get(usize_idx.to_owned() as usize)
-                                .expect("index out of bounds.")
-                                .to_owned(),
-                        ));
-                    }
+                // find list item if applicable, bail otherwise
+                if let ASTNode::List(tokens) = &*list {
+                    return Ok(Some(
+                        tokens
+                            .get(usize_idx.to_owned() as usize)
+                            .expect("index out of bounds.")
+                            .to_owned(),
+                    ));
+                } else {
+                    bail!("expected list as index target");
                 }
-
-                // if return hasn't been reached, panic
-                panic!("invalid index expression.");
             }
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {

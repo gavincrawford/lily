@@ -103,15 +103,7 @@ impl Parser {
             Some(Token::Function) => self.parse_decl_fn(),
             Some(Token::Struct) => self.parse_decl_struct(),
             Some(Token::While) => self.parse_while(),
-            Some(Token::Identifier(_)) => match self.peek_n(1) {
-                // parens open after identifier signify base-level function calls
-                Some(Token::ParenOpen) => {
-                    let id = self.next().unwrap();
-                    self.parse_call_fn(ASTNode::Literal(id).into())
-                }
-                // otherwise, this is just a variable assignment
-                _ => self.parse_assign_var(),
-            },
+            Some(Token::Identifier(_)) => self.parse_assign_var(),
             Some(Token::Return) => self.parse_return(),
             _ => {
                 bail!("expected statement, found {:?}", self.peek().unwrap());
@@ -176,7 +168,7 @@ impl Parser {
         self.expect(Token::If)?;
 
         // get if expression and if body block
-        let expr = self.parse_expr(true).context("failed to parse condition")?;
+        let expr = self.parse_expr(None).context("failed to parse condition")?;
         let if_body = self.parse().context("failed to parse if-body")?;
 
         // process else body block, if present
@@ -199,9 +191,8 @@ impl Parser {
         // if id is found, parse index value
         self.expect(Token::BracketOpen)?;
         let index = self
-            .parse_expr(false)
+            .parse_expr(Some(Token::BracketClose))
             .context("failed to parse list index")?;
-        self.expect(Token::BracketClose)?;
 
         // return newly made index node
         Ok(ASTNode::Index { target, index }.into())
@@ -212,7 +203,7 @@ impl Parser {
         self.expect(Token::While)?;
         Ok(ASTNode::Loop {
             condition: self
-                .parse_expr(true)
+                .parse_expr(None)
                 .context("failed to parse loop condition")?,
             body: self.parse().context("failed to parse loop body")?,
         }
@@ -226,7 +217,7 @@ impl Parser {
         self.expect(Token::New)?;
 
         // parse as a function call. if none is found, bail
-        let stmnt = self.parse_expr(false)?;
+        let stmnt = self.parse_expr(None)?;
         if let ASTNode::FunctionCall {
             target: _,
             arguments: _,
@@ -294,7 +285,7 @@ impl Parser {
                     break;
                 }
                 Some(_) => {
-                    args.push(self.parse_expr(false).context("failed to parse argument")?);
+                    args.push(self.parse_expr(None).context("failed to parse argument")?);
                 }
                 _ => {
                     break;
@@ -313,7 +304,7 @@ impl Parser {
     fn parse_return(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Return)?;
         Ok(ASTNode::Return(
-            self.parse_expr(true)
+            self.parse_expr(None)
                 .context("failed to parse return value")?,
         )
         .into())
@@ -326,7 +317,7 @@ impl Parser {
             self.expect(Token::Equal)?;
             Ok(ASTNode::Assign {
                 id: ID::new(id),
-                value: self.parse_expr(true)?,
+                value: self.parse_expr(None)?,
             }
             .into())
         } else {
@@ -342,7 +333,7 @@ impl Parser {
             self.expect(Token::Equal)?;
             Ok(ASTNode::Declare {
                 id: ID::new(id),
-                value: self.parse_expr(true)?,
+                value: self.parse_expr(None)?,
             }
             .into())
         } else {
@@ -350,74 +341,71 @@ impl Parser {
         }
     }
 
-    /// Parses raw expressions, such as math or comparisons.
-    fn parse_expr(&mut self, consume_delimiters: bool) -> Result<Rc<ASTNode>> {
-        // tracks if a paren has been opened for error messages
-        let parens_open;
-
+    /// Parses expressions, such as operators, indices, function calls, etc.
+    fn parse_expr(&mut self, expect: Option<Token>) -> Result<Rc<ASTNode>> {
         // evaluate primary value
-        let primary: Rc<ASTNode>;
-        match self.peek() {
+        let mut primary = match self.peek() {
             Some(Token::ParenOpen) => {
-                // if parenthesis are present, parse them as an expression
                 self.next();
-                parens_open = true;
-                primary = self
-                    .parse_expr(true)
-                    .context("failed to parse parenthesised expression")?;
+                self.parse_expr(Some(Token::ParenClose))
+                    .context("failed to parse parenthesised expression")?
             }
-            _ => {
-                // otherwise, parse as a primary/literal
-                parens_open = false;
-                primary = self.parse_primary().context("failed to parse expression")?;
-            }
-        }
+            _ => self
+                .parse_primary()
+                .context("failed to parse primary expression")?,
+        };
 
-        // match operator
-        match self.peek() {
-            Some(Token::Add)
-            | Some(Token::Sub)
-            | Some(Token::Mul)
-            | Some(Token::Div)
-            | Some(Token::Pow)
-            | Some(Token::LogicalL)
-            | Some(Token::LogicalLe)
-            | Some(Token::LogicalG)
-            | Some(Token::LogicalGe)
-            | Some(Token::LogicalEq)
-            | Some(Token::LogicalNeq) => Ok(ASTNode::Op {
-                lhs: primary,
-                op: self.next().unwrap(), // safety: peek
-                rhs: self
-                    .parse_expr(parens_open || consume_delimiters)
-                    .context("failed to parse member of op")?,
-            }
-            .into()),
-            Some(Token::ParenClose) | Some(Token::BracketClose) => {
-                if consume_delimiters {
+        // keep looping until we've found the largest possible primary
+        loop {
+            // match operator
+            let result = match self.peek() {
+                // math and logical operators
+                Some(Token::Add)
+                | Some(Token::Sub)
+                | Some(Token::Mul)
+                | Some(Token::Div)
+                | Some(Token::Pow)
+                | Some(Token::LogicalL)
+                | Some(Token::LogicalLe)
+                | Some(Token::LogicalG)
+                | Some(Token::LogicalGe)
+                | Some(Token::LogicalEq)
+                | Some(Token::LogicalNeq) => Ok(ASTNode::Op {
+                    lhs: primary.clone(),
+                    op: self.next().unwrap(), // safety: peek
+                    rhs: self
+                        .parse_expr(expect.clone())
+                        .context("failed to parse member of op")?,
+                }
+                .into()),
+
+                // function calls
+                Some(Token::ParenOpen) => self.parse_call_fn(primary.clone()),
+
+                // indexes
+                Some(Token::BracketOpen) => self.parse_index(primary.clone()),
+
+                // break for all others
+                Some(Token::Endl) | Some(Token::BlockStart) | Some(Token::Comma) | None => {
                     self.next();
+                    break;
                 }
-                Ok(primary)
-            }
-            Some(Token::Endl) | Some(Token::BlockStart) | Some(Token::Comma) => {
-                self.next();
-                Ok(primary)
-            }
-            _ => {
-                if parens_open {
-                    bail!("unclosed delimiter found");
+                _ => {
+                    // remove expected token, if applicable
+                    if let Some(token) = expect {
+                        self.expect(token)?;
+                    }
+                    break;
                 }
+            };
 
-                // XXX
-                // returning the primary here is a half-ass fix for the way that parenthesis are
-                // handled. the consume_delimiters functionality causes lots of issues and
-                // conflicts with funciton calls.
-                Ok(primary)
-            }
+            primary = result?;
         }
+
+        Ok(primary)
     }
 
-    /// Parses primaries, such as literals and function calls.
+    /// Parses literal primaries.
     fn parse_primary(&mut self) -> Result<Rc<ASTNode>> {
         match self.peek() {
             // process negative numbers
@@ -436,7 +424,8 @@ impl Parser {
             }
 
             // literals
-            Some(Token::Number(_))
+            Some(Token::Identifier(_))
+            | Some(Token::Number(_))
             | Some(Token::Str(_))
             | Some(Token::Bool(_))
             | Some(Token::Char(_)) => {
@@ -445,32 +434,6 @@ impl Parser {
 
             // lists
             Some(Token::BracketOpen) => self.parse_list().context("failed to parse list"),
-
-            // variables, function calls, indices
-            Some(Token::Identifier(_)) => {
-                // evaluate the target
-                // safety: branch check
-                let target = ASTNode::Literal(self.next().unwrap()).into();
-
-                match self.peek() {
-                    // if open parens, this is a function call
-                    Some(Token::ParenOpen) => {
-                        return self
-                            .parse_call_fn(target)
-                            .context("failed to parse function call");
-                    }
-                    // if open brackets, this is an index
-                    Some(Token::BracketOpen) => {
-                        return self
-                            .parse_index(target)
-                            .context("failed to parse index operator");
-                    }
-                    // otherwise, return literal as it is
-                    _ => {
-                        return Ok(target);
-                    }
-                }
-            }
 
             // structure instances
             Some(Token::New) => self
@@ -508,8 +471,7 @@ impl Parser {
 
             // add item to the list
             items.push(Rc::from(
-                self.parse_expr(false)
-                    .context("failed to parse list item")?,
+                self.parse_expr(None).context("failed to parse list item")?,
             ))
         }
 

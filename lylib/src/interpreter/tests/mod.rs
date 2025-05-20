@@ -154,7 +154,7 @@ mod feature {
             Variable::Owned(ASTNode::Literal(Token::Number(3.))).into()
         );
         assert_eq!(
-            *i.get(&ID::new("idx_list")).unwrap(),
+            *i.get(&ID::new("idx_list_whole")).unwrap(),
             Variable::Owned(
                 ASTNode::List(vec![
                     ASTNode::Literal(Token::Char('a')).into(),
@@ -164,6 +164,10 @@ mod feature {
                 .into()
             )
             .into()
+        );
+        assert_eq!(
+            *i.get(&ID::new("idx_list_part")).unwrap(),
+            Variable::Owned(ASTNode::Literal(Token::Char('a'))).into()
         );
     }
 
