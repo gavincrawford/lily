@@ -104,7 +104,6 @@ impl Parser {
             Some(Token::While) => self.parse_while(),
             Some(Token::Identifier(_)) => match self.peek_n(1) {
                 Some(Token::ParenOpen) => self.parse_call_fn(),
-                Some(Token::BracketOpen) => self.parse_index(),
                 _ => self.parse_assign_var(),
             },
             Some(Token::Return) => self.parse_return(),
@@ -190,24 +189,16 @@ impl Parser {
     }
 
     /// Parses a list index.
-    fn parse_index(&mut self) -> Result<Rc<ASTNode>> {
-        if let Some(Token::Identifier(id)) = self.next() {
-            // if id is found, parse index value
-            self.expect(Token::BracketOpen)?;
-            let index = self
-                .parse_expr(false)
-                .context("failed to parse list index")?;
-            self.expect(Token::BracketClose)?;
+    fn parse_index(&mut self, target: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
+        // if id is found, parse index value
+        self.expect(Token::BracketOpen)?;
+        let index = self
+            .parse_expr(false)
+            .context("failed to parse list index")?;
+        self.expect(Token::BracketClose)?;
 
-            // return index block
-            Ok(ASTNode::Index {
-                id: ID::new(id),
-                index,
-            }
-            .into())
-        } else {
-            bail!("expected identifier to index");
-        }
+        // return newly made index node
+        Ok(ASTNode::Index { target, index }.into())
     }
 
     /// Parses a while loop.
@@ -449,22 +440,30 @@ impl Parser {
             // lists
             Some(Token::BracketOpen) => self.parse_list().context("failed to parse list"),
 
-            // variables, function calls
-            Some(Token::Identifier(_)) => match self.peek_n(1) {
-                Some(Token::ParenOpen) => {
-                    // if the future token is a parenthesis, this is a function call
-                    self.parse_call_fn()
-                        .context("failed to parse function call")
+            // variables, function calls, indices
+            Some(Token::Identifier(_)) => {
+                // process function calls and indices
+                match self.peek_n(1) {
+                    Some(Token::ParenOpen) => {
+                        // if the future token is a parenthesis, this is a function call
+                        self.parse_call_fn()
+                            .context("failed to parse function call")
+                    }
+                    Some(Token::BracketOpen) => {
+                        // TODO clean up duplicate code w/ lower branch
+                        let literal_node =
+                            ASTNode::Literal(self.next().expect("expected literal")).into();
+
+                        // if the future token is a bracket, this is an index
+                        self.parse_index(literal_node)
+                            .context("failed to parse index operator")
+                    }
+                    _ => {
+                        // otherwise, it's safe to assume that the token is a literal
+                        Ok(ASTNode::Literal(self.next().expect("expected literal")).into())
+                    }
                 }
-                Some(Token::BracketOpen) => {
-                    // if the future token is a bracket, this is an index
-                    self.parse_index().context("failed to parse index operator")
-                }
-                _ => {
-                    // otherwise, it's safe to assume that the token is a literal
-                    Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF")).into())
-                }
-            },
+            }
 
             // structure instances
             Some(Token::New) => self

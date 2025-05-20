@@ -268,7 +268,7 @@ impl Interpreter {
                 // return self
                 return Ok(Some(statement.to_owned()));
             }
-            ASTNode::Index { id, index } => {
+            ASTNode::Index { target, index } => {
                 // get index as a usize
                 let usize_idx;
                 if let ASTNode::Literal(Token::Number(n)) = &*self
@@ -282,14 +282,20 @@ impl Interpreter {
                 }
 
                 // get value from list
-                let list = &*(self.get(id)?);
-                if let Variable::Owned(ASTNode::List(tokens)) = &*list.borrow() {
-                    return Ok(Some(
-                        tokens
-                            .get(usize_idx.to_owned() as usize)
-                            .expect("index out of bounds.")
-                            .to_owned(),
-                    ));
+                if let ASTNode::Literal(Token::Identifier(id)) = &**target {
+                    // get identifier and then list from memory
+                    let id: ID = id.as_str().into();
+                    let list = &*(self.get(&id)?);
+
+                    // clone list ref cell to avoid borrow checker drama & get desired value
+                    if let Variable::Owned(ASTNode::List(tokens)) = &*list.clone().borrow() {
+                        return Ok(Some(
+                            tokens
+                                .get(usize_idx.to_owned() as usize)
+                                .expect("index out of bounds.")
+                                .to_owned(),
+                        ));
+                    }
                 }
 
                 // if return hasn't been reached, panic
@@ -316,7 +322,10 @@ impl Interpreter {
 
                 // if there are indicies, flatten them
                 let expr = match *expr {
-                    ASTNode::Index { id: _, index: _ } => self
+                    ASTNode::Index {
+                        target: _,
+                        index: _,
+                    } => self
                         .execute_expr(expr)
                         .context("could not flatten index")?
                         .unwrap(),

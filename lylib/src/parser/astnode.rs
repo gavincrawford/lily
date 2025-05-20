@@ -14,7 +14,7 @@ pub enum ASTNode {
     },
 
     Index {
-        id: ID,
+        target: Rc<ASTNode>,
         index: Rc<ASTNode>,
     },
     Assign {

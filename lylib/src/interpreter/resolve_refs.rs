@@ -6,7 +6,10 @@ impl Interpreter {
         if let ASTNode::List(ref mut items) = expr {
             for item in items.iter_mut() {
                 match **item {
-                    ASTNode::Index { id: _, index: _ } => {
+                    ASTNode::Index {
+                        target: _,
+                        index: _,
+                    } => {
                         *item = self
                             .execute_expr(item.clone())
                             .context("could not flatten index inside list")?

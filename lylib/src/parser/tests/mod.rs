@@ -35,7 +35,7 @@ fn decl() {
 fn lists() {
     let result = Parser::new(
         Lexer::new()
-            .lex("let list = [1, 2, 3]; list[0];".into())
+            .lex("let list = [1, 2, 3]; let value = list[0];".into())
             .unwrap(),
     )
     .parse();
@@ -53,9 +53,13 @@ fn lists() {
                 .into(),
             }
             .into(),
-            ASTNode::Index {
-                id: "list".into(),
-                index: ASTNode::Literal(Token::Number(0.)).into()
+            ASTNode::Declare {
+                id: "value".into(),
+                value: ASTNode::Index {
+                    target: ASTNode::Literal(Token::Identifier("list".into())).into(),
+                    index: ASTNode::Literal(Token::Number(0.)).into()
+                }
+                .into(),
             }
             .into(),
         ])
