@@ -319,21 +319,9 @@ impl Interpreter {
                     .expect("expected return expression");
 
                 // if there are indicies, flatten them
-                let expr = match *expr {
-                    ASTNode::Index {
-                        target: _,
-                        index: _,
-                    } => self
-                        .execute_expr(expr)
-                        .context("could not flatten index")?
-                        .unwrap(),
-                    ASTNode::List(_) => {
-                        self.resolve_refs(ASTNode::inner_to_owned(&expr))
-                            .context("could not flatten list")?;
-                        expr.into()
-                    }
-                    _ => expr.clone(),
-                };
+                let expr = self
+                    .resolve_refs(ASTNode::inner_to_owned(&expr))
+                    .context("could not flatten references")?;
 
                 Ok(Some(expr))
             }

@@ -227,4 +227,42 @@ mod implementation {
         var_eq_literal!(i, "one_fac", Token::Number(1.));
         var_eq_literal!(i, "zero_fac", Token::Number(1.));
     }
+
+    #[test]
+    fn matrix_rotation() {
+        let mut i = Interpreter::new();
+        let ast = Parser::new(
+            Lexer::new()
+                .lex(include_str!("implementation/matrix_rotation.ly").to_string())
+                .unwrap(),
+        )
+        .parse()
+        .unwrap();
+        i.execute(ast).unwrap();
+
+        var_eq!(
+            i,
+            "result",
+            ASTNode::List(vec![
+                ASTNode::List(vec![
+                    ASTNode::Literal(Token::Number(1.)).into(),
+                    ASTNode::Literal(Token::Number(4.)).into(),
+                    ASTNode::Literal(Token::Number(7.)).into(),
+                ])
+                .into(),
+                ASTNode::List(vec![
+                    ASTNode::Literal(Token::Number(2.)).into(),
+                    ASTNode::Literal(Token::Number(5.)).into(),
+                    ASTNode::Literal(Token::Number(8.)).into(),
+                ])
+                .into(),
+                ASTNode::List(vec![
+                    ASTNode::Literal(Token::Number(3.)).into(),
+                    ASTNode::Literal(Token::Number(6.)).into(),
+                    ASTNode::Literal(Token::Number(9.)).into(),
+                ])
+                .into(),
+            ])
+        );
+    }
 }
