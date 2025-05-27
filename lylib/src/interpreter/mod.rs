@@ -277,9 +277,17 @@ impl Interpreter {
                     .context("failed to evaluate index value")?
                     .unwrap()
                 {
+                    // guard numbers outside of range
+                    if *n < 0. {
+                        bail!("index values must be non-negative");
+                    } else if *n > usize::MAX as f32 {
+                        bail!("index value larger than {}", usize::MAX);
+                    }
+
+                    // convert index to usize for later use
                     usize_idx = n.to_owned() as usize;
                 } else {
-                    panic!("index must be positive and a number.");
+                    panic!("index must be positive and a number");
                 }
 
                 // get list
