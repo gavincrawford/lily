@@ -45,7 +45,8 @@ impl Interpreter {
             }
         } else {
             // otherwise, execute the segment by itself
-            self.execute_expr(ast)?;
+            self.execute_expr(ast)
+                .context("failed to execute expression")?;
         }
         Ok(None)
     }

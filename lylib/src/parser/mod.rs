@@ -96,7 +96,7 @@ impl Parser {
     /// Parses a statement.
     fn parse_statement(&mut self) -> Result<Rc<ASTNode>> {
         // process all possible base statements
-        match self.peek() {
+        let result = match self.peek() {
             Some(Token::Import) => self.parse_import(),
             Some(Token::Let) => self.parse_decl_var(),
             Some(Token::If) => self.parse_cond(),
@@ -108,7 +108,10 @@ impl Parser {
             _ => {
                 bail!("expected statement, found {:?}", self.peek().unwrap());
             }
-        }
+        };
+
+        // return result with added context
+        result.context("failed to parse statement")
     }
 
     /// Parses imports.
@@ -143,7 +146,9 @@ impl Parser {
                 .context("failed to read file data")?;
 
             // lex buffer into tokens
-            let tokens = Lexer::new().lex(buffer)?;
+            let tokens = Lexer::new()
+                .lex(buffer)
+                .context("failed to lex imported file")?;
 
             // create a parser and point it to the file's parent directory
             let mut parser = Self::new(tokens);
@@ -440,8 +445,11 @@ impl Parser {
                 .parse_struct_instance()
                 .context("failed to parse new structure instance"),
 
+            None => {
+                bail!("invalid primary: EOF");
+            }
             _ => {
-                todo!()
+                bail!("invalid primary '{:?}'", self.peek().unwrap());
             }
         }
     }
