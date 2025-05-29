@@ -7,8 +7,8 @@ use crate::{interpreter::*, lexer::*, parser::*};
 macro_rules! var_eq_literal {
     ($interpreter:expr, $id:tt, $token:expr) => {
         assert_eq!(
-            *$interpreter.get(&ID::new($id)).unwrap(),
-            Variable::Owned(ASTNode::Literal($token)).into()
+            *$interpreter.get(&ID::new($id.clone())).unwrap(),
+            Variable::Owned(ASTNode::Literal($token)).into(),
         );
     };
 }
@@ -18,7 +18,7 @@ macro_rules! var_eq {
     ($interpreter:expr, $id:tt, $node:expr) => {
         assert_eq!(
             *$interpreter.get(&ID::new($id)).unwrap(),
-            Variable::Owned($node).into()
+            Variable::Owned($node).into(),
         );
     };
 }
@@ -124,19 +124,19 @@ mod feature {
         .unwrap();
         i.execute(ast).unwrap();
 
-        var_eq_literal!(i, "idx_a", Token::Number(10.));
-        var_eq_literal!(i, "idx_b", Token::Number(2.));
-        var_eq_literal!(i, "idx_c", Token::Number(3.));
+        var_eq_literal!(i, "idx_a", Token::Number(2.));
+        var_eq_literal!(i, "idx_b", Token::Number(3.));
+        var_eq_literal!(i, "dangling", Token::Number(10.));
         var_eq!(
             i,
             "idx_list_whole",
-            ASTNode::List(vec![
-                ASTNode::Literal(Token::Char('a')).into(),
-                ASTNode::Literal(Token::Char('b')).into(),
-                ASTNode::Literal(Token::Char('c')).into(),
-            ])
+            ASTNode::List(SVTable::new_with(vec![ASTNode::Literal(Token::Number(
+                123.
+            ))
+            .into(),]))
         );
-        var_eq_literal!(i, "idx_list_part", Token::Char('a'));
+        var_eq_literal!(i, "idx_list_part", Token::Number(123.));
+        var_eq_literal!(i, "assignment", Token::Number(1.));
     }
 
     #[test]
@@ -189,6 +189,7 @@ mod feature {
 
         var_eq_literal!(i, "av", Token::Number(123.));
         var_eq_literal!(i, "bv", Token::Number(0.));
+        var_eq_literal!(i, "declaration", Token::Bool(true));
     }
 }
 
@@ -243,26 +244,26 @@ mod implementation {
         var_eq!(
             i,
             "result",
-            ASTNode::List(vec![
-                ASTNode::List(vec![
+            ASTNode::List(SVTable::new_with(vec![
+                ASTNode::List(SVTable::new_with(vec![
                     ASTNode::Literal(Token::Number(1.)).into(),
                     ASTNode::Literal(Token::Number(4.)).into(),
                     ASTNode::Literal(Token::Number(7.)).into(),
-                ])
+                ]))
                 .into(),
-                ASTNode::List(vec![
+                ASTNode::List(SVTable::new_with(vec![
                     ASTNode::Literal(Token::Number(2.)).into(),
                     ASTNode::Literal(Token::Number(5.)).into(),
                     ASTNode::Literal(Token::Number(8.)).into(),
-                ])
+                ]))
                 .into(),
-                ASTNode::List(vec![
+                ASTNode::List(SVTable::new_with(vec![
                     ASTNode::Literal(Token::Number(3.)).into(),
                     ASTNode::Literal(Token::Number(6.)).into(),
                     ASTNode::Literal(Token::Number(9.)).into(),
-                ])
+                ]))
                 .into(),
-            ])
+            ]))
         );
     }
 }

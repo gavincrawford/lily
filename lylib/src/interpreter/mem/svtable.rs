@@ -1,6 +1,6 @@
 //! Implements the SVTable, or the scoped-variable table.
 
-use super::Variable;
+use super::{ASTNode, Variable};
 use anyhow::{bail, Result};
 use std::{cell::RefCell, collections::HashMap, rc::Rc, slice::Iter};
 
@@ -13,12 +13,34 @@ pub struct SVTable {
 }
 
 impl SVTable {
-    /// Creates a new scoped-variable table
+    /// Creates a new scoped-variable table with a default scope.
     pub fn new() -> Self {
-        Self {
+        let mut svt = Self {
             table: vec![],
             modules: HashMap::new(),
+        };
+        svt.add_scope();
+        svt
+    }
+
+    /// Creates a new scoped-variable table and adds the specified values.
+    /// Used for creating list tables.
+    pub fn new_with(values: Vec<Rc<ASTNode>>) -> Rc<RefCell<SVTable>> {
+        let mut svt = Self {
+            table: vec![],
+            modules: HashMap::new(),
+        };
+        svt.add_scope();
+        let scope = svt.get_scope(0).unwrap(); // safety ^
+        for (idx, value) in values.iter().enumerate() {
+            scope.insert(
+                idx.to_string(),
+                Rc::new(RefCell::new(Variable::Owned(ASTNode::inner_to_owned(
+                    value,
+                )))),
+            );
         }
+        Rc::new(RefCell::new(svt))
     }
 
     /// Returns the iterator to the internal list of frames.

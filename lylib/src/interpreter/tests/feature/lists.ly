@@ -1,13 +1,24 @@
-let list = [1, 2, 3, ['a', 'b', 'c']]
+let list = []
 
+# test basic indexing
+list = [1, 2, 3]
+let idx = 2
+let idx_a = list[1]
+let idx_b = list[idx]
+
+# test dangling references
 func dangling_test do
   let list = [10, 20]
   return list[0]
 end
+let dangling = dangling_test()
 
-let idx = 2
-let idx_a = dangling_test()
-let idx_b = list[1]
-let idx_c = list[idx]
-let idx_list_whole = list[3]
-let idx_list_part = list[3][0]
+# test nested indexes
+list = [[123]]
+let idx_list_whole = list[0]
+let idx_list_part = list[0][0]
+
+# test list assignment
+list = [0, 0, 0, 0]
+list[1] = 1
+let assignment = list[1]

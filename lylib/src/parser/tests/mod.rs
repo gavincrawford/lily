@@ -17,12 +17,12 @@ fn decl() {
         result.unwrap(),
         ASTNode::Block(vec![
             ASTNode::Declare {
-                id: "number".into(),
+                target: ASTNode::Literal(Token::Identifier("number".into())).into(),
                 value: ASTNode::Literal(Token::Number(-1.)).into(),
             }
             .into(),
             ASTNode::Declare {
-                id: "boolean".into(),
+                target: ASTNode::Literal(Token::Identifier("boolean".into())).into(),
                 value: ASTNode::Literal(Token::Bool(true)).into(),
             }
             .into(),
@@ -44,17 +44,17 @@ fn lists() {
         result.unwrap(),
         ASTNode::Block(vec![
             ASTNode::Declare {
-                id: "list".into(),
-                value: ASTNode::List(vec![
+                target: ASTNode::Literal(Token::Identifier("list".into())).into(),
+                value: ASTNode::List(SVTable::new_with(vec![
                     ASTNode::Literal(Token::Number(1.)).into(),
                     ASTNode::Literal(Token::Number(2.)).into(),
                     ASTNode::Literal(Token::Number(3.)).into(),
-                ])
+                ]))
                 .into(),
             }
             .into(),
             ASTNode::Declare {
-                id: "value".into(),
+                target: ASTNode::Literal(Token::Identifier("value".into())).into(),
                 value: ASTNode::Index {
                     target: ASTNode::Literal(Token::Identifier("list".into())).into(),
                     index: ASTNode::Literal(Token::Number(0.)).into()
@@ -79,7 +79,7 @@ fn math() {
     assert_eq!(
         result.unwrap(),
         ASTNode::Block(vec![ASTNode::Declare {
-            id: "x".into(),
+            target: ASTNode::Literal(Token::Identifier("x".into())).into(),
             value: ASTNode::Op {
                 lhs: ASTNode::Literal(Token::Number(1.)).into(),
                 op: Token::Add,
@@ -123,7 +123,7 @@ fn comparisons() {
         result.unwrap(),
         ASTNode::Block(vec![
             ASTNode::Declare {
-                id: "a".into(),
+                target: ASTNode::Literal(Token::Identifier("a".into())).into(),
                 value: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(100.)).into(),
                     op: Token::LogicalL,
@@ -133,7 +133,7 @@ fn comparisons() {
             }
             .into(),
             ASTNode::Declare {
-                id: "b".into(),
+                target: ASTNode::Literal(Token::Identifier("b".into())).into(),
                 value: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(100.)).into(),
                     op: Token::LogicalLe,
@@ -143,7 +143,7 @@ fn comparisons() {
             }
             .into(),
             ASTNode::Declare {
-                id: "c".into(),
+                target: ASTNode::Literal(Token::Identifier("c".into())).into(),
                 value: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(200.)).into(),
                     op: Token::LogicalG,
@@ -153,7 +153,7 @@ fn comparisons() {
             }
             .into(),
             ASTNode::Declare {
-                id: "d".into(),
+                target: ASTNode::Literal(Token::Identifier("d".into())).into(),
                 value: ASTNode::Op {
                     lhs: ASTNode::Literal(Token::Number(200.)).into(),
                     op: Token::LogicalGe,
@@ -181,7 +181,7 @@ fn conditionals() {
             }
             .into(),
             if_body: ASTNode::Block(vec![ASTNode::Assign {
-                id: "a".into(),
+                target: ASTNode::Literal(Token::Identifier("a".into())).into(),
                 value: ASTNode::Literal(Token::Identifier("b".into())).into(),
             }
             .into()])
@@ -205,7 +205,7 @@ fn arguments() {
     assert_eq!(
         result.unwrap(),
         ASTNode::Block(vec![ASTNode::Declare {
-            id: "result".into(),
+            target: ASTNode::Literal(Token::Identifier("result".into())).into(),
             value: ASTNode::FunctionCall {
                 target: ASTNode::Literal(Token::Identifier("func".into())).into(),
                 arguments: vec![ASTNode::Op {
@@ -243,7 +243,7 @@ fn functions() {
             arguments: vec!["a".into(), "b".into()],
             body: ASTNode::Block(vec![
                 ASTNode::Declare {
-                    id: "x".into(),
+                    target: ASTNode::Literal(Token::Identifier("x".into())).into(),
                     value: ASTNode::Op {
                         lhs: ASTNode::Literal(Token::Identifier("a".into())).into(),
                         op: Token::Add,
@@ -253,7 +253,7 @@ fn functions() {
                 }
                 .into(),
                 ASTNode::Declare {
-                    id: "y".into(),
+                    target: ASTNode::Literal(Token::Identifier("y".into())).into(),
                     value: ASTNode::Op {
                         lhs: ASTNode::Literal(Token::Identifier("a".into())).into(),
                         op: Token::Sub,
@@ -333,7 +333,7 @@ fn import() {
             }
             .into(),
             ASTNode::Declare {
-                id: "ten".into(),
+                target: ASTNode::Literal(Token::Identifier("ten".into())).into(),
                 value: ASTNode::FunctionCall {
                     target: ASTNode::Literal(Token::Identifier("mod1.mod2.add2".into())).into(),
                     arguments: vec![
@@ -362,7 +362,7 @@ fn structs() {
             ASTNode::Struct {
                 id: "Number".into(),
                 body: ASTNode::Block(vec![ASTNode::Declare {
-                    id: ID::new("value"),
+                    target: ASTNode::Literal(Token::Identifier("value".into())).into(),
                     value: ASTNode::Literal(Token::Number(0.)).into()
                 }
                 .into()])
@@ -370,7 +370,7 @@ fn structs() {
             }
             .into(),
             ASTNode::Declare {
-                id: "instance".into(),
+                target: ASTNode::Literal(Token::Identifier("instance".into())).into(),
                 value: ASTNode::FunctionCall {
                     target: ASTNode::Literal(Token::Identifier("Number".into())).into(),
                     arguments: vec![]

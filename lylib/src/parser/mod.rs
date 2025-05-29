@@ -1,6 +1,6 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
-use crate::interpreter::ID;
+use crate::interpreter::{SVTable, ID};
 use crate::lexer::{Lexer, Token};
 use anyhow::{bail, Context, Result};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
@@ -317,33 +317,33 @@ impl Parser {
 
     /// Parses a variable assignment.
     fn parse_assign_var(&mut self) -> Result<Rc<ASTNode>> {
-        let next = self.next();
-        if let Some(Token::Identifier(id)) = next {
-            self.expect(Token::Equal)?;
-            Ok(ASTNode::Assign {
-                id: ID::new(id),
-                value: self.parse_expr(None)?,
-            }
-            .into())
-        } else {
-            bail!("expected identifier, found {:?}", next);
-        }
+        // parse id and value
+        let target = self
+            .parse_expr(None)
+            .context("failed to parse assignment target")?;
+        self.expect(Token::Equal)?;
+        let value = self
+            .parse_expr(None)
+            .context("failed to parse assignment value")?;
+
+        // return node
+        Ok(ASTNode::Assign { target, value }.into())
     }
 
     /// Parses a variable declaration.
     fn parse_decl_var(&mut self) -> Result<Rc<ASTNode>> {
+        // parse id and value
         self.expect(Token::Let)?;
-        let next = self.next();
-        if let Some(Token::Identifier(id)) = next {
-            self.expect(Token::Equal)?;
-            Ok(ASTNode::Declare {
-                id: ID::new(id),
-                value: self.parse_expr(None)?,
-            }
-            .into())
-        } else {
-            bail!("expected identifier, found {:?}", next);
-        }
+        let target = self
+            .parse_expr(None)
+            .context("failed to parse declaration target")?;
+        self.expect(Token::Equal)?;
+        let value = self
+            .parse_expr(None)
+            .context("failed to parse declaration value")?;
+
+        // return node
+        Ok(ASTNode::Declare { target, value }.into())
     }
 
     /// Parses expressions, such as operators, indices, function calls, etc.
@@ -483,6 +483,6 @@ impl Parser {
             ))
         }
 
-        Ok(ASTNode::List(items).into())
+        Ok(ASTNode::List(SVTable::new_with(items)).into())
     }
 }

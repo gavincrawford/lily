@@ -37,7 +37,7 @@ impl Interpreter {
                         // if this is a simple module, return that and continue
                         module = v;
                     } else {
-                        // otherwise, this is a structure deref, so we have to find its SVT
+                        // otherwise, this is a structure or list deref, so we have to find its SVT
                         for (name, value) in module_ref.get_scope(0).unwrap() {
                             if let Variable::Owned(var) = &*value.borrow() {
                                 match (var, item == name) {
@@ -49,6 +49,7 @@ impl Interpreter {
                                         },
                                         true,
                                     ) => module = svt.clone(),
+                                    (ASTNode::List(svt), true) => module = svt.clone(),
                                     _ => {}
                                 }
                             }
@@ -113,7 +114,7 @@ impl Interpreter {
         let var_map = module
             .get_scope(self.scope_id)
             .context(format!("cannot delcare at scope {}", self.scope_id,))?;
-        if let Some(_) = var_map.insert(id.clone(), RefCell::new(value).into()) {
+        if let Some(_) = var_map.insert(id.to_owned(), Rc::new(RefCell::new(value))) {
             bail!("variable '{}' already exists", id);
         }
         Ok(())
@@ -141,7 +142,7 @@ impl Interpreter {
             .context(format!("cannot assign at scope {}", scope_idx,))?;
 
         // insert new value
-        var_map.insert(id, RefCell::new(value).into());
+        var_map.insert(id.to_owned(), Rc::new(RefCell::new(value)));
         Ok(())
     }
 }

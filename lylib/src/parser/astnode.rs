@@ -18,11 +18,11 @@ pub enum ASTNode {
         index: Rc<ASTNode>,
     },
     Assign {
-        id: ID,
+        target: Rc<ASTNode>,
         value: Rc<ASTNode>,
     },
     Declare {
-        id: ID,
+        target: Rc<ASTNode>,
         value: Rc<ASTNode>,
     },
     Function {
@@ -59,7 +59,7 @@ pub enum ASTNode {
     },
     Return(Rc<ASTNode>),
     Literal(Token),
-    List(Vec<Rc<ASTNode>>),
+    List(Rc<RefCell<SVTable>>),
 }
 
 impl ASTNode {
@@ -92,16 +92,23 @@ impl ASTNode {
             if let ASTNode::Block(nodes) = &**body {
                 let mut default_fields = vec![];
                 for node in nodes {
-                    if let ASTNode::Declare { id, value } = &**node {
+                    if let ASTNode::Declare { target: id, value } = &**node {
                         default_fields.push((id.clone(), ASTNode::inner_to_owned(value)));
                     }
                 }
                 let mut svt = SVTable::new();
                 svt.add_scope();
                 let inner_table = svt.inner_mut();
-                default_fields.first().iter().for_each(|(id, value)| {
+                default_fields.first().iter().for_each(|(target, value)| {
+                    // convert this field to an ID
+                    let id = ID::node_to_id(target.to_owned()).unwrap();
+
+                    // get the first value in the path
+                    let id = id.to_path().get(0).unwrap().to_owned();
+
+                    // add it to the table
                     inner_table.first_mut().unwrap().insert(
-                        id.to_path().get(0).unwrap().to_owned(),
+                        id.to_owned(),
                         Rc::new(RefCell::new(Variable::Owned(value.to_owned()))),
                     );
                 });

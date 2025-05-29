@@ -54,20 +54,36 @@ impl Interpreter {
     /// Executes an individual expression.
     fn execute_expr(&mut self, statement: Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
         match &*statement {
-            ASTNode::Assign { id, value } => {
-                let resolved_expr = &self
+            ASTNode::Assign { target, value } => {
+                // resolve target & expression
+                let resolved_target = &ID::node_to_id(target.clone())
+                    .context("failed to evaluate assignment target")?;
+                let resolved_expr = self
                     .execute_expr(value.clone())
                     .context("failed to evaluate assignment value")?
                     .unwrap();
-                self.assign(id, Variable::Owned((*resolved_expr.to_owned()).to_owned()))?;
+
+                // assign variable
+                self.assign(
+                    resolved_target,
+                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                )?;
                 Ok(None)
             }
-            ASTNode::Declare { id, value } => {
-                let resolved_expr = &self
+            ASTNode::Declare { target, value } => {
+                // resolve target & expression
+                let resolved_target = &ID::node_to_id(target.clone())
+                    .context("failed to evaluate declaration target")?;
+                let resolved_expr = self
                     .execute_expr(value.clone())
                     .context("failed to evaluate declaration value")?
                     .unwrap();
-                self.declare(id, Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)))?;
+
+                // declare variable
+                self.declare(
+                    resolved_target,
+                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                )?;
                 Ok(None)
             }
             ASTNode::Function {
@@ -297,13 +313,19 @@ impl Interpreter {
                     .unwrap();
 
                 // find list item if applicable, bail otherwise
-                if let ASTNode::List(tokens) = &*list {
-                    return Ok(Some(
-                        tokens
-                            .get(usize_idx.to_owned() as usize)
-                            .expect("index out of bounds.")
-                            .to_owned(),
-                    ));
+                if let ASTNode::List(list_table) = &*list {
+                    let mut items = list_table.borrow_mut();
+                    // TODO ew. helpers?
+                    if let Variable::Owned(value) = &*items
+                        .get_scope(0)
+                        .unwrap()
+                        .get(&usize_idx.to_string())
+                        .unwrap()
+                        .borrow()
+                    {
+                        return Ok(Some(value.to_owned().into()));
+                    }
+                    panic!();
                 } else {
                     bail!("expected list as index target");
                 }

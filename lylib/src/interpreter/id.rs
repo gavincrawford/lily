@@ -47,6 +47,29 @@ impl ID {
         }
     }
 
+    /// Converts a node to an ID, if applicable.
+    pub fn node_to_id(node: Rc<ASTNode>) -> Result<Self> {
+        match &*node {
+            ASTNode::Literal(Token::Identifier(id)) => Ok(ID::new(id)),
+            ASTNode::Index { target, index } => {
+                let parent = Self::node_to_id(target.clone())?.get_kind().into();
+                if let ASTNode::Literal(Token::Number(index)) = &**index {
+                    let member = IDKind::Literal(index.to_string()).into();
+                    Ok(Self {
+                        id: IDKind::Member { parent, member },
+                    })
+                } else {
+                    // TODO evaluate complex index expressions
+                    //      (and test them)
+                    todo!();
+                }
+            }
+            _ => {
+                bail!("cannot convert '{:?}' to ID", node)
+            }
+        }
+    }
+
     /// Gets the inner `IDKind` of this identifier.
     pub fn get_kind(&self) -> IDKind {
         self.id.to_owned()
