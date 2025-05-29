@@ -36,12 +36,13 @@ fn lists() {
 
 #[test]
 fn math() {
-    let result = parse!("let x = 1 + 2 - 3 * 4 / 5;");
+    let result = parse!("let a = (1 + 1) + (1 + 1); let b = 1 + 2 - 3 * 4 / 5;");
     assert_eq!(
         result.unwrap(),
-        block!(node!(declare x =>
-            node!(op lit!(1), Add, node!(op lit!(2), Sub, node!(op lit!(3), Mul, node!(op lit!(4), Div, lit!(5)))))
-        ))
+        block!(
+            node!(declare a => node!(op node!(op lit!(1), Add, lit!(1)), Add, node!(op lit!(1), Add, lit!(1)))),
+            node!(declare b => node!(op lit!(1), Add, node!(op lit!(2), Sub, node!(op lit!(3), Mul, node!(op lit!(4), Div, lit!(5))))))
+        )
     );
 }
 
@@ -76,12 +77,16 @@ fn conditionals() {
 
 #[test]
 fn arguments() {
-    let result = parse!("let result = function((1 + 1) * 2)");
+    let result = parse!("let a = function((1 + 1), false, \"string\", 'c', [1, 2, 3]);");
     assert_eq!(
         result.unwrap(),
-        block!(
-            node!(declare result => node!(function(node!(op node!(op lit!(1), Add, lit!(1)), Mul, lit!(2)))))
-        )
+        block!(node!(declare a => node!(function(
+            node!(op lit!(1), Add, lit!(1)),
+            lit!(Bool(false)),
+            lit!(Str("string".into())),
+            lit!(Char('c')),
+            node!([lit!(1), lit!(2), lit!(3)])
+        ))))
     );
 }
 

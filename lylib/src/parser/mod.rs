@@ -379,7 +379,7 @@ impl Parser {
                     lhs: primary.clone(),
                     op: self.next().unwrap(), // safety: peek
                     rhs: self
-                        .parse_expr(expect.clone())
+                        .parse_expr(None)
                         .context("failed to parse member of op")?,
                 }
                 .into()),
