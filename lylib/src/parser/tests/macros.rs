@@ -40,13 +40,16 @@ macro_rules! ident {
     };
 }
 
+/// Shorthand for creating node blocks.
+macro_rules! block {
+    ($($node:expr),*) => {{
+        let block = vec![$($node),*];
+        ASTNode::Block(block).into()
+    }};
+}
+
 /// Shorthand for all AST nodes.
 macro_rules! node {
-    // blocks
-    (block $block:expr) => {
-        ASTNode::Block($block).into()
-    };
-
     // ops, in two formats
     (op $lhs:expr, $op:expr, $rhs:expr) => {
         ASTNode::Op {
@@ -58,12 +61,18 @@ macro_rules! node {
     };
 
     // declarations & assignments
+    (declare $id:tt => $val:expr) => {
+        node!(declare ident!(stringify!($id)) => $val)
+    };
     (declare $id:expr => $val:expr) => {
         ASTNode::Declare {
             target: $id,
             value: $val,
         }
         .into()
+    };
+    (assign $id:tt => $val:expr) => {
+        node!(assign ident!(stringify!($id)) => $val)
     };
     (assign $id:expr => $val:expr) => {
         ASTNode::Assign {
