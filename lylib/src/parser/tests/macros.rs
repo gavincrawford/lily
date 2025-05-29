@@ -52,12 +52,11 @@ macro_rules! block {
 macro_rules! node {
     // ops, in two formats
     (op $lhs:expr, $op:expr, $rhs:expr) => {
-        ASTNode::Op {
+        Rc::new(ASTNode::Op {
             lhs: $lhs,
             op: $op,
             rhs: $rhs,
-        }
-        .into()
+        })
     };
 
     // declarations & assignments
@@ -134,10 +133,27 @@ macro_rules! node {
     };
 
     // indices (`list[0]`)
-    ($list:ident[$idx:expr]) => {
+    (index $list:expr, $idx:expr) => {
+        // explicit index
+        ASTNode::Index {
+            target: $list,
+            index: lit!(Token::Number($idx as f32)),
+        }
+        .into()
+    };
+    ($list:ident[$idx:literal]) => {
+        // numerical index
         ASTNode::Index {
             target: ident!(stringify!($list)),
             index: lit!(Token::Number($idx as f32)),
+        }
+        .into()
+    };
+    ($list:ident[$idx:expr]) => {
+        // expression index
+        ASTNode::Index {
+            target: ident!(stringify!($list)),
+            index: $idx,
         }
         .into()
     };

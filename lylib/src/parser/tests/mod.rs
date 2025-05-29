@@ -35,6 +35,19 @@ fn lists() {
 }
 
 #[test]
+fn indices() {
+    let result = parse!("let a = list[1][2][3]; let b = (list[1])[2]; let c = list[(1 + 1)];");
+    assert_eq!(
+        result.unwrap(),
+        block!(
+            node!(declare a => node!(index node!(index node!(index ident!("list"), 1), 2), 3)),
+            node!(declare b => node!(index node!(list[1]), 2)),
+            node!(declare c => node!(list[node!(op lit!(1), Add, lit!(1))]))
+        )
+    );
+}
+
+#[test]
 fn math() {
     let result = parse!("let a = (1 + 1) + (1 + 1); let b = 1 + 2 - 3 * 4 / 5;");
     assert_eq!(
