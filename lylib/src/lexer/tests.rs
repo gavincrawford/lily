@@ -183,12 +183,12 @@ fn functions() {
         ]
     );
 
-    let result = Lexer::new().lex("func(1 + 2, 3 + 4)".into());
+    let result = Lexer::new().lex("function(1 + 2, 3 + 4)".into());
     assert!(result.is_ok());
     assert_eq!(
         result.unwrap(),
         vec![
-            Identifier("func".into()),
+            Identifier("function".into()),
             ParenOpen,
             Number(1.),
             Add,
@@ -250,7 +250,7 @@ fn parens() {
 
 #[test]
 fn lists() {
-    let result = Lexer::new().lex("let list = [1, 2, 3]; list[0];".into());
+    let result = Lexer::new().lex("let list = [0, false, 'a']; let value = list[0];".into());
     assert!(result.is_ok());
     assert_eq!(
         result.unwrap(),
@@ -259,13 +259,16 @@ fn lists() {
             Identifier("list".into()),
             Equal,
             BracketOpen,
-            Number(1.),
+            Number(0.),
             Comma,
-            Number(2.),
+            Bool(false),
             Comma,
-            Number(3.),
+            Char('a'),
             BracketClose,
             Endl,
+            Let,
+            Identifier("value".into()),
+            Equal,
             Identifier("list".into()),
             BracketOpen,
             Number(0.),

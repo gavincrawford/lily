@@ -24,11 +24,11 @@ fn decl() {
 
 #[test]
 fn lists() {
-    let result = parse!("let list = [1, 2, 3]; let value = list[0];");
+    let result = parse!("let list = [0, false, 'a']; let value = list[0];");
     assert_eq!(
         result.unwrap(),
         node!(block vec![
-            node!(declare ident!("list") => node!([lit!(1), lit!(2), lit!(3)])),
+            node!(declare ident!("list") => node!([lit!(0), lit!(Bool(false)), lit!(Char('a'))])),
             node!(declare ident!("value") => node!(list[0])),
         ])
     );
@@ -78,11 +78,11 @@ fn conditionals() {
 
 #[test]
 fn arguments() {
-    let result = parse!("let result = func((1 + 1) * 2)");
+    let result = parse!("let result = function((1 + 1) * 2)");
     assert_eq!(
         result.unwrap(),
         node!(block vec![
-            node!(declare ident!("result") => node!(func(node!(op node!(op lit!(1), Add, lit!(1)), Mul, lit!(2)))))
+            node!(declare ident!("result") => node!(function(node!(op node!(op lit!(1), Add, lit!(1)), Mul, lit!(2)))))
         ])
     );
 }

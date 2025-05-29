@@ -141,19 +141,26 @@ impl Lexer {
                             self.number_register.push(c);
                         }
 
-                        // non-number words
+                        // quotes, for str & char
                         '\"' => {
                             mode = CaptureMode::String;
                         }
                         '\'' => {
                             mode = CaptureMode::Char;
                         }
-                        '(' | ')' | '[' | ']' | ',' => {
-                            // add identifier for function calls
-                            if !self.keyword_register.is_empty() {
+
+                        // keywords and identifiers
+                        '(' | ')' | '[' | ']' | ',' | ' ' => {
+                            if let Some(token) = self.keyword_from_register() {
+                                // if the register contains a keyword, that takes priority
+                                tokens.push(token);
+                            } else if !self.keyword_register.is_empty() {
+                                // otherwise, it'd be an identifier
                                 tokens.push(Identifier(self.keyword_register.clone()));
-                                self.keyword_register.clear();
                             }
+                            self.keyword_register.clear();
+
+                            // match delimiters
                             match c {
                                 '(' => tokens.push(ParenOpen),
                                 ')' => tokens.push(ParenClose),
@@ -165,16 +172,6 @@ impl Lexer {
                         }
                         c if c.is_alphanumeric() || c == '_' || c == '.' => {
                             self.keyword_register.push(c);
-                        }
-
-                        // keywords
-                        ' ' => {
-                            if let Some(token) = self.keyword_from_register() {
-                                tokens.push(token);
-                            } else if !self.keyword_register.is_empty() {
-                                tokens.push(Identifier(self.keyword_register.clone()));
-                            }
-                            self.keyword_register.clear();
                         }
 
                         // endlines
