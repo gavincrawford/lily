@@ -1,14 +1,6 @@
 #![cfg(test)]
 
-use super::*;
-use crate::lexer::Lexer;
-
-// expose utility macros
-#[macro_use]
-mod macros;
-
-// expose token variants
-use Token::*;
+use crate::{lexer::Token::*, parser::*, *};
 
 #[test]
 fn decl() {

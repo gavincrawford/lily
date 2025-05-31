@@ -1,6 +1,7 @@
 //! A collection of macros that make writing tests easier and slimmer.
 
 /// Shorthand for creating and executing the parser.
+#[macro_export]
 macro_rules! parse {
     ($code:expr) => {
         (|| {
@@ -20,7 +21,21 @@ macro_rules! parse {
     };
 }
 
+/// Shorthand for executing test code located at the provided path.
+#[macro_export]
+macro_rules! interpret {
+    ($path:expr) => {{
+        let mut i = Interpreter::new();
+        let mut p = Parser::new(Lexer::new().lex(include_str!($path).to_string()).unwrap());
+        p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
+        let ast = p.parse().unwrap();
+        i.execute(ast).unwrap();
+        i
+    }};
+}
+
 /// Shorthand for creating a literal.
+#[macro_export]
 macro_rules! lit {
     // numbers
     ($literal:literal) => {
@@ -34,6 +49,7 @@ macro_rules! lit {
 }
 
 /// Shorthand for creating a literal identifier.
+#[macro_export]
 macro_rules! ident {
     ($id:expr) => {
         lit!(Token::Identifier($id.into()))
@@ -41,6 +57,7 @@ macro_rules! ident {
 }
 
 /// Shorthand for creating node blocks.
+#[macro_export]
 macro_rules! block {
     ($($node:expr),*) => {{
         let block = vec![$($node),*];
@@ -49,6 +66,7 @@ macro_rules! block {
 }
 
 /// Shorthand for all AST nodes.
+#[macro_export]
 macro_rules! node {
     // ops, in two formats
     (op $lhs:expr, $op:expr, $rhs:expr) => {
