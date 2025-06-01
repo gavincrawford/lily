@@ -3,7 +3,7 @@ let list = []
 # test basic indexing
 list = [1, 2, 3]
 let idx = 2
-let idx_a = list[1]
+let idx_a = list[4 - (1 * 3)]
 let idx_b = list[idx]
 
 # test dangling references

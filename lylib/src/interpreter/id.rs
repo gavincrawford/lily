@@ -55,14 +55,11 @@ impl ID {
                 let parent = Self::node_to_id(target.clone())?.get_kind().into();
                 if let ASTNode::Literal(Token::Number(index)) = &**index {
                     let member = IDKind::Literal(index.to_string()).into();
-                    Ok(Self {
+                    return Ok(Self {
                         id: IDKind::Member { parent, member },
-                    })
-                } else {
-                    // TODO evaluate complex index expressions
-                    //      (and test them)
-                    todo!();
+                    });
                 }
+                panic!()
             }
             _ => {
                 bail!("cannot convert '{:?}' to ID", node)
