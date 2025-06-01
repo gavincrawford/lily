@@ -1,22 +1,22 @@
 //! A collection of macros that make writing tests easier and slimmer.
 
-/// Shorthand for creating and executing the parser.
+/// Shorthand for creating and executing the parser, and comparing its output to an expression.
 #[macro_export]
-macro_rules! parse {
-    ($code:expr) => {
+macro_rules! parse_eq {
+    ($code:expr; $($block:expr),*) => {
         (|| {
             let result = Parser::new(Lexer::new().lex($code.into()).unwrap()).parse();
             assert!(result.is_ok(), "Parser failed: {:?}", result);
-            result
+            assert_eq!(result.unwrap(), block!($($block),*));
         })()
     };
-    ($code:expr, $path:expr) => {
+    ($code:expr, $path:expr; $($block:expr),*) => {
         (|| {
             let mut parser = Parser::new(Lexer::new().lex($code.into()).unwrap());
             parser.set_pwd($path.into());
             let result = parser.parse();
             assert!(result.is_ok(), "Parser failed: {:?}", result);
-            result
+            assert_eq!(result.unwrap(), block!($($block),*));
         })()
     };
 }
