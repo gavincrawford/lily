@@ -57,7 +57,12 @@ impl Lexer {
                             tokens.push(Mul);
                         }
                         '/' => {
-                            tokens.push(Div);
+                            if let Some('/') = chars.peek() {
+                                chars.next();
+                                tokens.push(Floor);
+                            } else {
+                                tokens.push(Div);
+                            }
                         }
                         '^' => {
                             tokens.push(Pow);

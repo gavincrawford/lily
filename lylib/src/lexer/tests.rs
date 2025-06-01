@@ -53,7 +53,7 @@ fn math() {
         vec![Number(32.), Add, Number(12.), Sub, Number(7.), Endl]
     );
 
-    let result = Lexer::new().lex("0.5731 * 0.222 / 1^3;".into());
+    let result = Lexer::new().lex("0.5731 * 0.222 / 1^3 // 10;".into());
     assert!(result.is_ok());
     assert_eq!(
         result.unwrap(),
@@ -65,6 +65,8 @@ fn math() {
             Number(1.),
             Pow,
             Number(3.),
+            Floor,
+            Number(10.),
             Endl
         ]
     );

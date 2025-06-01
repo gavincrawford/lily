@@ -202,6 +202,7 @@ impl Interpreter {
                         Sub => Number(l - r),
                         Mul => Number(l * r),
                         Div => Number(l / r),
+                        Floor => Number((l / r).floor()),
                         Pow => Number(l.powf(*r)),
                         LogicalG => Bool(l > r),
                         LogicalGe => Bool(l >= r),

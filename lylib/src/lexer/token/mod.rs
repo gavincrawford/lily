@@ -46,6 +46,7 @@ pub enum Token {
     Mul,
     Div,
     Pow,
+    Floor,
 
     // modules
     Import,
