@@ -1,4 +1,5 @@
 use super::*;
+use crate::lit;
 
 impl Interpreter {
     /// Executes a given function with the given arguments.
@@ -33,7 +34,9 @@ impl Interpreter {
             let result = self.execute(body.clone())?;
             self.scope_id -= 1;
             self.drop();
-            return Ok(result);
+
+            // return result if present. otherwise, undefined
+            return Ok(Some(result.unwrap_or(lit!(Token::Undefined))));
         }
         bail!("failed to execute non-function value")
     }
