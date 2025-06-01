@@ -260,7 +260,10 @@ impl Interpreter {
                 while let Some(condition) = self.execute_expr(condition.clone())? {
                     // run loop body
                     if let ASTNode::Literal(Token::Bool(true)) = *condition {
-                        self.execute(body.clone())?;
+                        // execute and return if applicable
+                        if let Some(result) = self.execute(body.clone())? {
+                            return Ok(Some(result));
+                        }
                     } else {
                         break;
                     }
