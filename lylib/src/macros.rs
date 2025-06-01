@@ -39,7 +39,7 @@ macro_rules! interpret {
 macro_rules! lit {
     // numbers
     ($literal:literal) => {
-        lit!(Token::Number($literal as f32))
+        lit!($literal.into())
     };
 
     // literals
@@ -155,7 +155,7 @@ macro_rules! node {
         // explicit index
         ASTNode::Index {
             target: $list,
-            index: lit!(Token::Number($idx as f32)),
+            index: lit!($idx),
         }
         .into()
     };
@@ -163,7 +163,7 @@ macro_rules! node {
         // numerical index
         ASTNode::Index {
             target: ident!(stringify!($list)),
-            index: lit!(Token::Number($idx as f32)),
+            index: lit!($idx),
         }
         .into()
     };

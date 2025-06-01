@@ -7,7 +7,7 @@ fn decl() {
     parse_eq!(
         "let number = -1; let boolean = true;";
         node!(declare number => lit!(-1)),
-        node!(declare boolean => lit!(Bool(true)))
+        node!(declare boolean => lit!(true))
     );
 }
 
@@ -15,7 +15,7 @@ fn decl() {
 fn lists() {
     parse_eq!(
         "let list = [0, false, 'a']; let value = list[0];";
-        node!(declare list => node!([lit!(0), lit!(Bool(false)), lit!(Char('a'))])),
+        node!(declare list => node!([lit!(0), lit!(false), lit!('a')])),
         node!(declare value => node!(list[0]))
     );
 }
@@ -69,9 +69,9 @@ fn arguments() {
         "let a = function((1 + 1), false, \"string\", 'c', [1, 2, 3]);";
         node!(declare a => node!(function(
             node!(op lit!(1), Add, lit!(1)),
-            lit!(Bool(false)),
-            lit!(Str("string".into())),
-            lit!(Char('c')),
+            lit!(false),
+            lit!("string"),
+            lit!('c'),
             node!([lit!(1), lit!(2), lit!(3)])
         )))
     );

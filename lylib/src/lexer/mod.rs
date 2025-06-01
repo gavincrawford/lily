@@ -1,6 +1,7 @@
 //! The lexer breaks down text information into tokens, which can be used to assemble syntax.
 
 use anyhow::{bail, Context, Result};
+mod from;
 mod tests;
 
 /// Represents all possible tokens.
