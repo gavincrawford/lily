@@ -50,6 +50,21 @@ mod feature {
     }
 
     #[test]
+    fn operators() {
+        let i = interpret!("feature/operators.ly");
+        var_eq_literal!(i, "n_eq", Bool(true));
+        var_eq_literal!(i, "n_neq", Bool(true));
+        var_eq_literal!(i, "n_add", Number(2.));
+        var_eq_literal!(i, "n_sub", Number(0.));
+        var_eq_literal!(i, "n_mul", Number(8.));
+        var_eq_literal!(i, "n_div", Number(8.));
+        var_eq_literal!(i, "b_eq", Bool(true));
+        var_eq_literal!(i, "b_neq", Bool(true));
+        var_eq_literal!(i, "s_eq", Bool(true));
+        var_eq_literal!(i, "s_neq", Bool(true));
+    }
+
+    #[test]
     fn conditionals() {
         let i = interpret!("feature/conditionals.ly");
         var_eq_literal!(i, "a", Number(7.));

@@ -184,49 +184,40 @@ impl Interpreter {
                     self.execute_expr(lhs.clone()),
                     self.execute_expr(rhs.clone()),
                 ) {
-                    use ASTNode::*;
-                    use Token::*;
-                    match (op, &*a, &*b) {
-                        // math operators
-                        (Add, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Number(a + b)).into()))
-                        }
-                        (Sub, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Number(a - b)).into()))
-                        }
-                        (Div, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Number(a / b)).into()))
-                        }
-                        (Mul, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Number(a * b)).into()))
-                        }
-                        (Pow, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Number(a.powf(*b))).into()))
-                        }
-
-                        // logical operators
-                        (LogicalEq, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Bool(a == b)).into()))
-                        }
-                        (LogicalNeq, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Bool(a != b)).into()))
-                        }
-                        (LogicalG, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Bool(a > b)).into()))
-                        }
-                        (LogicalGe, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Bool(a >= b)).into()))
-                        }
-                        (LogicalL, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Bool(a < b)).into()))
-                        }
-                        (LogicalLe, Literal(Number(a)), Literal(Number(b))) => {
-                            return Ok(Some(Literal(Bool(a <= b)).into()))
-                        }
-                        _ => {
-                            bail!("operator not implemented")
-                        }
+                    macro_rules! opmatch {
+                        (match $op:expr, $lhs:expr, $rhs:expr => $locallhs:pat, $localrhs:pat if $($pat:pat => $res:expr),*) => {
+                            match ($op, $lhs, $rhs) {
+                                $(($pat, ASTNode::Literal($locallhs), ASTNode::Literal($localrhs)) => {
+                                    return Ok(Some(Rc::new(ASTNode::Literal($res))))
+                                })*
+                                _ => {},
+                            }
+                        };
                     }
+
+                    use Token::*;
+                    opmatch!(
+                        match op, &*a, &*b => Number(l), Number(r) if
+                        Add => Number(l + r),
+                        Sub => Number(l - r),
+                        Mul => Number(l * r),
+                        Div => Number(l / r),
+                        Pow => Number(l.powf(*r)),
+                        LogicalG => Bool(l > r),
+                        LogicalGe => Bool(l >= r),
+                        LogicalL => Bool(l < r),
+                        LogicalLe => Bool(l <= r)
+                    );
+                    opmatch!(
+                        match op, &*a, &*b => Str(l), Str(r) if
+                        Add => Str(l.clone() + r)
+                    );
+                    opmatch!(
+                        match op, &*a, &*b => l, r if
+                        LogicalEq => Bool(l == r),
+                        LogicalNeq => Bool(l != r)
+                    );
+                    bail!("operator not implemented")
                 } else {
                     bail!("failed to evaluate operands")
                 }
