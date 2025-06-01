@@ -1,65 +1,10 @@
 //! The lexer breaks down text information into tokens, which can be used to assemble syntax.
 
+mod token;
+pub use token::Token;
+
 use anyhow::{bail, Context, Result};
-mod from;
 mod tests;
-
-/// Represents all possible tokens.
-#[derive(Debug, PartialEq, Clone)]
-pub enum Token {
-    // variables
-    Equal,
-    Identifier(String),
-    Function,
-    Struct,
-    Return,
-    Let,
-
-    // data types
-    Number(f32),
-    Bool(bool),
-    Str(String),
-    Char(char),
-    Undefined,
-
-    // conditionals
-    If,
-    Else,
-    While,
-    BlockStart,
-    BlockEnd,
-
-    // delimiters
-    ParenOpen,
-    ParenClose,
-    BracketOpen,
-    BracketClose,
-
-    // logic
-    LogicalNot,
-    LogicalEq,
-    LogicalNeq,
-    LogicalG,
-    LogicalGe,
-    LogicalL,
-    LogicalLe,
-
-    // math ops
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Pow,
-
-    // modules
-    Import,
-    As,
-
-    // other
-    Comma,
-    New,
-    Endl,
-}
 
 /// Lexer capture mode.
 enum CaptureMode {
