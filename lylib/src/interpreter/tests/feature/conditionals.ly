@@ -24,3 +24,6 @@ if false do
 else
   a = a + 1
 end
+if a do
+  a = a + 1
+end

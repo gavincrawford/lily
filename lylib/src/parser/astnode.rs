@@ -86,6 +86,17 @@ impl ASTNode {
         }
         None
     }
+
+    /// Returns the truthiness of this node.
+    /// True booleans and literals are truthy. Non-literal expressions are not.
+    pub fn is_truthy(&self) -> bool {
+        match self {
+            ASTNode::Literal(Token::Bool(v)) => *v,
+            ASTNode::Literal(ref t) if *t != Token::Undefined => true,
+            _ => false,
+        }
+    }
+
     /// Create the default SVT for this struct, if applicable. Returns `None` if otherwise.
     pub fn default_svt(&self) -> Option<SVTable> {
         if let ASTNode::Struct { id: _, body } = self {

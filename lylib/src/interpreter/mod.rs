@@ -234,7 +234,7 @@ impl Interpreter {
                 {
                     // increase scope level and execute body statements
                     self.scope_id += 1;
-                    if let ASTNode::Literal(Token::Bool(true)) = *condition {
+                    if condition.is_truthy() {
                         if let Some(result) = self.execute(if_body.clone())? {
                             self.scope_id -= 1;
                             self.drop();
@@ -245,7 +245,6 @@ impl Interpreter {
                             self.scope_id -= 1;
                             self.drop();
                             return Ok(Some(result));
-                        } else {
                         }
                     }
                     // after finishing, decrease scope level and drop locals
@@ -255,26 +254,32 @@ impl Interpreter {
                 Ok(None)
             }
             ASTNode::Loop { condition, body } => {
+                // create result buffer, default none
+                let mut result = None;
+
                 // increase scope level and execute body
                 self.scope_id += 1;
                 while let Some(condition) = self.execute_expr(condition.clone())? {
-                    // run loop body
-                    if let ASTNode::Literal(Token::Bool(true)) = *condition {
-                        // execute and return if applicable
-                        if let Some(result) = self.execute(body.clone())? {
-                            return Ok(Some(result));
+                    // if condition is true, execute body
+                    if condition.is_truthy() {
+                        result = self.execute(body.clone())?;
+
+                        // if a value was returned, break
+                        if result.is_some() {
+                            break;
                         }
                     } else {
                         break;
                     }
 
-                    // drop any variables created inside
+                    // after each execution of the loop, clear values at this scope
                     self.drop_here();
                 }
+
                 // after finishing, decrease scope level and drop locals
                 self.scope_id -= 1;
                 self.drop();
-                Ok(None)
+                Ok(result)
             }
             ASTNode::List(_) => {
                 // return self
@@ -315,7 +320,9 @@ impl Interpreter {
                         .get_scope(0)
                         .unwrap()
                         .get(&usize_idx.to_string())
-                        .unwrap()
+                        .unwrap_or(&Rc::new(RefCell::new(Variable::Owned(ASTNode::Literal(
+                            Token::Undefined,
+                        )))))
                         .borrow()
                     {
                         return Ok(Some(value.to_owned().into()));

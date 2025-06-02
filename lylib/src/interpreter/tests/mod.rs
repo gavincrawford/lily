@@ -67,7 +67,7 @@ mod feature {
     #[test]
     fn conditionals() {
         let i = interpret!("feature/conditionals.ly");
-        var_eq_literal!(i, "a", Number(7.));
+        var_eq_literal!(i, "a", Number(8.));
     }
 
     #[test]
