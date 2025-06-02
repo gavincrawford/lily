@@ -8,6 +8,12 @@ impl From<isize> for Token {
     }
 }
 
+impl From<f32> for Token {
+    fn from(value: f32) -> Self {
+        Token::Number(value)
+    }
+}
+
 impl From<bool> for Token {
     fn from(value: bool) -> Self {
         Token::Bool(value)
