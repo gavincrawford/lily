@@ -62,6 +62,9 @@ mod feature {
         var_eq_literal!(i, "b_neq", Bool(true));
         var_eq_literal!(i, "s_eq", Bool(true));
         var_eq_literal!(i, "s_neq", Bool(true));
+        var_eq_literal!(i, "s_add_s", Str("abcd".into()));
+        var_eq_literal!(i, "c_eq", Bool(true));
+        var_eq_literal!(i, "c_neq", Bool(true));
     }
 
     #[test]
