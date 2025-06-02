@@ -124,6 +124,12 @@ mod implementation {
     use super::*;
 
     #[test]
+    fn binary_search() {
+        let i = interpret!("implementation/binary_search.ly");
+        var_eq_literal!(i, "result", Number(4.));
+    }
+
+    #[test]
     fn fibonacci() {
         let i = interpret!("implementation/fibonacci.ly");
         var_eq_literal!(i, "result", Number(21.));
