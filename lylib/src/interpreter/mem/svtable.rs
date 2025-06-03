@@ -135,21 +135,24 @@ impl Display for SVTable {
 
         // log scopes progressively
         for (scope_idx, scope) in self.table.iter().enumerate() {
+            // log scope level
             writeln!(f, "scope {}", scope_idx)?;
-            // TODO sort scope items before printing, somehow
-            for (id, value) in scope {
-                // get debug string of this value
+
+            // iterate through scope values, sorted
+            let mut keys = scope.keys().collect::<Vec<&String>>();
+            keys.sort();
+            for key in keys {
+                // obtain debug string respective to variable value
+                let value = scope.get(key).unwrap();
                 let dbg_ln = match &*value.borrow() {
                     Variable::Owned(node) => format!("{}", prettify(node.to_owned().into())),
                     Variable::Reference(reference) => format!("&{}", prettify(reference.clone())),
                     Variable::Type(instance) => format!("struct {}", prettify(instance.clone())),
                 };
 
-                // tab out lines
+                // tab out endlines to keep indents, and print it
                 let dbg_ln = dbg_ln.replace("\n", "\n\t");
-
-                // print resulting debug line
-                writeln!(f, "\t{} = {}", id, dbg_ln)?;
+                writeln!(f, "\t{} = {}", key, dbg_ln)?;
             }
         }
         Ok(())
