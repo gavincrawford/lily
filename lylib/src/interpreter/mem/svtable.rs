@@ -1,8 +1,8 @@
 //! Implements the SVTable, or the scoped-variable table.
 
-use super::{ASTNode, Variable};
+use super::{ASTNode, Token, Variable};
 use anyhow::{bail, Result};
-use std::{cell::RefCell, collections::HashMap, rc::Rc, slice::Iter};
+use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc, slice::Iter};
 
 #[derive(Debug, PartialEq)]
 pub struct SVTable {
@@ -92,5 +92,66 @@ impl SVTable {
     /// Returns the number of scopes in this table.
     pub fn scopes(&self) -> usize {
         self.table.len()
+    }
+}
+
+impl Display for SVTable {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        fn prettify(node: Rc<ASTNode>) -> String {
+            String::from(match &*node {
+                ASTNode::Literal(Token::Identifier(id)) => format!("{}", id),
+                ASTNode::Literal(token) => format!("{:?}", token),
+                ASTNode::List(list) => format!("[{}]", list.borrow()),
+                ASTNode::Op { lhs, op, rhs } => format!(
+                    "{} {:?} {}",
+                    prettify(lhs.clone()),
+                    op,
+                    prettify(rhs.clone())
+                ),
+                ASTNode::Block(lines) => {
+                    format!(
+                        "{}",
+                        lines
+                            .iter()
+                            .map(|ln| { prettify(ln.clone()) })
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    )
+                }
+                ASTNode::Return(value) => prettify(value.clone()),
+                ASTNode::Function {
+                    id,
+                    arguments,
+                    body,
+                } => format!(
+                    "{}({}) => {}",
+                    id.to_path().join("."),
+                    arguments.join(", "),
+                    prettify(body.clone())
+                ),
+                other => format!("{:?}", other),
+            })
+        }
+
+        // log scopes progressively
+        for (scope_idx, scope) in self.table.iter().enumerate() {
+            writeln!(f, "scope {}", scope_idx)?;
+            // TODO sort scope items before printing, somehow
+            for (id, value) in scope {
+                // get debug string of this value
+                let dbg_ln = match &*value.borrow() {
+                    Variable::Owned(node) => format!("{}", prettify(node.to_owned().into())),
+                    Variable::Reference(reference) => format!("&{}", prettify(reference.clone())),
+                    Variable::Type(instance) => format!("struct {}", prettify(instance.clone())),
+                };
+
+                // tab out lines
+                let dbg_ln = dbg_ln.replace("\n", "\n\t");
+
+                // print resulting debug line
+                writeln!(f, "\t{} = {}", id, dbg_ln)?;
+            }
+        }
+        Ok(())
     }
 }
