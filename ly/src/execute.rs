@@ -36,7 +36,7 @@ pub fn execute(args: ArgMatches) -> Result<()> {
 
     // for debugging
     #[cfg(debug_assertions)]
-    dbg!(interp.memory.borrow().inner());
+    println!("{}", interp.memory.borrow());
     Ok(())
 }
 
