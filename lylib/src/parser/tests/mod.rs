@@ -14,9 +14,11 @@ fn decl() {
 #[test]
 fn lists() {
     parse_eq!(
-        "let list = [0, false, 'a']; let value = list[0];";
+        "let list = [0, false, 'a']; let value = list[0]; list[0] = 0; list.obj = 0;";
         node!(declare list => node!([lit!(0), lit!(false), lit!('a')])),
-        node!(declare value => node!(list[0]))
+        node!(declare value => node!(list[0])),
+        node!(assign node!(list[0]) => lit!(0)),
+        node!(assign ident!("list.obj") => lit!(0))
     );
 }
 

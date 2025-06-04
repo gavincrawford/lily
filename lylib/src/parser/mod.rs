@@ -103,7 +103,7 @@ impl Parser {
             Some(Token::Function) => self.parse_decl_fn(),
             Some(Token::Struct) => self.parse_decl_struct(),
             Some(Token::While) => self.parse_while(),
-            Some(Token::Identifier(_)) => self.parse_assign_var(),
+            Some(Token::Identifier(_)) => self.parse_expr(None),
             Some(Token::Return) => self.parse_return(),
             _ => {
                 bail!("expected statement, found {:?}", self.peek().unwrap());
@@ -315,12 +315,9 @@ impl Parser {
         .into())
     }
 
-    /// Parses a variable assignment.
-    fn parse_assign_var(&mut self) -> Result<Rc<ASTNode>> {
-        // parse id and value
-        let target = self
-            .parse_expr(None)
-            .context("failed to parse assignment target")?;
+    /// Parses assignment to any target.
+    fn parse_assignment(&mut self, target: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
+        // parse value
         self.expect(Token::Equal)?;
         let value = self
             .parse_expr(None)
@@ -335,9 +332,8 @@ impl Parser {
         // parse id and value
         self.expect(Token::Let)?;
         let target = self
-            .parse_expr(None)
+            .parse_expr(Some(Token::Equal))
             .context("failed to parse declaration target")?;
-        self.expect(Token::Equal)?;
         let value = self
             .parse_expr(None)
             .context("failed to parse declaration value")?;
@@ -362,6 +358,14 @@ impl Parser {
 
         // keep looping until we've found the largest possible primary
         loop {
+            // if we hit the expected token, break
+            if let Some(ref token) = expect {
+                if self.peek().unwrap() == token {
+                    self.expect(expect.unwrap())?;
+                    break;
+                }
+            }
+
             // match operator
             let result = match self.peek() {
                 // math and logical operators
@@ -391,16 +395,15 @@ impl Parser {
                 // indexes
                 Some(Token::BracketOpen) => self.parse_index(primary.clone()),
 
+                // assignments
+                Some(Token::Equal) => self.parse_assignment(primary.clone()),
+
                 // break for all others
                 Some(Token::Endl) | Some(Token::BlockStart) | Some(Token::Comma) | None => {
                     self.next();
                     break;
                 }
                 _ => {
-                    // remove expected token, if applicable
-                    if let Some(token) = expect {
-                        self.expect(token)?;
-                    }
                     break;
                 }
             };
