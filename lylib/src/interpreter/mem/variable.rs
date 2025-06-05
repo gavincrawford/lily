@@ -1,6 +1,14 @@
 use super::*;
 use std::{fmt::Debug, mem::discriminant};
 
+/// External function signature.
+/// The first two arguments are the input and output handles. The third contains arguments.
+type ExFn = dyn for<'a> Fn(
+    Rc<RefCell<dyn Write + 'a>>,
+    Rc<RefCell<dyn Read + 'a>>,
+    &Vec<Rc<ASTNode>>,
+) -> Result<Option<Rc<ASTNode>>>;
+
 /// Represents stored information.
 #[derive(Clone)]
 pub enum Variable {
@@ -9,7 +17,7 @@ pub enum Variable {
     /// For functions.
     Function(Rc<ASTNode>),
     /// For external functions.
-    Extern(Rc<dyn Fn(&Vec<Rc<ASTNode>>) -> Result<Option<Rc<ASTNode>>>>),
+    Extern(Rc<ExFn>),
     /// For non-standard types, such as structures.
     Type(Rc<ASTNode>),
 }

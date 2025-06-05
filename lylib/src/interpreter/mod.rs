@@ -9,26 +9,36 @@ mod tests;
 
 use crate::{lexer::Token, parser::ASTNode};
 use anyhow::{bail, Context, Result};
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    io::{Read, Write},
+    rc::Rc,
+};
 
 pub use id::*;
 pub use mem::{svtable::SVTable, variable::*};
 
-pub struct Interpreter {
+pub struct Interpreter<Out: Write, In: Read> {
     /// Memory structure. Tracks variables and modules.
     pub memory: Rc<RefCell<SVTable>>,
     /// Current module.
     mod_id: Option<Rc<RefCell<SVTable>>>,
     /// Scope level.
     scope_id: usize,
+    /// Output buffer. Typically `stdout`.
+    output: Rc<RefCell<Out>>,
+    /// Input buffer. Typically `stdin`.
+    input: Rc<RefCell<In>>,
 }
-impl Interpreter {
+impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Creates a new interpreter with default builtins.
-    pub fn new() -> Self {
+    pub fn new(input: In, output: Out) -> Self {
         let mut i = Self {
             memory: Rc::new(RefCell::new(SVTable::new())),
             mod_id: None,
             scope_id: 0,
+            output: Rc::new(RefCell::new(output)),
+            input: Rc::new(RefCell::new(input)),
         };
         i.inject_builtins()
             .context("failed to add builtins")
@@ -109,7 +119,9 @@ impl Interpreter {
                     let variable = self.get_owned(&id)?;
                     match variable {
                         // this branch should trigger on external functions
-                        Variable::Extern(closure) => return closure(call_args),
+                        Variable::Extern(closure) => {
+                            return closure(self.output.clone(), self.input.clone(), call_args)
+                        }
 
                         // this branch should trigger on raw, local functions
                         Variable::Function(function) => {

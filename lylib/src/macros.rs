@@ -25,7 +25,9 @@ macro_rules! parse_eq {
 #[macro_export]
 macro_rules! interpret {
     ($path:expr) => {{
-        let mut i = Interpreter::new();
+        use std::io::Cursor;
+        let (buf_out, buf_in) = (Cursor::new(vec![]), Cursor::new(vec![]));
+        let mut i = Interpreter::new(buf_out, buf_in);
         let mut p = Parser::new(Lexer::new().lex(include_str!($path).to_string()).unwrap());
         p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
         let ast = p.parse().unwrap();

@@ -1,25 +1,27 @@
 use super::*;
 
 macro_rules! exfn {
-    (|$($arg:ident),*| $body:expr) => {
-        Variable::Extern(Rc::new(|args| {
+    (|$($arg:ident),*;$in:ident, $out:ident| $body:expr) => {
+        Variable::Extern(Rc::new(|$in, $out, args| {
             let [$($arg),*] = args.as_slice() else { bail!("invalid arguments provided to external function"); };
             $body
         }))
     };
 }
-impl Interpreter {
+
+impl<Out: Write, In: Read> Interpreter<Out, In> {
     pub fn inject_builtins(&mut self) -> Result<()> {
         self.declare(
             &ID::from("print"),
-            exfn!(|value| {
+            exfn!(|value; stdout, _stdin| {
+                let mut out = stdout.borrow_mut();
                 match &**value {
-                    ASTNode::Literal(Token::Str(s)) => println!("{}", s),
-                    ASTNode::Literal(Token::Number(n)) => println!("{}", n),
-                    ASTNode::Literal(Token::Char(c)) => println!("{}", c),
-                    ASTNode::Literal(Token::Bool(b)) => println!("{}", b),
-                    other => println!("{:?}", other),
-                }
+                    ASTNode::Literal(Token::Str(s)) => write!(out, "{}\n", s),
+                    ASTNode::Literal(Token::Number(n)) => write!(out, "{}\n", n),
+                    ASTNode::Literal(Token::Char(c)) => write!(out, "{}\n", c),
+                    ASTNode::Literal(Token::Bool(b)) => write!(out, "{}\n", b),
+                    other => write!(out, "{:?}\n", other),
+                }?;
                 Ok(None)
             }),
         )?;

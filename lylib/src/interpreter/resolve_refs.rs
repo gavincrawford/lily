@@ -1,6 +1,6 @@
 use super::*;
 
-impl Interpreter {
+impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Makes all references inside the expression absolute.
     pub fn resolve_refs(&mut self, mut expr: ASTNode) -> Result<Rc<ASTNode>> {
         if let ASTNode::List(ref mut items) = expr {

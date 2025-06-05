@@ -1,8 +1,8 @@
 //! Implementations for drop functions. These basically serve as a very basic garbage collector.
 
-use super::Interpreter;
+use super::*;
 
-impl Interpreter {
+impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Drops all out-of-scope variables.
     pub fn drop(&mut self) {
         if let Some(mod_pointer) = &self.mod_id {

@@ -8,7 +8,7 @@ pub mod drop;
 pub mod svtable;
 pub mod variable;
 
-impl Interpreter {
+impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Helper function to get the absolute module and variable name from an ID.
     ///
     /// Some identifiers reference variables within stacks of modules, and this function resolves

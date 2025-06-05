@@ -1,7 +1,7 @@
 use super::*;
 use crate::lit;
 
-impl Interpreter {
+impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Executes a given function with the given arguments.
     pub fn execute_function(
         &mut self,
