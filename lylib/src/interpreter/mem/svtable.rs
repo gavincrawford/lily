@@ -146,7 +146,8 @@ impl Display for SVTable {
                 let value = scope.get(key).unwrap();
                 let dbg_ln = match &*value.borrow() {
                     Variable::Owned(node) => format!("{}", prettify(node.to_owned().into())),
-                    Variable::Reference(reference) => format!("&{}", prettify(reference.clone())),
+                    Variable::Function(reference) => format!("&{}", prettify(reference.clone())),
+                    Variable::Extern(_) => format!("EXTERN"),
                     Variable::Type(instance) => format!("struct {}", prettify(instance.clone())),
                 };
 

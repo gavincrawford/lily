@@ -1,5 +1,6 @@
 //! The interpreter executes an abstract syntax tree.
 
+mod builtins;
 mod execute_function;
 mod id;
 mod mem;
@@ -22,13 +23,17 @@ pub struct Interpreter {
     scope_id: usize,
 }
 impl Interpreter {
+    /// Creates a new interpreter with default builtins.
     pub fn new() -> Self {
-        // return new interpreter
-        Self {
+        let mut i = Self {
             memory: Rc::new(RefCell::new(SVTable::new())),
             mod_id: None,
             scope_id: 0,
-        }
+        };
+        i.inject_builtins()
+            .context("failed to add builtins")
+            .unwrap();
+        i
     }
 
     /// Executes an AST segment, typically the head. Returns `Some` when a return block is reached.
@@ -91,7 +96,7 @@ impl Interpreter {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                self.declare(id, Variable::Reference(statement.to_owned()))?;
+                self.declare(id, Variable::Function(statement.to_owned()))?;
                 Ok(None)
             }
             ASTNode::FunctionCall {
@@ -103,8 +108,11 @@ impl Interpreter {
                     let id = ID::new(id);
                     let variable = self.get_owned(&id)?;
                     match variable {
+                        // this branch should trigger on external functions
+                        Variable::Extern(closure) => return closure(call_args),
+
                         // this branch should trigger on raw, local functions
-                        Variable::Reference(function) => {
+                        Variable::Function(function) => {
                             if let ASTNode::Function {
                                 id: _,
                                 arguments: _,
