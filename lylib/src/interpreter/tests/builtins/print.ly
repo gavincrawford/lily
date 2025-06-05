@@ -1,0 +1,4 @@
+print("str")
+print('c')
+print(1)
+print(true)

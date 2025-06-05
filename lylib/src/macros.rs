@@ -25,14 +25,22 @@ macro_rules! parse_eq {
 #[macro_export]
 macro_rules! interpret {
     ($path:expr) => {{
+        // interpret file
         use std::io::Cursor;
-        let (buf_out, buf_in) = (Cursor::new(vec![]), Cursor::new(vec![]));
-        let mut i = Interpreter::new(buf_out, buf_in);
+        let mut i = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
         let mut p = Parser::new(Lexer::new().lex(include_str!($path).to_string()).unwrap());
         p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
         let ast = p.parse().unwrap();
         i.execute(ast).unwrap();
-        i
+
+        // read output
+        let mut buf = String::new();
+        let mut output = i.output.borrow_mut();
+        output.set_position(0);
+        output.read_to_string(&mut buf).unwrap();
+        drop(output);
+
+        (i, buf)
     }};
 }
 

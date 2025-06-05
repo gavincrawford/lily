@@ -29,12 +29,23 @@ macro_rules! var_eq {
 }
 
 #[cfg(test)]
+mod builtins {
+    use super::*;
+
+    #[test]
+    fn print() {
+        let (_, out) = interpret!("builtins/print.ly");
+        assert_eq!(out, "str\nc\n1\ntrue\n");
+    }
+}
+
+#[cfg(test)]
 mod feature {
     use super::*;
 
     #[test]
     fn global_variables() {
-        let i = interpret!("feature/global_variables.ly");
+        let (i, _) = interpret!("feature/global_variables.ly");
         var_eq_literal!(i, "a", 1);
         var_eq_literal!(i, "b", true);
         var_eq_literal!(i, "c", "str");
@@ -43,7 +54,7 @@ mod feature {
 
     #[test]
     fn math() {
-        let i = interpret!("feature/math.ly");
+        let (i, _) = interpret!("feature/math.ly");
         var_eq_literal!(i, "a", 1);
         var_eq_literal!(i, "b", 2.5);
         var_eq_literal!(i, "c", 6);
@@ -51,7 +62,7 @@ mod feature {
 
     #[test]
     fn operators() {
-        let i = interpret!("feature/operators.ly");
+        let (i, _) = interpret!("feature/operators.ly");
         var_eq_literal!(i, "n_eq", true);
         var_eq_literal!(i, "n_neq", true);
         var_eq_literal!(i, "n_add", 2);
@@ -69,13 +80,13 @@ mod feature {
 
     #[test]
     fn conditionals() {
-        let i = interpret!("feature/conditionals.ly");
+        let (i, _) = interpret!("feature/conditionals.ly");
         var_eq_literal!(i, "a", 8);
     }
 
     #[test]
     fn functions() {
-        let i = interpret!("feature/functions.ly");
+        let (i, _) = interpret!("feature/functions.ly");
         var_eq_literal!(i, "a", 10);
         var_eq_literal!(i, "b", 20);
         var_eq_literal!(i, "c", true);
@@ -83,14 +94,14 @@ mod feature {
 
     #[test]
     fn loops() {
-        let i = interpret!("feature/loops.ly");
+        let (i, _) = interpret!("feature/loops.ly");
         var_eq_literal!(i, "i", 25);
         var_eq_literal!(i, "a", 25);
     }
 
     #[test]
     fn lists() {
-        let i = interpret!("feature/lists.ly");
+        let (i, _) = interpret!("feature/lists.ly");
         var_eq_literal!(i, "idx_a", 2);
         var_eq_literal!(i, "idx_b", 3);
         var_eq_literal!(i, "dangling", 10);
@@ -101,7 +112,7 @@ mod feature {
 
     #[test]
     fn imports() {
-        let i = interpret!("feature/imports.ly");
+        let (i, _) = interpret!("feature/imports.ly");
         var_eq_literal!(i, "get_res", 4);
         var_eq_literal!(i, "assign_res", "reassignment value");
         var_eq_literal!(i, "decl_res", "declaration value");
@@ -109,13 +120,13 @@ mod feature {
 
     #[test]
     fn nested_imports() {
-        let i = interpret!("feature/nested_imports.ly");
+        let (i, _) = interpret!("feature/nested_imports.ly");
         var_eq_literal!(i, "res", 4);
     }
 
     #[test]
     fn structs() {
-        let i = interpret!("feature/structs.ly");
+        let (i, _) = interpret!("feature/structs.ly");
         var_eq_literal!(i, "av", 123);
         var_eq_literal!(i, "bv", 0);
         var_eq_literal!(i, "declaration", true);
@@ -128,19 +139,19 @@ mod implementation {
 
     #[test]
     fn binary_search() {
-        let i = interpret!("implementation/binary_search.ly");
+        let (i, _) = interpret!("implementation/binary_search.ly");
         var_eq_literal!(i, "result", 4);
     }
 
     #[test]
     fn fibonacci() {
-        let i = interpret!("implementation/fibonacci.ly");
+        let (i, _) = interpret!("implementation/fibonacci.ly");
         var_eq_literal!(i, "result", 21);
     }
 
     #[test]
     fn factorial() {
-        let i = interpret!("implementation/factorial.ly");
+        let (i, _) = interpret!("implementation/factorial.ly");
         var_eq_literal!(i, "six_fac", 720);
         var_eq_literal!(i, "one_fac", 1);
         var_eq_literal!(i, "zero_fac", 1);
@@ -148,7 +159,7 @@ mod implementation {
 
     #[test]
     fn matrix_rotation() {
-        let i = interpret!("implementation/matrix_rotation.ly");
+        let (i, _) = interpret!("implementation/matrix_rotation.ly");
         var_eq!(
             i,
             "result",
