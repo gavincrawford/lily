@@ -5,7 +5,12 @@ use lylib::{
     lexer::*,
     parser::*,
 };
-use std::{fs, path::PathBuf, rc::Rc};
+use std::{
+    fs,
+    io::{stdin, stdout},
+    path::PathBuf,
+    rc::Rc,
+};
 
 /// Executes a file.
 pub fn execute(args: ArgMatches) -> Result<()> {
@@ -31,7 +36,7 @@ pub fn execute(args: ArgMatches) -> Result<()> {
         .context("failed to parse file")?;
 
     // execute interpreter
-    let mut interp = Interpreter::new();
+    let mut interp = Interpreter::new(stdin(), stdout());
     interp.execute(ast).context("failed to execute file")?;
 
     // for debugging
