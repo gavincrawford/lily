@@ -109,10 +109,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 self.declare(id, Variable::Function(statement.to_owned()))?;
                 Ok(None)
             }
-            ASTNode::FunctionCall {
-                target,
-                arguments: call_args,
-            } => {
+            ASTNode::FunctionCall { target, arguments } => {
                 // get function reference, bail if none found
                 if let ASTNode::Literal(Token::Identifier(id)) = &**target {
                     let id = ID::new(id);
@@ -120,7 +117,17 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     match variable {
                         // this branch should trigger on external functions
                         Variable::Extern(closure) => {
-                            return closure(self.output.clone(), self.input.clone(), call_args)
+                            return closure(
+                                self.output.clone(),
+                                self.input.clone(),
+                                &arguments
+                                    .iter()
+                                    .map(|arg| {
+                                        // TODO no unwrap, especially here
+                                        self.execute_expr(arg.clone()).unwrap().unwrap().to_owned()
+                                    })
+                                    .collect::<Vec<Rc<ASTNode>>>(),
+                            );
                         }
 
                         // this branch should trigger on raw, local functions
@@ -131,7 +138,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 body: _,
                             } = &*function
                             {
-                                return Ok(self.execute_function(call_args, function)?);
+                                return Ok(self.execute_function(arguments, function)?);
                             } else {
                                 bail!("attempted to call non-function");
                             }
@@ -152,7 +159,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 self.mod_id = Some(svt.clone());
 
                                 // execute function
-                                self.execute_function(call_args, v)?;
+                                self.execute_function(arguments, v)?;
 
                                 // reset module ID
                                 self.mod_id = temp;

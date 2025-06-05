@@ -34,9 +34,8 @@ mod builtins {
 
     #[test]
     fn len() {
-        let (i, _) = interpret!("builtins/len.ly");
-        var_eq_literal!(i, "a", 0);
-        var_eq_literal!(i, "b", 5);
+        let (_, out) = interpret!("builtins/len.ly");
+        assert_eq!(out, "0\n5\n");
     }
 
     #[test]
