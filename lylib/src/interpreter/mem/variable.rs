@@ -3,7 +3,7 @@ use std::{fmt::Debug, mem::discriminant};
 
 /// External function signature.
 /// The first two arguments are the input and output handles. The third contains arguments.
-type ExFn = dyn for<'a> Fn(
+pub type ExFn = dyn for<'a> Fn(
     Rc<RefCell<dyn Write + 'a>>,
     Rc<RefCell<dyn Read + 'a>>,
     &Vec<Rc<ASTNode>>,

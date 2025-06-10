@@ -1,19 +1,27 @@
-use super::*;
+use super::{mem::variable::ExFn, *};
 use crate::lit;
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
-    pub fn inject_builtins(&mut self) -> Result<()> {
+    /// Adds an arbitrary external function to this interpreter.
+    pub fn inject_extern(&mut self, id: impl Into<String>, closure: Rc<ExFn>) -> Result<()> {
+        let id = id.into();
+        self.declare(&ID::from(id.as_str()), Variable::Extern(closure))
+    }
+
+    // `Interpreter::new`, and we don't want anyone using it twice.
+    /// Adds the default external functions to this interpreter.
+    pub(crate) fn inject_builtins(&mut self) -> Result<()> {
         /// Adds an external function.
         macro_rules! exfn {
             ($id:tt, |$($arg:ident),*;$out:ident, $in:ident| $body:expr) => {
-                self.declare(
-                    &ID::from(stringify!($id)),
-                    Variable::Extern(Rc::new(|stdout, stdin, args| {
+                self.inject_extern(
+                    stringify!($id),
+                    Rc::new(|stdout, stdin, args| {
                         let mut $out = stdout.borrow_mut();
                         let mut $in = stdin.borrow_mut();
                         let [$($arg),*] = args.as_slice() else { bail!("invalid arguments provided to external function"); };
                         $body
-                    }))
+                    })
                 )?
             };
         }
