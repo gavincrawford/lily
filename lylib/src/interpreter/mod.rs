@@ -15,8 +15,8 @@ use std::{
     rc::Rc,
 };
 
-pub use id::*;
-pub use mem::{svtable::SVTable, variable::*};
+pub(crate) use id::*;
+pub(crate) use mem::{svtable::SVTable, variable::*};
 
 pub struct Interpreter<Out: Write, In: Read> {
     /// Memory structure. Tracks variables and modules.
@@ -113,7 +113,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // get function reference, bail if none found
                 if let ASTNode::Literal(Token::Identifier(id)) = &**target {
                     let id = ID::new(id);
-                    let variable = self.get_owned(&id)?;
+                    let variable = self.get(&id)?;
                     match variable {
                         // this branch should trigger on external functions
                         Variable::Extern(closure) => {
@@ -362,7 +362,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
                     // if this literal is an identifier, return the internal value
-                    if let Variable::Owned(var) = self.get_owned(&ID::new(identifier))? {
+                    if let Variable::Owned(var) = self.get(&ID::new(identifier))? {
                         return Ok(Some(var.into()));
                     }
                     Ok(None)

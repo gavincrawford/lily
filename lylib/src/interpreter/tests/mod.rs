@@ -12,7 +12,7 @@ use crate::{
 macro_rules! var_eq_literal {
     ($interpreter:expr, $id:tt, $token:expr) => {
         assert_eq!(
-            *$interpreter.get(&ID::new($id.clone())).unwrap(),
+            $interpreter.get(&ID::new($id.clone())).unwrap(),
             Variable::Owned(ASTNode::inner_to_owned(&lit!($token))).into(),
         );
     };
@@ -22,7 +22,7 @@ macro_rules! var_eq_literal {
 macro_rules! var_eq {
     ($interpreter:expr, $id:tt, $node:expr) => {
         assert_eq!(
-            *$interpreter.get(&ID::new($id)).unwrap(),
+            $interpreter.get(&ID::new($id)).unwrap(),
             Variable::Owned($node).into(),
         );
     };

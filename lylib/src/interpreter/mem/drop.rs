@@ -4,7 +4,7 @@ use super::*;
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Drops all out-of-scope variables.
-    pub fn drop(&mut self) {
+    pub(crate) fn drop(&mut self) {
         if let Some(mod_pointer) = &self.mod_id {
             let mut module = mod_pointer.borrow_mut();
             let mut scope_n = 0;
@@ -24,7 +24,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     }
 
     /// Drops all variables in the current scope.
-    pub fn drop_here(&mut self) {
+    pub(crate) fn drop_here(&mut self) {
         if let Some(mod_pointer) = &self.mod_id {
             let mut module = mod_pointer.borrow_mut();
             if let Some(this_scope) = module.get_scope(self.scope_id) {

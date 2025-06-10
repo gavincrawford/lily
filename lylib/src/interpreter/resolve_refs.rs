@@ -2,7 +2,7 @@ use super::*;
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Makes all references inside the expression absolute.
-    pub fn resolve_refs(&mut self, mut expr: ASTNode) -> Result<Rc<ASTNode>> {
+    pub(crate) fn resolve_refs(&mut self, mut expr: ASTNode) -> Result<Rc<ASTNode>> {
         if let ASTNode::List(ref mut items) = expr {
             // get list items, always at scope zero
             let mut table = items.borrow_mut();

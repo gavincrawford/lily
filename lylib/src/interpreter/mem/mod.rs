@@ -63,25 +63,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         Ok((module, id))
     }
 
-    /// Gets the value of a variable.
-    pub fn get(&self, id: &ID) -> Result<Rc<RefCell<Variable>>> {
-        // get absolute module and ID
-        let (module, id) = self.resolve_identifier(id)?;
-
-        // find id in any scope
-        for scope in (&*module).borrow().iter().rev() {
-            if scope.contains_key(&id) {
-                let variable = scope.get(&id).unwrap();
-                return Ok(variable.to_owned());
-            }
-        }
-
-        // if no value is found, bail
-        bail!("failed to get value {:?}", id)
-    }
-
     /// Gets the value of a variable, and clones it in the process.
-    pub fn get_owned(&self, id: &ID) -> Result<Variable> {
+    pub(crate) fn get(&self, id: &ID) -> Result<Variable> {
         // get absolute module and ID
         let (module, id) = self.resolve_identifier(id)?;
 
@@ -98,7 +81,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     }
 
     /// Declares a new variable.
-    pub fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
+    pub(crate) fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get absolute module and ID
         let (module, id) = self.resolve_identifier(id)?;
 
@@ -121,7 +104,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     }
 
     /// Assigns to an existing variable.
-    pub fn assign(&mut self, id: &ID, value: Variable) -> Result<()> {
+    pub(crate) fn assign(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get absolute module and ID
         let (module, id) = self.resolve_identifier(id)?;
 
