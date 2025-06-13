@@ -118,10 +118,10 @@ impl ASTNode {
                     let id = id.to_path().get(0).unwrap().to_owned();
 
                     // add it to the table
-                    inner_table.first_mut().unwrap().insert(
-                        id.to_owned(),
-                        Rc::new(RefCell::new(Variable::Owned(value.to_owned()))),
-                    );
+                    inner_table
+                        .first_mut()
+                        .unwrap()
+                        .insert(id.to_owned(), Variable::Owned(value.to_owned()).into());
                 });
                 return Some(svt);
             }

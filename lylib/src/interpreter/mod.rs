@@ -342,14 +342,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // find list item if applicable, bail otherwise
                 if let ASTNode::List(list_table) = &*list {
                     let mut items = list_table.borrow_mut();
-                    // TODO ew. helpers?
                     if let Variable::Owned(value) = &*items
                         .get_scope(0)
                         .unwrap()
                         .get(&usize_idx.to_string())
-                        .unwrap_or(&Rc::new(RefCell::new(Variable::Owned(ASTNode::Literal(
-                            Token::Undefined,
-                        )))))
+                        .unwrap_or(&Variable::Owned(ASTNode::Literal(Token::Undefined)).into())
                         .borrow()
                     {
                         return Ok(Some(value.to_owned().into()));

@@ -22,6 +22,12 @@ pub enum Variable {
     Type(Rc<ASTNode>),
 }
 
+impl Into<Rc<RefCell<Variable>>> for Variable {
+    fn into(self) -> Rc<RefCell<Variable>> {
+        Rc::new(RefCell::new(self))
+    }
+}
+
 impl Debug for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
