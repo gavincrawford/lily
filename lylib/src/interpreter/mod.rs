@@ -7,7 +7,7 @@ mod mem;
 mod resolve_refs;
 mod tests;
 
-use crate::{lexer::Token, parser::ASTNode};
+use crate::{lexer::Token, parser::ASTNode, *};
 use anyhow::{bail, Context, Result};
 use std::{
     cell::RefCell,
@@ -117,16 +117,22 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     match variable {
                         // this branch should trigger on external functions
                         Variable::Extern(closure) => {
+                            // resolve arguments to their literal values
+                            let mut resolved_args = vec![];
+                            for arg in arguments {
+                                resolved_args.push(
+                                    self.execute_expr(arg.clone())
+                                        .context("failed to evaluate argument in extern")?
+                                        .unwrap_or(lit!(Token::Undefined))
+                                        .to_owned(),
+                                );
+                            }
+
+                            // call closure with i/o handles
                             return closure(
                                 self.output.clone(),
                                 self.input.clone(),
-                                &arguments
-                                    .iter()
-                                    .map(|arg| {
-                                        // TODO no unwrap, especially here
-                                        self.execute_expr(arg.clone()).unwrap().unwrap().to_owned()
-                                    })
-                                    .collect::<Vec<Rc<ASTNode>>>(),
+                                &resolved_args,
                             );
                         }
 
