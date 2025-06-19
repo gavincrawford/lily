@@ -1,7 +1,6 @@
-use std::cell::RefCell;
-
 use super::{Rc, Token};
 use crate::interpreter::{IDKind, SVTable, Variable, ID};
+use std::{cell::RefCell, fmt::Display};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ASTNode {
@@ -131,5 +130,15 @@ impl ASTNode {
 
     pub fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {
         (&*rc.clone()).clone()
+    }
+}
+
+impl Display for ASTNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ASTNode::Literal(token) => write!(f, "{}", token),
+            _ => write!(f, "{:?}", self),
+        }?;
+        Ok(())
     }
 }

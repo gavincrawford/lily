@@ -254,7 +254,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         LogicalEq => Bool(l == r),
                         LogicalNeq => Bool(l != r)
                     );
-                    bail!("operator not implemented")
+                    bail!("operator not implemented ({} {:?} {})", &*a, op, &*b)
                 } else {
                     bail!("failed to evaluate operands")
                 }
@@ -326,7 +326,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let usize_idx;
                 if let ASTNode::Literal(Token::Number(n)) = &*self
                     .execute_expr(index.clone())
-                    .context("failed to evaluate index value")?
+                    .context(format!("failed to evaluate index value ({})", index))?
                     .unwrap()
                 {
                     // guard numbers outside of range
@@ -387,7 +387,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let expr = self
                     .execute_expr(expr.clone())
                     .context("failed to evaluate return expression")?
-                    .expect("expected return expression");
+                    .expect("expected return value");
 
                 // if there are indicies, flatten them
                 let expr = self
@@ -409,8 +409,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
 
                     // execute body
-                    self.execute(body.clone())
-                        .context("failed to evaluate module body")?;
+                    self.execute(body.clone()).context(format!(
+                        "failed to evaluate module '{}'",
+                        alias.clone().unwrap() // safety: destructuring
+                    ))?;
                     self.mod_id = temp;
                 } else {
                     // insert unnamed modules
