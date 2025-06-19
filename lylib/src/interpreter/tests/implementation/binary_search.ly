@@ -1,8 +1,6 @@
 func search list target do
   let left = 0
-  # TODO length builtin
-  # ... = len(list) - 1
-  let right = 8
+  let right = len(list) - 1
   while left <= right do
     let mid = (left + right) // 2
     if list[mid] == target do
@@ -18,5 +16,5 @@ func search list target do
   return -1
 end
 
-let list = [8, 5, 7, 0, 2, 1, 3, 4, 6, 9]
-let result = search(list, 2)
+let some = search([8, 5, 7, 0, 2, 1, 3, 4, 6, 9], 2)
+let none = search([], 1)

@@ -3,7 +3,8 @@ use super::*;
 #[test]
 fn binary_search() {
     let (i, _) = interpret!("binary_search.ly");
-    var_eq_literal!(i, "result", 4);
+    var_eq_literal!(i, "some", 4);
+    var_eq_literal!(i, "none", -1);
 }
 
 #[test]
