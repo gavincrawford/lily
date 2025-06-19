@@ -8,6 +8,14 @@ fn binary_search() {
 }
 
 #[test]
+fn tree() {
+    let (i, _) = interpret!("tree.ly");
+    var_eq_literal!(i, "head", 1);
+    var_eq_literal!(i, "lhs", 2);
+    var_eq_literal!(i, "rhs", 0);
+}
+
+#[test]
 fn fibonacci() {
     let (i, _) = interpret!("fibonacci.ly");
     var_eq_literal!(i, "result", 21);

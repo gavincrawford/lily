@@ -112,22 +112,25 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::FunctionCall { target, arguments } => {
                 // get function reference, bail if none found
                 if let ASTNode::Literal(Token::Identifier(id)) = &**target {
+                    // get function defined by this ID
                     let id = ID::new(id);
                     let variable = self.get(&id)?;
+
+                    // resolve arguments to their literal values
+                    // we do this BEFORE to allow arguments to access their relative scope
+                    let mut resolved_args = vec![];
+                    for arg in arguments {
+                        resolved_args.push(
+                            self.execute_expr(arg.clone())
+                                .context("failed to evaluate argument in extern")?
+                                .unwrap_or(lit!(Token::Undefined))
+                                .to_owned(),
+                        );
+                    }
+
                     match variable {
                         // this branch should trigger on external functions
                         Variable::Extern(closure) => {
-                            // resolve arguments to their literal values
-                            let mut resolved_args = vec![];
-                            for arg in arguments {
-                                resolved_args.push(
-                                    self.execute_expr(arg.clone())
-                                        .context("failed to evaluate argument in extern")?
-                                        .unwrap_or(lit!(Token::Undefined))
-                                        .to_owned(),
-                                );
-                            }
-
                             // call closure with i/o handles
                             return closure(
                                 self.output.clone(),
@@ -144,7 +147,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 body: _,
                             } = &*function
                             {
-                                return Ok(self.execute_function(arguments, function)?);
+                                return Ok(self.execute_function(&resolved_args, function)?);
                             } else {
                                 bail!("attempted to call non-function");
                             }
@@ -165,7 +168,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 self.mod_id = Some(svt.clone());
 
                                 // execute function
-                                self.execute_function(arguments, v)?;
+                                self.execute_function(&resolved_args, v)?;
 
                                 // reset module ID
                                 self.mod_id = temp;
@@ -374,6 +377,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     Ok(Some(statement.to_owned()))
                 }
             }
+            ASTNode::Instance {
+                kind: _,
+                id: _,
+                svt: _,
+            } => Ok(Some(statement)),
             ASTNode::Return(ref expr) => {
                 // resolve expression
                 let expr = self
