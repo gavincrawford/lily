@@ -110,7 +110,7 @@ impl ASTNode {
                 let mut svt = SVTable::new();
                 svt.add_scope();
                 let inner_table = svt.inner_mut();
-                default_fields.first().iter().for_each(|(target, value)| {
+                default_fields.iter().for_each(|(target, value)| {
                     // convert this field to an ID
                     let id = ID::node_to_id(target.to_owned()).unwrap();
 

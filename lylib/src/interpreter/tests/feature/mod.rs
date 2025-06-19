@@ -84,7 +84,7 @@ fn nested_imports() {
 #[test]
 fn structs() {
     let (i, _) = interpret!("structs.ly");
-    var_eq_literal!(i, "av", 123);
+    var_eq_literal!(i, "av", 444);
     var_eq_literal!(i, "bv", 0);
     var_eq_literal!(i, "declaration", true);
 }

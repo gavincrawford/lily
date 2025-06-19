@@ -1,17 +1,21 @@
 struct DefinedConstructor do
-  func constructor n do
-    value = n
+  func constructor x y do
+    a = x
+    b = y
   end
-  let value = 0
+  let a = 0
+  let b = 0
 end
 
 struct DefaultConstructor do
   let value = 0
 end
 
-# test constructors
-let a = new DefinedConstructor(123)
-let av = a.value
+# test defined constructors with two values
+let a = new DefinedConstructor(123, 321)
+let av = a.a + a.b
+
+# test default constructors with one value
 let b = new DefaultConstructor()
 let bv = b.value
 
