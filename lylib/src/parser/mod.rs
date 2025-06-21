@@ -290,7 +290,10 @@ impl Parser {
                     break;
                 }
                 Some(_) => {
-                    args.push(self.parse_expr(None).context("failed to parse argument")?);
+                    args.push(
+                        self.parse_expr(Some(Token::Comma))
+                            .context("failed to parse argument")?,
+                    );
                 }
                 _ => {
                     break;
@@ -399,7 +402,7 @@ impl Parser {
                 Some(Token::Equal) => self.parse_assignment(primary.clone()),
 
                 // break for all others
-                Some(Token::Endl) | Some(Token::BlockStart) | Some(Token::Comma) | None => {
+                Some(Token::Endl) | Some(Token::BlockStart) | None => {
                     self.next();
                     break;
                 }
@@ -483,7 +486,8 @@ impl Parser {
 
             // add item to the list
             items.push(Rc::from(
-                self.parse_expr(None).context("failed to parse list item")?,
+                self.parse_expr(Some(Token::Comma))
+                    .context("failed to parse list item")?,
             ))
         }
 

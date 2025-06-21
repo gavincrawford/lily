@@ -1,8 +1,6 @@
-# TODO using negative values for nonexistence causes problems in initialization...
-# ex. new Node(1, new Node(2, -1, -1), -1)
 struct Node do
-  let l = 0
-  let r = 0
+  let l = -1
+  let r = -1
   let v = 0
   func constructor nv nl nr do
     v = nv
@@ -11,7 +9,7 @@ struct Node do
   end
 end
 
-let tree = new Node(1, new Node(2, 0, 0), 0)
+let tree = new Node(1, new Node(2, -1, -1), -1)
 
 # check tree head == 1
 let head = tree.v
