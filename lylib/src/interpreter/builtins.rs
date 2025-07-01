@@ -56,6 +56,23 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
         });
 
+        // chars (get characters of string as list)
+        exfn!(chars, |string; _stdout, _stdin| {
+            match &**string {
+                ASTNode::Literal(Token::Str(v)) =>
+                {
+                    // collect chars into a vector of nodes
+                    let values: Vec<Rc<ASTNode>> = v.chars().map(|ch| {
+                        ASTNode::Literal(Token::Char(ch.clone())).into()
+                    }).collect();
+
+                    // return new list
+                    Ok(Some(ASTNode::List(SVTable::new_with(values)).into()))
+                },
+                _ => bail!("cannot fetch characters of {:?}", &**string)
+            }
+        });
+
         Ok(())
     }
 }
