@@ -57,14 +57,21 @@ fn loops() {
 }
 
 #[test]
-fn lists() {
-    let (i, _) = interpret!("lists.ly");
+fn indices() {
+    let (i, _) = interpret!("indices.ly");
     var_eq_literal!(i, "idx_a", 2);
     var_eq_literal!(i, "idx_b", 3);
-    var_eq_literal!(i, "dangling", 10);
     var_eq!(i, "idx_list_whole", node!([lit!(123)]));
     var_eq_literal!(i, "idx_list_part", 123);
     var_eq_literal!(i, "assignment", 1);
+    var_eq_literal!(i, "head", '0');
+    var_eq_literal!(i, "tail", '5');
+}
+
+#[test]
+fn dangling_indices() {
+    let (i, _) = interpret!("dangling_indices.ly");
+    var_eq_literal!(i, "dangling", 10);
 }
 
 #[test]

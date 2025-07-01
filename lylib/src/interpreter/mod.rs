@@ -342,27 +342,40 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     panic!("index must be positive and a number");
                 }
 
-                // get list
-                let list = self
+                // get the target of this index
+                let target = self
                     .execute_expr(target.to_owned())
                     .context("failed to evaluate index target")?
                     .unwrap();
 
-                // find list item if applicable, bail otherwise
-                if let ASTNode::List(list_table) = &*list {
-                    let mut items = list_table.borrow_mut();
-                    if let Variable::Owned(value) = &*items
-                        .get_scope(0)
-                        .unwrap()
-                        .get(&usize_idx.to_string())
-                        .unwrap_or(&Variable::Owned(ASTNode::Literal(Token::Undefined)).into())
-                        .borrow()
-                    {
-                        return Ok(Some(value.to_owned().into()));
+                // find item if applicable, bail otherwise
+                match &*target {
+                    ASTNode::List(list) => {
+                        let mut items = list.borrow_mut();
+                        if let Variable::Owned(value) = &*items
+                            .get_scope(0)
+                            .unwrap()
+                            .get(&usize_idx.to_string())
+                            .unwrap_or(&Variable::Owned(ASTNode::Literal(Token::Undefined)).into())
+                            .borrow()
+                        {
+                            return Ok(Some(value.to_owned().into()));
+                        }
+                        bail!("expected list item to be an owned value");
                     }
-                    panic!();
-                } else {
-                    bail!("expected list as index target");
+                    ASTNode::Literal(Token::Str(string)) => {
+                        // get the char at the provided index, bail if it is not found
+                        let ch = string.chars().nth(usize_idx).context(format!(
+                            "no character exists at {} in string '{}'",
+                            usize_idx, string
+                        ))?;
+
+                        // return the cloned character
+                        return Ok(Some(lit!(Token::Char(ch))));
+                    }
+                    _ => {
+                        bail!("expected list as index target");
+                    }
                 }
             }
             ASTNode::Literal(ref t) => {
