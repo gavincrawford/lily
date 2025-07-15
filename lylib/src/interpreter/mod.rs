@@ -353,7 +353,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     ASTNode::List(items) => {
                         if let Variable::Owned(value) = &*items
                             .get(usize_idx)
-                            .unwrap_or(&Variable::Owned(ASTNode::Literal(Token::Undefined)).into())
+                            .context("list item does not exist")?
+                            .borrow()
                         {
                             return Ok(Some(value.to_owned().into()));
                         }

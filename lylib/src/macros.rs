@@ -160,7 +160,7 @@ macro_rules! node {
             let mut variables = vec![];
             for value in values {
                 let variable: Variable = value.into();
-                variables.push(variable);
+                variables.push(variable.into());
             }
             ASTNode::List(variables).into()
         }

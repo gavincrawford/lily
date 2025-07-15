@@ -57,8 +57,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 ASTNode::Literal(Token::Str(v)) =>
                 {
                     // collect chars into a vector of nodes
-                    let values: Vec<Variable> = v.chars().map(|ch| {
-                        ASTNode::Literal(Token::Char(ch.clone())).into()
+                    let values: Vec<Rc<RefCell<Variable>>> = v.chars().map(|ch| {
+                        Variable::Owned(ASTNode::Literal(Token::Char(ch.clone()))).into()
                     }).collect();
 
                     // return new list

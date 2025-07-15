@@ -63,7 +63,8 @@ fn indices() {
     var_eq_literal!(i, "idx_b", 3);
     var_eq!(i, "idx_list_whole", node!([lit!(123)]));
     var_eq_literal!(i, "idx_list_part", 123);
-    var_eq_literal!(i, "assignment", 1);
+    var_eq_literal!(i, "assignment_flat", 1);
+    var_eq_literal!(i, "assignment_nested", 1);
     var_eq_literal!(i, "head", '0');
     var_eq_literal!(i, "tail", '5');
 }

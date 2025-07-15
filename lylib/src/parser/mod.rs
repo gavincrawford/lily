@@ -490,7 +490,7 @@ impl Parser {
                 .context("failed to parse list item")?;
 
             // add item to the list
-            items.push(Variable::Owned(ASTNode::inner_to_owned(&item)))
+            items.push(Variable::Owned(ASTNode::inner_to_owned(&item)).into())
         }
 
         Ok(ASTNode::List(items).into())

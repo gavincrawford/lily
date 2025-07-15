@@ -58,7 +58,7 @@ pub enum ASTNode {
     },
     Return(Rc<ASTNode>),
     Literal(Token),
-    List(Vec<Variable>),
+    List(Vec<Rc<RefCell<Variable>>>),
 }
 
 impl ASTNode {

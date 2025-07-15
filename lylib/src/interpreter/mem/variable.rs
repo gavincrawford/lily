@@ -75,14 +75,23 @@ impl MemoryInterface for Variable {
         if let Variable::Owned(ASTNode::List(items)) = self {
             // saftey: checked in interpreter
             let idx = id.parse::<usize>().unwrap();
-            Ok(items.get(idx).context("index out of bounds")?.to_owned())
+            let item = items.get(idx).context("index out of bounds")?;
+            let inner = (&*item.clone()).clone().into_inner();
+            Ok(inner)
         } else {
             bail!("invalid access to variable '{:?}'", self);
         }
     }
 
-    fn get_ref(&self, _: String) -> Result<Rc<RefCell<Variable>>> {
-        bail!("variables cannot provide references to their memory");
+    fn get_ref(&self, id: String) -> Result<Rc<RefCell<Variable>>> {
+        if let Variable::Owned(ASTNode::List(items)) = self {
+            // saftey: checked in interpreter
+            let idx = id.parse::<usize>().unwrap();
+            let item = items.get(idx).context("index out of bounds")?;
+            Ok(item.clone())
+        } else {
+            bail!("invalid access to variable '{:?}'", self);
+        }
     }
 
     fn get_module(&self, _: String) -> Result<Rc<RefCell<SVTable>>> {
@@ -93,7 +102,7 @@ impl MemoryInterface for Variable {
         if let Variable::Owned(ASTNode::List(items)) = self {
             // saftey: checked in interpreter
             let idx = id.parse::<usize>().unwrap();
-            items.insert(idx, value);
+            items.insert(idx, value.into());
             Ok(())
         } else {
             bail!("invalid declaration to variable '{:?}'", self);
@@ -104,7 +113,7 @@ impl MemoryInterface for Variable {
         if let Variable::Owned(ASTNode::List(items)) = self {
             // saftey: checked in interpreter
             let idx = id.parse::<usize>().unwrap();
-            *items.get_mut(idx).context("index out of bounds")? = value;
+            *items.get_mut(idx).context("index out of bounds")? = value.into();
             Ok(())
         } else {
             bail!("invalid assignment to variable '{:?}'", self);

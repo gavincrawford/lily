@@ -12,9 +12,11 @@ let idx_list_whole = list[0]
 let idx_list_part = list[0][0]
 
 # test list assignment
-list = [0, 0, 0, 0]
+list = [0, 0, 0, [0, 0]]
 list[1] = 1
-let assignment = list[1]
+let assignment_flat = list[1]
+list[3][0] = 1
+let assignment_nested = list[3][0]
 
 # test string indexing
 let string = "012345"

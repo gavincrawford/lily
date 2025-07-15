@@ -6,7 +6,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         if let ASTNode::List(ref mut items) = expr {
             // resolve list items
             for variable in items.iter_mut() {
-                if let Variable::Owned(value) = &*variable {
+                let mut handle = variable.borrow_mut();
+                if let Variable::Owned(value) = &*handle {
                     match value {
                         ASTNode::Index {
                             target: _,
@@ -16,11 +17,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .execute_expr(value.clone().into())
                                 .context("could not flatten index inside list")?
                                 .unwrap();
-                            *variable = Variable::Owned(ASTNode::inner_to_owned(&resolved_item));
+                            *handle =
+                                Variable::Owned(ASTNode::inner_to_owned(&resolved_item)).into();
                         }
                         ASTNode::List(_) => {
                             let resolved_refs = self.resolve_refs(value.to_owned())?;
-                            *variable = Variable::Owned(ASTNode::inner_to_owned(&resolved_refs));
+                            *handle =
+                                Variable::Owned(ASTNode::inner_to_owned(&resolved_refs)).into();
                         }
                         _ => {}
                     }
