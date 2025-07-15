@@ -1,4 +1,4 @@
-use super::{Rc, Token};
+use super::*;
 use crate::interpreter::{IDKind, SVTable, Variable, ID};
 use std::{cell::RefCell, fmt::Display};
 
@@ -58,7 +58,7 @@ pub enum ASTNode {
     },
     Return(Rc<ASTNode>),
     Literal(Token),
-    List(Rc<RefCell<SVTable>>),
+    List(Vec<Variable>),
 }
 
 impl ASTNode {

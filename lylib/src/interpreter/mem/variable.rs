@@ -28,6 +28,18 @@ impl Into<Rc<RefCell<Variable>>> for Variable {
     }
 }
 
+impl From<ASTNode> for Variable {
+    fn from(value: ASTNode) -> Self {
+        Self::Owned(value)
+    }
+}
+
+impl From<Rc<ASTNode>> for Variable {
+    fn from(value: Rc<ASTNode>) -> Self {
+        Self::Owned(ASTNode::inner_to_owned(&value))
+    }
+}
+
 impl Debug for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -54,6 +66,48 @@ impl PartialEq for Variable {
                 "cannot comapre external variables ({:?}, {:?})",
                 self, other
             ),
+        }
+    }
+}
+
+impl MemoryInterface for Variable {
+    fn get_owned(&self, id: String) -> Result<Variable> {
+        if let Variable::Owned(ASTNode::List(items)) = self {
+            // saftey: checked in interpreter
+            let idx = id.parse::<usize>().unwrap();
+            Ok(items.get(idx).context("index out of bounds")?.to_owned())
+        } else {
+            bail!("invalid access to variable '{:?}'", self);
+        }
+    }
+
+    fn get_ref(&self, _: String) -> Result<Rc<RefCell<Variable>>> {
+        bail!("variables cannot provide references to their memory");
+    }
+
+    fn get_module(&self, _: String) -> Result<Rc<RefCell<SVTable>>> {
+        bail!("variables cannot contain modules");
+    }
+
+    fn declare(&mut self, id: String, value: Variable, _: usize) -> Result<()> {
+        if let Variable::Owned(ASTNode::List(items)) = self {
+            // saftey: checked in interpreter
+            let idx = id.parse::<usize>().unwrap();
+            items.insert(idx, value);
+            Ok(())
+        } else {
+            bail!("invalid declaration to variable '{:?}'", self);
+        }
+    }
+
+    fn assign(&mut self, id: String, value: Variable, _: usize) -> Result<()> {
+        if let Variable::Owned(ASTNode::List(items)) = self {
+            // saftey: checked in interpreter
+            let idx = id.parse::<usize>().unwrap();
+            *items.get_mut(idx).context("index out of bounds")? = value;
+            Ok(())
+        } else {
+            bail!("invalid assignment to variable '{:?}'", self);
         }
     }
 }

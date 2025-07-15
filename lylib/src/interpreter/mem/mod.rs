@@ -1,21 +1,30 @@
 //! Implements all memory-related functions for the interpreter.
-//! This includes getting and setting variables, as well as garbage collection.
+//! This includes getting and setting variables.
 
 use super::*;
-use anyhow::{bail, Result};
+use anyhow::Result;
 
 pub mod drop;
 pub mod svtable;
 pub mod variable;
 
+/// This trait can be added to any type to give it the ability to be accessed by identifier.
+pub(crate) trait MemoryInterface {
+    fn get_owned(&self, id: String) -> Result<Variable>;
+    fn get_ref(&self, id: String) -> Result<Rc<RefCell<Variable>>>;
+    fn get_module(&self, id: String) -> Result<Rc<RefCell<SVTable>>>;
+    fn declare(&mut self, id: String, value: Variable, scope: usize) -> Result<()>;
+    fn assign(&mut self, id: String, value: Variable, scope: usize) -> Result<()>;
+}
+
 impl<Out: Write, In: Read> Interpreter<Out, In> {
-    /// Helper function to get the absolute module and variable name from an ID.
+    /// Helper function to get the target and variable name from an ID.
     ///
     /// Some identifiers reference variables within stacks of modules, and this function resolves
-    /// these long chains of reference into the relevant module and variable name, respectively.
-    fn resolve_identifier(&self, id: &ID) -> Result<(Rc<RefCell<SVTable>>, String)> {
+    /// these long chains of reference into the relevant target and variable name.
+    fn resolve_access_target(&self, id: &ID) -> Result<(Rc<RefCell<dyn MemoryInterface>>, String)> {
         // get relevant module pointer
-        let mut module = match &self.mod_id {
+        let mut module: Rc<RefCell<dyn MemoryInterface>> = match &self.mod_id {
             Some(mod_id) => mod_id.clone(),
             None => self.memory.clone(),
         };
@@ -31,29 +40,25 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 for item in &path[0..(path.len() - 1)] {
                     // get mutable module ref
                     let module_copy = &*module.clone();
-                    let mut module_ref = module_copy.borrow_mut();
+                    let module_ref = module_copy.borrow_mut();
 
-                    if let Ok(v) = module_ref.get_module(item) {
+                    if let Ok(v) = module_ref.get_module(item.to_owned()) {
                         // if this is a simple module, return that and continue
                         module = v;
                     } else {
                         // otherwise, this is a structure or list deref, so we have to find its SVT
-                        for (name, value) in module_ref.get_scope(0).unwrap() {
-                            if let Variable::Owned(var) = &*value.borrow() {
-                                match (var, item == name) {
-                                    (
-                                        ASTNode::Instance {
-                                            kind: _,
-                                            id: _,
-                                            svt,
-                                        },
-                                        true,
-                                    ) => module = svt.clone(),
-                                    (ASTNode::List(svt), true) => module = svt.clone(),
-                                    _ => {}
-                                }
+                        let item_ref = module_ref.get_ref(item.to_owned()).unwrap();
+                        match &*item_ref.borrow() {
+                            Variable::Owned(ASTNode::Instance {
+                                kind: _,
+                                id: _,
+                                svt,
+                            }) => module = svt.clone(),
+                            Variable::Owned(node) if matches!(node, ASTNode::List(_)) => {
+                                module = item_ref.clone();
                             }
-                        }
+                            _ => {}
+                        };
                     };
                 }
                 path.last().unwrap().to_owned()
@@ -66,66 +71,36 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Gets the value of a variable, and clones it in the process.
     pub(crate) fn get(&self, id: &ID) -> Result<Variable> {
         // get absolute module and ID
-        let (module, id) = self.resolve_identifier(id)?;
+        let (module, id) = self.resolve_access_target(id)?;
 
-        // find id in any scope
-        for scope in (&*module).borrow().iter().rev() {
-            if scope.contains_key(&id) {
-                let variable = scope.get(&id).unwrap();
-                return Ok((&**variable).borrow().clone());
-            }
-        }
+        // borrow statically to read value
+        let handle = module.borrow();
 
-        // if no value is found, bail
-        bail!("failed to get owned value {:?}", id)
+        // return value
+        handle.get_owned(id)
     }
 
     /// Declares a new variable.
     pub(crate) fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get absolute module and ID
-        let (module, id) = self.resolve_identifier(id)?;
+        let (module, id) = self.resolve_access_target(id)?;
 
         // borrow module mutably to make changes
         let mut module = module.borrow_mut();
 
-        // add scopes if necessary
-        while module.scopes() <= self.scope_id {
-            module.add_scope();
-        }
-
-        // get variable map and insert new value. if the value already exists, bail
-        let var_map = module
-            .get_scope(self.scope_id)
-            .context(format!("cannot delcare at scope {}", self.scope_id,))?;
-        if let Some(_) = var_map.insert(id.to_owned(), Rc::new(RefCell::new(value))) {
-            bail!("variable '{}' already exists", id);
-        }
-        Ok(())
+        // declare value
+        module.declare(id, value, self.scope_id)
     }
 
     /// Assigns to an existing variable.
     pub(crate) fn assign(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get absolute module and ID
-        let (module, id) = self.resolve_identifier(id)?;
+        let (module, id) = self.resolve_access_target(id)?;
 
         // borrow module mutably to make changes
         let mut module = module.borrow_mut();
 
-        // get currently selected scope id
-        let mut scope_idx = self.scope_id;
-        for (idx, scope) in module.iter().enumerate() {
-            if scope.contains_key(&id) {
-                scope_idx = idx;
-            }
-        }
-
-        // get variable map at specified scope id
-        let var_map = module
-            .get_scope(scope_idx)
-            .context(format!("cannot assign at scope {}", scope_idx,))?;
-
-        // insert new value
-        var_map.insert(id.to_owned(), Rc::new(RefCell::new(value)));
-        Ok(())
+        // assign value
+        module.assign(id, value, self.scope_id)
     }
 }

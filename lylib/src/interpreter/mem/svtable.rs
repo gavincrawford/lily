@@ -1,6 +1,6 @@
 //! Implements the SVTable, or the scoped-variable table.
 
-use super::{ASTNode, Token, Variable};
+use super::*;
 use anyhow::{bail, Result};
 use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc, slice::Iter};
 
@@ -95,13 +95,84 @@ impl SVTable {
     }
 }
 
+impl MemoryInterface for SVTable {
+    fn get_owned(&self, id: String) -> Result<Variable> {
+        // find id in any scope and return owned
+        for scope in self.iter().rev() {
+            if scope.contains_key(&id) {
+                let variable = scope.get(&id).unwrap();
+                return Ok((&**variable).borrow().clone());
+            }
+        }
+
+        // if no value is found, bail
+        bail!("failed to get owned value {:?}", id)
+    }
+
+    fn get_ref(&self, id: String) -> Result<Rc<RefCell<Variable>>> {
+        // find id in any scope and return reference
+        for scope in self.iter().rev() {
+            if scope.contains_key(&id) {
+                let variable = scope.get(&id).unwrap();
+                return Ok((&*variable).clone());
+            }
+        }
+
+        // if no value is found, bail
+        bail!("failed to get owned value {:?}", id)
+    }
+
+    fn get_module(&self, id: String) -> Result<Rc<RefCell<SVTable>>> {
+        match self.modules.get(&id) {
+            Some(module) => Ok(module.clone()),
+            _ => {
+                bail!("could not find module '{:?}'", id)
+            }
+        }
+    }
+
+    fn declare(&mut self, id: String, value: Variable, scope: usize) -> Result<()> {
+        // add scopes if necessary
+        while self.scopes() <= scope {
+            self.add_scope();
+        }
+
+        // get variable map and insert new value. if the value already exists, bail
+        let var_map = self
+            .get_scope(scope)
+            .context(format!("cannot delcare at scope {}", scope,))?;
+        if let Some(_) = var_map.insert(id.to_owned(), Rc::new(RefCell::new(value))) {
+            bail!("variable '{}' already exists", id);
+        }
+        Ok(())
+    }
+
+    fn assign(&mut self, id: String, value: Variable, scope: usize) -> Result<()> {
+        // get currently selected scope id
+        let mut scope_idx = scope;
+        for (idx, scope) in self.iter().enumerate() {
+            if scope.contains_key(&id) {
+                scope_idx = idx;
+            }
+        }
+
+        // get variable map at specified scope id
+        let var_map = self
+            .get_scope(scope_idx)
+            .context(format!("cannot assign at scope {}", scope_idx,))?;
+
+        // insert new value
+        var_map.insert(id.to_owned(), Rc::new(RefCell::new(value)));
+        Ok(())
+    }
+}
+
 impl Display for SVTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn prettify(node: Rc<ASTNode>) -> String {
             String::from(match &*node {
                 ASTNode::Literal(Token::Identifier(id)) => format!("{}", id),
                 ASTNode::Literal(token) => format!("{:?}", token),
-                ASTNode::List(list) => format!("[{}]", list.borrow()),
                 ASTNode::Op { lhs, op, rhs } => format!(
                     "{} {:?} {}",
                     prettify(lhs.clone()),

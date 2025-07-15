@@ -155,8 +155,14 @@ macro_rules! node {
     // lists (`[1, 2, 3]`)
     ([$($item:expr),*]) => {
         {
-            let values = vec![$($item),*];
-            ASTNode::List(SVTable::new_with(values)).into()
+            // convert nodes to variables and make new list
+            let values: Vec<Rc<ASTNode>> = vec![$($item),*];
+            let mut variables = vec![];
+            for value in values {
+                let variable: Variable = value.into();
+                variables.push(variable);
+            }
+            ASTNode::List(variables).into()
         }
     };
 

@@ -42,12 +42,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         exfn!(len, |item; _stdout, _stdin| {
             match &**item {
                 ASTNode::List(items) => {
-                    let mut handle = items.borrow_mut();
-                    let length = match handle.get_scope(0) {
-                        Some(scope) => scope.len(),
-                        None => 0,
-                    };
-                    Ok(Some(lit!(Token::Number(length as f32))))
+                    Ok(Some(lit!(Token::Number(items.len() as f32))))
                 }
                 ASTNode::Literal(Token::Str(string)) => {
                     Ok(Some(lit!(Token::Number(string.len() as f32))))
@@ -62,12 +57,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 ASTNode::Literal(Token::Str(v)) =>
                 {
                     // collect chars into a vector of nodes
-                    let values: Vec<Rc<ASTNode>> = v.chars().map(|ch| {
+                    let values: Vec<Variable> = v.chars().map(|ch| {
                         ASTNode::Literal(Token::Char(ch.clone())).into()
                     }).collect();
 
                     // return new list
-                    Ok(Some(ASTNode::List(SVTable::new_with(values)).into()))
+                    Ok(Some(ASTNode::List(values).into()))
                 },
                 _ => bail!("cannot fetch characters of {:?}", &**string)
             }

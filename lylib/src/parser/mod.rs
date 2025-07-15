@@ -1,6 +1,6 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
-use crate::interpreter::{SVTable, ID};
+use crate::interpreter::{Variable, ID};
 use crate::lexer::{Lexer, Token};
 use anyhow::{bail, Context, Result};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
@@ -484,13 +484,15 @@ impl Parser {
                 _ => {}
             }
 
+            // get resolved item
+            let item = self
+                .parse_expr(Some(Token::Comma))
+                .context("failed to parse list item")?;
+
             // add item to the list
-            items.push(Rc::from(
-                self.parse_expr(Some(Token::Comma))
-                    .context("failed to parse list item")?,
-            ))
+            items.push(Variable::Owned(ASTNode::inner_to_owned(&item)))
         }
 
-        Ok(ASTNode::List(SVTable::new_with(items)).into())
+        Ok(ASTNode::List(items).into())
     }
 }

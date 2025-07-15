@@ -350,14 +350,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 // find item if applicable, bail otherwise
                 match &*target {
-                    ASTNode::List(list) => {
-                        let mut items = list.borrow_mut();
+                    ASTNode::List(items) => {
                         if let Variable::Owned(value) = &*items
-                            .get_scope(0)
-                            .unwrap()
-                            .get(&usize_idx.to_string())
+                            .get(usize_idx)
                             .unwrap_or(&Variable::Owned(ASTNode::Literal(Token::Undefined)).into())
-                            .borrow()
                         {
                             return Ok(Some(value.to_owned().into()));
                         }
