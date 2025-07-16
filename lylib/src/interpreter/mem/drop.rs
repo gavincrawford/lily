@@ -3,8 +3,12 @@
 use super::*;
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
-    /// Drops all out-of-scope variables.
-    pub(crate) fn drop(&mut self) {
+    /// Drops all out-of-scope variables and drops down a scope.
+    pub(crate) fn drop_scope(&mut self) {
+        // decrease scope level
+        self.scope_id -= 1;
+
+        // remove out of scope variables
         if let Some(mod_pointer) = &self.mod_id {
             let mut module = mod_pointer.borrow_mut();
             let mut scope_n = 0;

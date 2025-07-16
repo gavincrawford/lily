@@ -270,20 +270,17 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     self.scope_id += 1;
                     if condition.is_truthy() {
                         if let Some(result) = self.execute(if_body.clone())? {
-                            self.scope_id -= 1;
-                            self.drop();
+                            self.drop_scope();
                             return Ok(Some(result));
                         }
                     } else {
                         if let Some(result) = self.execute(else_body.clone())? {
-                            self.scope_id -= 1;
-                            self.drop();
+                            self.drop_scope();
                             return Ok(Some(result));
                         }
                     }
                     // after finishing, decrease scope level and drop locals
-                    self.scope_id -= 1;
-                    self.drop();
+                    self.drop_scope();
                 }
                 Ok(None)
             }
@@ -311,8 +308,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 }
 
                 // after finishing, decrease scope level and drop locals
-                self.scope_id -= 1;
-                self.drop();
+                self.drop_scope();
                 Ok(result)
             }
             ASTNode::List(_) => {

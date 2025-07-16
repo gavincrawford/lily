@@ -32,8 +32,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
             // get result and clear scoped vars
             let result = self.execute(body.clone())?;
-            self.scope_id -= 1;
-            self.drop();
+            self.drop_scope();
 
             // return result if present. otherwise, undefined
             return Ok(Some(result.unwrap_or(lit!(Token::Undefined))));
