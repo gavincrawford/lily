@@ -129,7 +129,7 @@ impl ASTNode {
     }
 
     pub fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {
-        (&*rc.clone()).clone()
+        (**rc).clone()
     }
 }
 

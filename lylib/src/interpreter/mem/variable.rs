@@ -76,7 +76,7 @@ impl MemoryInterface for Variable {
             // saftey: checked in interpreter
             let idx = id.parse::<usize>().unwrap();
             let item = items.get(idx).context("index out of bounds")?;
-            let inner = (&*item.clone()).clone().into_inner();
+            let inner = item.borrow().clone();
             Ok(inner)
         } else {
             bail!("invalid access to variable '{:?}'", self);
