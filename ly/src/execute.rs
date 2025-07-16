@@ -8,7 +8,6 @@ use lylib::{
 use std::{
     fs,
     io::{stdin, stdout},
-    path::PathBuf,
     rc::Rc,
 };
 
@@ -18,16 +17,11 @@ pub fn execute(args: ArgMatches) -> Result<()> {
     let file_path: &String = args.get_one("file").unwrap();
     let buf = fs::read_to_string(file_path).context("failed to open file")?;
 
-    // get pwd
-    let mut path = PathBuf::from(file_path);
-    path.pop();
-
     // lex buffer into tokens
     let tokens = Lexer::new().lex(buf).context("failed to lex file")?;
 
     // parse tokens into ast
     let mut parser = Parser::new(tokens);
-    parser.set_pwd(path);
     let ast = parser
         .parse_with_imports(match args.get_one("nostd").unwrap() {
             true => vec![],
