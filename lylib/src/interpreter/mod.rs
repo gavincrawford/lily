@@ -273,11 +273,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             self.drop_scope();
                             return Ok(Some(result));
                         }
-                    } else {
-                        if let Some(result) = self.execute(else_body.clone())? {
-                            self.drop_scope();
-                            return Ok(Some(result));
-                        }
+                    } else if let Some(result) = self.execute(else_body.clone())? {
+                        self.drop_scope();
+                        return Ok(Some(result));
                     }
                     // after finishing, decrease scope level and drop locals
                     self.drop_scope();
