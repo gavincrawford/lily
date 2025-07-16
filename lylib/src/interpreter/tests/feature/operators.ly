@@ -10,7 +10,6 @@ let b_neq = false != true
 
 let s_eq = "abc" == "abc"
 let s_neq = "abc" != "cba"
-let s_add_s = "ab" + "cd"
 
 let c_eq = 'a' == 'a'
 let c_neq = 'a' != 'b'

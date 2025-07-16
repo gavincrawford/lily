@@ -24,12 +24,15 @@ test!(operators => (
     b_neq := true,
     s_eq := true,
     s_neq := true,
-    s_add_s := "abcd",
     c_eq := true,
     c_neq := true
 ));
 
 test!(conditionals => (
+    a := 0
+));
+
+test!(comparisons => (
     a := 8
 ));
 
@@ -40,29 +43,42 @@ test!(functions => (
 ));
 
 test!(loops => (
-    i := 25,
-    a := 25
+    x := 25
+));
+
+test!(loops_nested => (
+    x := 25
 ));
 
 test!(indices => (
     idx_a := 2,
     idx_b := 3,
-    idx_list_whole == node!([lit!(123)]),
-    idx_list_part := 123,
     assignment_flat := 1,
     assignment_nested := 1,
-    head := '0',
-    tail := '5'
 ));
 
-test!(dangling_indices => (
+test!(indices_dangling => (
     dangling := 10
+));
+
+test!(indices_nested => (
+    nest_0 == node!([lit!(123)]),
+    nest_1 := 123,
 ));
 
 test!(imports => (
     get_res := 4,
     assign_res := "reassignment value",
     decl_res := "declaration value"
+));
+
+test!(string_index => (
+    head := '0',
+    tail := '5'
+));
+
+test!(string_concat => (
+    concatenated := "abcd"
 ));
 
 test!(nested_imports => (
@@ -74,4 +90,3 @@ test!(structs => (
     bv := 0,
     declaration := true
 ));
-

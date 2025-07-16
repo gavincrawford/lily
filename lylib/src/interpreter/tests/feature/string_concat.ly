@@ -1,0 +1,1 @@
+let concatenated = "ab" + "cd"
