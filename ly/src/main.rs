@@ -7,6 +7,7 @@ fn main() {
     let cmd = Command::new("ly")
         .arg(arg!(<file>))
         .arg(arg!(--nostd "run without standard library"))
+        .arg(arg!(--debugast "(debug) prints the AST during execution"))
         .get_matches();
 
     //execute file

@@ -34,6 +34,9 @@ pub fn execute(args: ArgMatches) -> Result<()> {
             false => stdlib().context("failed to resolve standard library")?,
         })
         .context("failed to parse file")?;
+    if *args.get_one("debugast").unwrap() {
+        println!("[BUILT AST]\n{:#?}\n", ast);
+    }
 
     // execute interpreter
     let mut interp = Interpreter::new(stdin(), stdout());
