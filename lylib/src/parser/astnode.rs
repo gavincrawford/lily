@@ -96,8 +96,8 @@ impl ASTNode {
         }
     }
 
-    /// Create the default SVT for this struct, if applicable. Returns `None` if otherwise.
-    pub fn default_svt(&self) -> Option<SVTable> {
+    /// Create the default SVT for this struct is applicable.
+    pub fn create_struct_template(&self) -> Result<SVTable> {
         if let ASTNode::Struct { id: _, body } = self {
             if let ASTNode::Block(nodes) = &**body {
                 let mut default_fields = vec![];
@@ -109,9 +109,10 @@ impl ASTNode {
                 let mut svt = SVTable::new();
                 svt.add_scope();
                 let inner_table = svt.inner_mut();
-                default_fields.iter().for_each(|(target, value)| {
+                for (target, value) in default_fields {
                     // convert this field to an ID
-                    let id = ID::node_to_id(target.to_owned()).unwrap();
+                    let id = ID::node_to_id(target.to_owned())
+                        .context("failed to parse default field")?;
 
                     // get the first value in the path
                     let id = id.to_path().get(0).unwrap().to_owned();
@@ -121,11 +122,11 @@ impl ASTNode {
                         .first_mut()
                         .unwrap()
                         .insert(id.to_owned(), Variable::Owned(value.to_owned()).into());
-                });
-                return Some(svt);
+                }
+                return Ok(svt);
             }
         }
-        None
+        bail!("cannot create template of non-structure value: {:?}", self);
     }
 
     pub fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {

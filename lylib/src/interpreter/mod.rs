@@ -156,11 +156,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         // this branch should trigger when constructors are called
                         Variable::Type(ref structure) => match structure.constructor() {
                             Some(v) => {
-                                // get default svt
+                                // get template
                                 let svt = structure
-                                    .default_svt()
-                                    .context("cannot add struct default variables")
-                                    .unwrap();
+                                    .create_struct_template()
+                                    .context("failed to create structure template")?;
 
                                 // use the new structure svt as module for this constructor
                                 let svt = Rc::new(RefCell::new(svt));
@@ -184,11 +183,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 ));
                             }
                             None => {
-                                // get default svt
+                                // get template
                                 let svt = structure
-                                    .default_svt()
-                                    .context("cannot add struct default variables")
-                                    .unwrap();
+                                    .create_struct_template()
+                                    .context("failed to create structure template")?;
 
                                 // return newly made instance
                                 return Ok(Some(
