@@ -147,7 +147,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 body: _,
                             } = &*function
                             {
-                                return Ok(self.execute_function(&resolved_args, function)?);
+                                return self.execute_function(&resolved_args, function);
                             } else {
                                 bail!("attempted to call non-function");
                             }
@@ -311,14 +311,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::List(_) => {
                 // return self
-                return Ok(Some(statement.to_owned()));
+                Ok(Some(statement.to_owned()))
             }
             ASTNode::Index { target, index } => {
                 // get index as a usize
                 let usize_idx;
                 if let ASTNode::Literal(Token::Number(n)) = &*self
                     .execute_expr(index.clone())
-                    .context(format!("failed to evaluate index value ({})", index))?
+                    .context(format!("failed to evaluate index value ({index})"))?
                     .unwrap()
                 {
                     // guard numbers outside of range
@@ -355,12 +355,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     ASTNode::Literal(Token::Str(string)) => {
                         // get the char at the provided index, bail if it is not found
                         let ch = string.chars().nth(usize_idx).context(format!(
-                            "no character exists at {} in string '{}'",
-                            usize_idx, string
+                            "no character exists at {usize_idx} in string '{string}'"
                         ))?;
 
                         // return the cloned character
-                        return Ok(Some(lit!(Token::Char(ch))));
+                        Ok(Some(lit!(Token::Char(ch))))
                     }
                     _ => {
                         bail!("expected list as index target");

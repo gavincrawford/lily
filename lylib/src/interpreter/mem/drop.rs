@@ -34,10 +34,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             if let Some(this_scope) = module.get_scope(self.scope_id) {
                 this_scope.clear();
             }
-        } else {
-            if let Some(this_scope) = self.memory.borrow_mut().get_scope(self.scope_id) {
-                this_scope.clear();
-            }
+        } else if let Some(this_scope) = self.memory.borrow_mut().get_scope(self.scope_id) {
+            this_scope.clear();
         }
     }
 }

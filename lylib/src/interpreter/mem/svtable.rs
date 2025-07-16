@@ -70,7 +70,7 @@ impl SVTable {
     pub fn get_module(&self, name: impl Into<String>) -> Result<Rc<RefCell<SVTable>>> {
         let name = name.into();
         if let Some(module) = self.modules.get(&name) {
-            return Ok(module.clone());
+            Ok(module.clone())
         } else {
             bail!("failed to find module '{}'", name);
         }
@@ -101,7 +101,7 @@ impl MemoryInterface for SVTable {
         for scope in self.iter().rev() {
             if scope.contains_key(&id) {
                 let variable = scope.get(&id).unwrap();
-                return Ok((&**variable).borrow().clone());
+                return Ok((**variable).borrow().clone());
             }
         }
 
@@ -114,7 +114,7 @@ impl MemoryInterface for SVTable {
         for scope in self.iter().rev() {
             if scope.contains_key(&id) {
                 let variable = scope.get(&id).unwrap();
-                return Ok((&*variable).clone());
+                return Ok((*variable).clone());
             }
         }
 
@@ -140,7 +140,7 @@ impl MemoryInterface for SVTable {
         // get variable map and insert new value. if the value already exists, bail
         let var_map = self
             .get_scope(scope)
-            .context(format!("cannot delcare at scope {}", scope,))?;
+            .context(format!("cannot delcare at scope {scope}",))?;
         if let Some(_) = var_map.insert(id.to_owned(), Rc::new(RefCell::new(value))) {
             bail!("variable '{}' already exists", id);
         }
@@ -159,7 +159,7 @@ impl MemoryInterface for SVTable {
         // get variable map at specified scope id
         let var_map = self
             .get_scope(scope_idx)
-            .context(format!("cannot assign at scope {}", scope_idx,))?;
+            .context(format!("cannot assign at scope {scope_idx}",))?;
 
         // insert new value
         var_map.insert(id.to_owned(), Rc::new(RefCell::new(value)));
@@ -170,25 +170,21 @@ impl MemoryInterface for SVTable {
 impl Display for SVTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn prettify(node: Rc<ASTNode>) -> String {
-            String::from(match &*node {
-                ASTNode::Literal(Token::Identifier(id)) => format!("{}", id),
-                ASTNode::Literal(token) => format!("{:?}", token),
+            match &*node {
+                ASTNode::Literal(Token::Identifier(id)) => id.to_string(),
+                ASTNode::Literal(token) => format!("{token:?}"),
                 ASTNode::Op { lhs, op, rhs } => format!(
                     "{} {:?} {}",
                     prettify(lhs.clone()),
                     op,
                     prettify(rhs.clone())
                 ),
-                ASTNode::Block(lines) => {
-                    format!(
-                        "{}",
-                        lines
-                            .iter()
-                            .map(|ln| { prettify(ln.clone()) })
-                            .collect::<Vec<String>>()
-                            .join(", ")
-                    )
-                }
+                ASTNode::Block(lines) => lines
+                    .iter()
+                    .map(|ln| prettify(ln.clone()))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+                    .to_string(),
                 ASTNode::Return(value) => prettify(value.clone()),
                 ASTNode::Function {
                     id,
@@ -200,14 +196,14 @@ impl Display for SVTable {
                     arguments.join(", "),
                     prettify(body.clone())
                 ),
-                other => format!("{:?}", other),
-            })
+                other => format!("{other:?}"),
+            }
         }
 
         // log scopes progressively
         for (scope_idx, scope) in self.table.iter().enumerate() {
             // log scope level
-            writeln!(f, "scope {}", scope_idx)?;
+            writeln!(f, "scope {scope_idx}")?;
 
             // iterate through scope values, sorted
             let mut keys = scope.keys().collect::<Vec<&String>>();
@@ -216,15 +212,15 @@ impl Display for SVTable {
                 // obtain debug string respective to variable value
                 let value = scope.get(key).unwrap();
                 let dbg_ln = match &*value.borrow() {
-                    Variable::Owned(node) => format!("{}", prettify(node.to_owned().into())),
+                    Variable::Owned(node) => prettify(node.to_owned().into()).to_string(),
                     Variable::Function(reference) => format!("&{}", prettify(reference.clone())),
-                    Variable::Extern(_) => format!("EXTERN"),
+                    Variable::Extern(_) => "EXTERN".to_string(),
                     Variable::Type(instance) => format!("struct {}", prettify(instance.clone())),
                 };
 
                 // tab out endlines to keep indents, and print it
                 let dbg_ln = dbg_ln.replace("\n", "\n\t");
-                writeln!(f, "\t{} = {}", key, dbg_ln)?;
+                writeln!(f, "\t{key} = {dbg_ln}")?;
             }
         }
         Ok(())

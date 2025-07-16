@@ -18,12 +18,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .context("could not flatten index inside list")?
                                 .unwrap();
                             *handle =
-                                Variable::Owned(ASTNode::inner_to_owned(&resolved_item)).into();
+                                Variable::Owned(ASTNode::inner_to_owned(&resolved_item));
                         }
                         ASTNode::List(_) => {
                             let resolved_refs = self.resolve_refs(value.to_owned())?;
                             *handle =
-                                Variable::Owned(ASTNode::inner_to_owned(&resolved_refs)).into();
+                                Variable::Owned(ASTNode::inner_to_owned(&resolved_refs));
                         }
                         _ => {}
                     }

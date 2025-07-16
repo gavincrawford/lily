@@ -54,7 +54,7 @@ impl Parser {
     fn expect(&mut self, expected: Token) -> Result<()> {
         match self.next() {
             Some(token) if token == expected => {
-                return Ok(());
+                Ok(())
             }
             Some(token) => {
                 bail!("found {:?}, expected {:?}", token, expected);
@@ -140,7 +140,7 @@ impl Parser {
 
             // read the file to be imported to a buffer
             let mut buffer = String::new();
-            File::open(path.to_owned())
+            File::open(&path)
                 .context("failed to created file buffer")?
                 .read_to_string(&mut buffer)
                 .context("failed to read file data")?;
@@ -425,7 +425,7 @@ impl Parser {
                     self.next();
 
                     // negate literal and return
-                    Ok(ASTNode::Literal(Token::Number(-1. * (value.to_owned()))).into())
+                    Ok(ASTNode::Literal(Token::Number(-(value.to_owned()))).into())
                 } else {
                     bail!("expected number after '-', found {:?}", self.peek());
                 }

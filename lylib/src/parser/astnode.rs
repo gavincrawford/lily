@@ -115,7 +115,7 @@ impl ASTNode {
                         .context("failed to parse default field")?;
 
                     // get the first value in the path
-                    let id = id.to_path().get(0).unwrap().to_owned();
+                    let id = id.to_path().first().unwrap().to_owned();
 
                     // add it to the table
                     inner_table
@@ -137,8 +137,8 @@ impl ASTNode {
 impl Display for ASTNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ASTNode::Literal(token) => write!(f, "{}", token),
-            _ => write!(f, "{:?}", self),
+            ASTNode::Literal(token) => write!(f, "{token}"),
+            _ => write!(f, "{self:?}"),
         }?;
         Ok(())
     }

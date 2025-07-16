@@ -29,11 +29,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         // print
         exfn!(print, |value; stdout, _stdin| {
             match &**value {
-                ASTNode::Literal(Token::Str(s)) => write!(stdout, "{}\n", s),
-                ASTNode::Literal(Token::Number(n)) => write!(stdout, "{}\n", n),
-                ASTNode::Literal(Token::Char(c)) => write!(stdout, "{}\n", c),
-                ASTNode::Literal(Token::Bool(b)) => write!(stdout, "{}\n", b),
-                other => write!(stdout, "{:?}\n", other),
+                ASTNode::Literal(Token::Str(s)) => writeln!(stdout, "{s}"),
+                ASTNode::Literal(Token::Number(n)) => writeln!(stdout, "{n}"),
+                ASTNode::Literal(Token::Char(c)) => writeln!(stdout, "{c}"),
+                ASTNode::Literal(Token::Bool(b)) => writeln!(stdout, "{b}"),
+                other => writeln!(stdout, "{other:?}"),
             }?;
             Ok(None)
         });
@@ -70,7 +70,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 {
                     // collect chars into a vector of nodes
                     let values: Vec<Rc<RefCell<Variable>>> = v.chars().map(|ch| {
-                        Variable::Owned(ASTNode::Literal(Token::Char(ch.clone()))).into()
+                        Variable::Owned(ASTNode::Literal(Token::Char(ch))).into()
                     }).collect();
 
                     // return new list

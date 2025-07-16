@@ -43,8 +43,8 @@ impl From<Rc<ASTNode>> for Variable {
 impl Debug for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Variable::Owned(node) => write!(f, "{:?}", node),
-            Variable::Function(node) | Variable::Type(node) => write!(f, "&{:?}", node),
+            Variable::Owned(node) => write!(f, "{node:?}"),
+            Variable::Function(node) | Variable::Type(node) => write!(f, "&{node:?}"),
             Variable::Extern(_) => write!(f, "EXTERN"),
         }
     }
@@ -63,8 +63,7 @@ impl PartialEq for Variable {
             (Variable::Function(a), Variable::Function(b))
             | (Variable::Type(a), Variable::Type(b)) => a == b,
             _ => panic!(
-                "cannot comapre external variables ({:?}, {:?})",
-                self, other
+                "cannot comapre external variables ({self:?}, {other:?})"
             ),
         }
     }
@@ -79,7 +78,7 @@ impl PartialOrd for Variable {
                 Variable::Owned(ASTNode::Literal(Token::Number(a))),
                 Variable::Owned(ASTNode::Literal(Token::Number(b))),
             ) => a.partial_cmp(b),
-            _ => panic!("cannot order variables ({:?}, {:?})", self, other),
+            _ => panic!("cannot order variables ({self:?}, {other:?})"),
         }
     }
 }
