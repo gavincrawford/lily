@@ -1,5 +1,5 @@
 use super::*;
-use std::{fmt::Debug, mem::discriminant};
+use std::{cmp::Ordering, fmt::Debug, mem::discriminant};
 
 /// External function signature.
 /// The first two arguments are the input and output handles. The third contains arguments.
@@ -67,6 +67,26 @@ impl PartialEq for Variable {
                 self, other
             ),
         }
+    }
+}
+
+impl Eq for Variable {}
+
+impl PartialOrd for Variable {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (
+                Variable::Owned(ASTNode::Literal(Token::Number(a))),
+                Variable::Owned(ASTNode::Literal(Token::Number(b))),
+            ) => a.partial_cmp(b),
+            _ => panic!("cannot order variables ({:?}, {:?})", self, other),
+        }
+    }
+}
+
+impl Ord for Variable {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap_or(Ordering::Less)
     }
 }
 

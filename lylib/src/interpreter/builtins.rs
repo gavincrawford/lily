@@ -51,6 +51,18 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
         });
 
+        // sort
+        exfn!(sort, |list; _stdout, _stdin| {
+            match &**list {
+                ASTNode::List(items) => {
+                    let mut clone = items.clone();
+                    clone.sort();
+                    Ok(Some(ASTNode::List(clone).into()))
+                }
+                _ => bail!("cannot sort {:?}", &**list)
+            }
+        });
+
         // chars (get characters of string as list)
         exfn!(chars, |string; _stdout, _stdin| {
             match &**string {
