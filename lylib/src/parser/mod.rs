@@ -156,12 +156,8 @@ impl Parser {
             parser.set_pwd(path);
 
             // parse the module
-            let module = parser.parse().context("failed to parse module body")?;
-            Ok(ASTNode::Module {
-                alias,
-                body: module.into(),
-            }
-            .into())
+            let body = parser.parse().context("failed to parse module body")?;
+            Ok(ASTNode::Module { alias, body }.into())
         } else {
             bail!("expected path after import");
         }
@@ -173,7 +169,7 @@ impl Parser {
         self.expect(Token::If)?;
 
         // get if expression and if body block
-        let expr = self.parse_expr(None).context("failed to parse condition")?;
+        let condition = self.parse_expr(None).context("failed to parse condition")?;
         let if_body = self.parse().context("failed to parse if-body")?;
 
         // process else body block, if present
@@ -184,7 +180,7 @@ impl Parser {
         }
 
         Ok(ASTNode::Conditional {
-            condition: expr,
+            condition,
             if_body,
             else_body,
         }
@@ -259,16 +255,16 @@ impl Parser {
         match next {
             Some(Token::Identifier(name)) => {
                 // gather arguments
-                let mut args = vec![];
+                let mut arguments = vec![];
                 while let Some(Token::Identifier(arg)) = self.peek() {
-                    args.push(arg.clone());
+                    arguments.push(arg.clone());
                     self.next();
                 }
                 self.expect(Token::BlockStart)?;
                 Ok(ASTNode::Function {
                     id: ID::new(name),
                     body: self.parse().context("failed to parse function body")?,
-                    arguments: args,
+                    arguments,
                 }
                 .into())
             }
