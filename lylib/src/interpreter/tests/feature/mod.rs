@@ -22,6 +22,7 @@ test!(operators => (
     n_div := 8,
     b_eq := true,
     b_neq := true,
+    b_not := false,
     s_eq := true,
     s_neq := true,
     c_eq := true,

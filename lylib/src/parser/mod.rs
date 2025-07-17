@@ -53,9 +53,7 @@ impl Parser {
     /// Throws an error if the next token is not `expected`.
     fn expect(&mut self, expected: Token) -> Result<()> {
         match self.next() {
-            Some(token) if token == expected => {
-                Ok(())
-            }
+            Some(token) if token == expected => Ok(()),
             Some(token) => {
                 bail!("found {:?}, expected {:?}", token, expected);
             }
@@ -438,6 +436,18 @@ impl Parser {
             | Some(Token::Bool(_))
             | Some(Token::Char(_)) => {
                 Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF")).into())
+            }
+
+            // logical not
+            Some(Token::LogicalNot) => {
+                // consumes the `!` and creates a one-sided operator
+                self.next();
+                Ok(ASTNode::Op {
+                    lhs: self.parse_expr(None).unwrap(),
+                    op: Token::LogicalNot,
+                    rhs: ASTNode::Literal(Token::Undefined).into(),
+                }
+                .into())
             }
 
             // lists

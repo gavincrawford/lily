@@ -161,7 +161,10 @@ impl Lexer {
                             (LogicalL, _) => tokens.push(LogicalL),
                             (LogicalG, '=') => tokens.push(LogicalGe),
                             (LogicalG, _) => tokens.push(LogicalG),
-                            _ => {}
+                            _ => {
+                                tokens.push(LogicalNot);
+                                self.keyword_register.push(c);
+                            }
                         }
                     }
                     self.equality_register = None;

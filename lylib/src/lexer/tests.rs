@@ -153,6 +153,13 @@ fn conditionals() {
             Endl
         ]
     );
+
+    let result = Lexer::new().lex("if !true do end;".into());
+    assert!(result.is_ok());
+    assert_eq!(
+        result.unwrap(),
+        vec![If, LogicalNot, Bool(true), BlockStart, BlockEnd, Endl]
+    );
 }
 
 #[test]

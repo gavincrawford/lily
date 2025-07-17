@@ -7,6 +7,7 @@ let n_div = 16 / 2
 
 let b_eq = false == false
 let b_neq = false != true
+let b_not = !false
 
 let s_eq = "abc" == "abc"
 let s_neq = "abc" != "cba"

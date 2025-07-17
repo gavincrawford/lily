@@ -218,6 +218,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     self.execute_expr(lhs.clone()),
                     self.execute_expr(rhs.clone()),
                 ) {
+                    use Token::*;
+
                     macro_rules! opmatch {
                         (match $op:expr, $lhs:expr, $rhs:expr => $locallhs:pat, $localrhs:pat if $($pat:pat => $res:expr),*) => {
                             match ($op, $lhs, $rhs) {
@@ -229,7 +231,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         };
                     }
 
-                    use Token::*;
+                    // operators for numbers on both sides
                     opmatch!(
                         match op, &*a, &*b => Number(l), Number(r) if
                         Add => Number(l + r),
@@ -243,10 +245,20 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         LogicalL => Bool(l < r),
                         LogicalLe => Bool(l <= r)
                     );
+
+                    // operators for strings on both sides
                     opmatch!(
                         match op, &*a, &*b => Str(l), Str(r) if
                         Add => Str(l.clone() + r)
                     );
+
+                    // not
+                    opmatch!(
+                        match op, &*a, &*b => Bool(l), _ if
+                        LogicalNot => Bool(!l)
+                    );
+
+                    // equality
                     opmatch!(
                         match op, &*a, &*b => l, r if
                         LogicalEq => Bool(l == r),
