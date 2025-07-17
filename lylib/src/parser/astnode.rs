@@ -1,5 +1,5 @@
 use super::*;
-use crate::interpreter::{IDKind, SVTable, Variable, ID};
+use crate::interpreter::{IDKind, MemoryInterface, SVTable, Variable, ID};
 use std::{cell::RefCell, fmt::Display};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -102,26 +102,32 @@ impl ASTNode {
             if let ASTNode::Block(nodes) = &**body {
                 let mut default_fields = vec![];
                 for node in nodes {
-                    if let ASTNode::Declare { target: id, value } = &**node {
-                        default_fields.push((id.clone(), ASTNode::inner_to_owned(value)));
+                    match &**node {
+                        // if the member is a structure variable, add an owned value
+                        ASTNode::Declare { target, value } => {
+                            default_fields.push((
+                                ID::node_to_id(target.clone())?,
+                                Variable::Owned(ASTNode::inner_to_owned(&value)),
+                            ));
+                        }
+
+                        // if the member is a function, add a reference to it
+                        ASTNode::Function {
+                            id,
+                            arguments: _,
+                            body: _,
+                        } => default_fields.push((id.clone(), Variable::Function(node.clone()))),
+
+                        _ => {}
                     }
                 }
                 let mut svt = SVTable::new();
-                svt.add_scope();
-                let inner_table = svt.inner_mut();
                 for (target, value) in default_fields {
-                    // convert this field to an ID
-                    let id = ID::node_to_id(target.to_owned())
-                        .context("failed to parse default field")?;
-
                     // get the first value in the path
-                    let id = id.to_path().first().unwrap().to_owned();
+                    let id = target.to_path().first().unwrap().to_owned();
 
                     // add it to the table
-                    inner_table
-                        .first_mut()
-                        .unwrap()
-                        .insert(id.to_owned(), Variable::Owned(value.to_owned()).into());
+                    svt.declare(id, value.into(), 0)?;
                 }
                 return Ok(svt);
             }

@@ -90,8 +90,13 @@ test!(nested_imports => (
     res := 4
 ));
 
-test!(structs => (
+test!(struct_constructors => (
     av := 444,
     bv := 0,
     declaration := true
+));
+
+test!(struct_functions => (
+    add := 10,
+    sub := 0
 ));

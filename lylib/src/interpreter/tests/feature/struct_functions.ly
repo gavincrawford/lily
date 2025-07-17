@@ -1,0 +1,19 @@
+struct Calculator do
+  let last = -1
+
+  func add l r do
+    let res = l + r
+    last = res
+    return res
+  end
+
+  func sub l r do
+    let res = l - r
+    last = res
+    return res
+  end
+end
+
+let calculator = new Calculator()
+let add = calculator.add(5, 5)
+let sub = calculator.add(5, 5)

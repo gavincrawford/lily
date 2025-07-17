@@ -16,7 +16,7 @@ use std::{
 };
 
 pub(crate) use id::*;
-pub(crate) use mem::{svtable::SVTable, variable::*};
+pub(crate) use mem::{svtable::SVTable, variable::*, MemoryInterface};
 
 pub struct Interpreter<Out: Write, In: Read> {
     /// Memory structure. Tracks variables and modules.
