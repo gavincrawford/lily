@@ -29,12 +29,16 @@ test!(operators => (
     c_neq := true
 ));
 
-test!(conditionals => (
+test!(ifelse => (
     a := 0
 ));
 
-test!(comparisons => (
+test!(comparison_numerical => (
     a := 8
+));
+
+test!(comparison_boolean => (
+    a := 4
 ));
 
 test!(functions => (
