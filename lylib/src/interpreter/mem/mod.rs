@@ -69,6 +69,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     }
 
     /// Gets the value of a variable, and clones it in the process.
+    #[inline]
     pub(crate) fn get(&self, id: &ID) -> Result<Variable> {
         // get absolute module and ID
         let (module, id) = self.resolve_access_target(id)?;
@@ -81,6 +82,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     }
 
     /// Declares a new variable.
+    #[inline]
     pub(crate) fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get absolute module and ID
         let (module, id) = self.resolve_access_target(id)?;
@@ -93,6 +95,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     }
 
     /// Assigns to an existing variable.
+    #[inline]
     pub(crate) fn assign(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get absolute module and ID
         let (module, id) = self.resolve_access_target(id)?;
