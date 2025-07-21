@@ -2,14 +2,17 @@
 
 use super::*;
 use anyhow::{bail, Result};
-use std::{cell::RefCell, collections::HashMap, fmt::Display, rc::Rc, slice::Iter};
+use rustc_hash::FxHashMap;
+use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
 
+/// Scoped-variable table. Holds values with respect to their variable names.
+/// Internally, uses a `FxHashMap` providing fast but less secure access.
 #[derive(Debug, PartialEq)]
 pub struct SVTable {
     /// Holds all the scope frames, each of which hold their respective variables.
-    table: Vec<HashMap<String, Rc<RefCell<Variable>>>>,
+    table: Vec<FxHashMap<String, Rc<RefCell<Variable>>>>,
     /// Holds all the modules defined at this SVTable's scope.
-    modules: HashMap<String, Rc<RefCell<SVTable>>>,
+    modules: FxHashMap<String, Rc<RefCell<SVTable>>>,
 }
 
 impl SVTable {
@@ -17,7 +20,7 @@ impl SVTable {
     pub fn new() -> Self {
         let mut svt = Self {
             table: vec![],
-            modules: HashMap::new(),
+            modules: FxHashMap::default(),
         };
         svt.add_scope();
         svt
@@ -28,7 +31,7 @@ impl SVTable {
     pub fn new_with(values: Vec<Rc<ASTNode>>) -> Rc<RefCell<SVTable>> {
         let mut svt = Self {
             table: vec![],
-            modules: HashMap::new(),
+            modules: FxHashMap::default(),
         };
         svt.add_scope();
         let scope = svt.get_scope(0).unwrap(); // safety ^
@@ -44,17 +47,17 @@ impl SVTable {
     }
 
     /// Returns the iterator to the internal list of frames.
-    pub fn iter(&self) -> Iter<'_, HashMap<String, Rc<RefCell<Variable>>>> {
+    pub fn iter(&self) -> Iter<'_, FxHashMap<String, Rc<RefCell<Variable>>>> {
         self.table.iter()
     }
 
     /// Returns the inner list of frames.
-    pub fn inner(&self) -> &Vec<HashMap<String, Rc<RefCell<Variable>>>> {
+    pub fn inner(&self) -> &Vec<FxHashMap<String, Rc<RefCell<Variable>>>> {
         &self.table
     }
 
     /// Returns the inner list of frames, mutable.
-    pub fn inner_mut(&mut self) -> &mut Vec<HashMap<String, Rc<RefCell<Variable>>>> {
+    pub fn inner_mut(&mut self) -> &mut Vec<FxHashMap<String, Rc<RefCell<Variable>>>> {
         &mut self.table
     }
 
@@ -78,14 +81,14 @@ impl SVTable {
 
     /// Adds a new scope.
     pub fn add_scope(&mut self) {
-        self.table.push(HashMap::new());
+        self.table.push(FxHashMap::default());
     }
 
     /// Gets a scope map. Mutable by default.
     pub fn get_scope(
         &mut self,
         index: usize,
-    ) -> Option<&mut HashMap<String, Rc<RefCell<Variable>>>> {
+    ) -> Option<&mut FxHashMap<String, Rc<RefCell<Variable>>>> {
         self.table.get_mut(index)
     }
 
