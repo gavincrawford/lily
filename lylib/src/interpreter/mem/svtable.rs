@@ -102,8 +102,7 @@ impl MemoryInterface for SVTable {
     fn get_owned(&self, id: String) -> Result<Variable> {
         // find id in any scope and return owned
         for scope in self.iter().rev() {
-            if scope.contains_key(&id) {
-                let variable = scope.get(&id).unwrap();
+            if let Some(variable) = scope.get(&id) {
                 return Ok((**variable).borrow().clone());
             }
         }
@@ -115,8 +114,7 @@ impl MemoryInterface for SVTable {
     fn get_ref(&self, id: String) -> Result<Rc<RefCell<Variable>>> {
         // find id in any scope and return reference
         for scope in self.iter().rev() {
-            if scope.contains_key(&id) {
-                let variable = scope.get(&id).unwrap();
+            if let Some(variable) = scope.get(&id) {
                 return Ok((*variable).clone());
             }
         }
@@ -151,20 +149,18 @@ impl MemoryInterface for SVTable {
     }
 
     fn assign(&mut self, id: String, value: Variable, scope: usize) -> Result<()> {
-        // get currently selected scope id
-        let mut scope_idx = scope;
-        for (idx, scope) in self.iter().enumerate() {
-            if scope.contains_key(&id) {
-                scope_idx = idx;
+        // replace the value of the top-most variable if possible
+        for scope in self.iter().rev() {
+            if let Some(variable) = scope.get(&id) {
+                *variable.borrow_mut() = value;
+                return Ok(());
             }
         }
 
-        // get variable map at specified scope id
+        // otherwise, manual insert. this is used for structures & modules
         let var_map = self
-            .get_scope(scope_idx)
-            .context(format!("cannot assign at scope {scope_idx}",))?;
-
-        // insert new value
+            .get_scope(scope)
+            .context(format!("cannot assign at scope {scope}",))?;
         var_map.insert(id.to_owned(), Rc::new(RefCell::new(value)));
         Ok(())
     }
