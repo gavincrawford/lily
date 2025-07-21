@@ -26,26 +26,6 @@ impl SVTable {
         svt
     }
 
-    /// Creates a new scoped-variable table and adds the specified values.
-    /// Used for creating list tables.
-    pub fn new_with(values: Vec<Rc<ASTNode>>) -> Rc<RefCell<SVTable>> {
-        let mut svt = Self {
-            table: vec![],
-            modules: FxHashMap::default(),
-        };
-        svt.add_scope();
-        let scope = svt.get_scope(0).unwrap(); // safety ^
-        for (idx, value) in values.iter().enumerate() {
-            scope.insert(
-                idx.to_string(),
-                Rc::new(RefCell::new(Variable::Owned(ASTNode::inner_to_owned(
-                    value,
-                )))),
-            );
-        }
-        Rc::new(RefCell::new(svt))
-    }
-
     /// Returns the iterator to the internal list of frames.
     pub fn iter(&self) -> Iter<'_, FxHashMap<String, Rc<RefCell<Variable>>>> {
         self.table.iter()
