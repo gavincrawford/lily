@@ -12,7 +12,7 @@ mod tests;
 pub struct Parser {
     tokens: Vec<Token>,
     position: usize,
-    path: Box<PathBuf>,
+    path: PathBuf,
 }
 
 impl Parser {
@@ -21,13 +21,13 @@ impl Parser {
         Self {
             tokens,
             position: 0,
-            path: Box::new(env::current_dir().unwrap()),
+            path: env::current_dir().unwrap(),
         }
     }
 
     /// Sets the current working directory, used to set relative location of imports.
     pub fn set_pwd(&mut self, path: PathBuf) {
-        self.path = Box::new(path);
+        self.path = path;
     }
 
     /// Peek at the next token.
