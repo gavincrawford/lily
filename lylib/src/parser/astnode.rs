@@ -105,10 +105,15 @@ impl ASTNode {
                     match &**node {
                         // if the member is a structure variable, add an owned value
                         ASTNode::Declare { target, value } => {
-                            default_fields.push((
-                                ID::node_to_id(target.clone())?,
-                                Variable::Owned(ASTNode::inner_to_owned(&value)),
-                            ));
+                            // if this field is literal, add it, bail otherwise
+                            if let ASTNode::Literal(Token::Identifier(variable)) = &**target {
+                                default_fields.push((
+                                    ID::new(variable),
+                                    Variable::Owned(ASTNode::inner_to_owned(&value)),
+                                ));
+                            } else {
+                                bail!("invalid default field '{:?}'", target);
+                            }
                         }
 
                         // if the member is a function, add a reference to it

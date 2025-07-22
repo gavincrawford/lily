@@ -4,7 +4,7 @@ use super::*;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct ID {
-    id: IDKind,
+    pub(crate) id: IDKind,
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -43,26 +43,6 @@ impl ID {
             // otherwise, this id is literal
             Self {
                 id: IDKind::Literal(id),
-            }
-        }
-    }
-
-    /// Converts a node to an ID, if applicable.
-    pub fn node_to_id(node: Rc<ASTNode>) -> Result<Self> {
-        match &*node {
-            ASTNode::Literal(Token::Identifier(id)) => Ok(ID::new(id)),
-            ASTNode::Index { target, index } => {
-                let parent = Self::node_to_id(target.clone())?.get_kind().into();
-                if let ASTNode::Literal(Token::Number(index)) = &**index {
-                    let member = IDKind::Literal(index.to_string()).into();
-                    return Ok(Self {
-                        id: IDKind::Member { parent, member },
-                    });
-                }
-                panic!()
-            }
-            _ => {
-                bail!("cannot convert '{:?}' to ID", node)
             }
         }
     }

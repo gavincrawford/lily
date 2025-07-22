@@ -4,6 +4,7 @@ mod builtins;
 mod execute_function;
 mod id;
 mod mem;
+mod node_to_id;
 mod resolve_refs;
 mod tests;
 
@@ -71,7 +72,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         match &*statement {
             ASTNode::Assign { target, value } => {
                 // resolve target & expression
-                let resolved_target = &ID::node_to_id(target.clone())
+                let resolved_target = &self
+                    .node_to_id(target.clone())
                     .context("failed to evaluate assignment target")?;
                 let resolved_expr = self
                     .execute_expr(value.clone())
@@ -87,7 +89,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::Declare { target, value } => {
                 // resolve target & expression
-                let resolved_target = &ID::node_to_id(target.clone())
+                let resolved_target = &self
+                    .node_to_id(target.clone())
                     .context("failed to evaluate declaration target")?;
                 let resolved_expr = self
                     .execute_expr(value.clone())

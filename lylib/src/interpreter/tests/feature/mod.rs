@@ -66,6 +66,11 @@ test!(indices_dangling => (
     dangling := 10
 ));
 
+test!(indices_indirect => (
+    read := 5,
+    write := 0
+));
+
 test!(indices_nested => (
     nest_0 == node!([lit!(123)]),
     nest_1 := 123,
