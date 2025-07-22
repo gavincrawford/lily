@@ -64,7 +64,7 @@ pub enum ASTNode {
 impl ASTNode {
     /// Returns a reference to the constructor of the structure represented by this node. If this
     /// node is not a structure, or no constructor was found, returns `None`.
-    pub fn constructor(&self) -> Option<Rc<ASTNode>> {
+    pub(crate) fn constructor(&self) -> Option<Rc<ASTNode>> {
         if let ASTNode::Struct { id: _, body } = self {
             if let ASTNode::Block(nodes) = &**body {
                 for node in nodes {
@@ -88,7 +88,7 @@ impl ASTNode {
 
     /// Returns the truthiness of this node.
     /// True booleans and literals are truthy. Non-literal expressions are not.
-    pub fn is_truthy(&self) -> bool {
+    pub(crate) fn is_truthy(&self) -> bool {
         match self {
             ASTNode::Literal(Token::Bool(v)) => *v,
             ASTNode::Literal(ref t) if *t != Token::Undefined => true,
@@ -97,7 +97,7 @@ impl ASTNode {
     }
 
     /// Create the default SVT for this struct is applicable.
-    pub fn create_struct_template(&self) -> Result<SVTable> {
+    pub(crate) fn create_struct_template(&self) -> Result<SVTable> {
         if let ASTNode::Struct { id: _, body } = self {
             if let ASTNode::Block(nodes) = &**body {
                 let mut default_fields = vec![];
@@ -140,7 +140,7 @@ impl ASTNode {
         bail!("cannot create template of non-structure value: {:?}", self);
     }
 
-    pub fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {
+    pub(crate) fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {
         (**rc).clone()
     }
 }
