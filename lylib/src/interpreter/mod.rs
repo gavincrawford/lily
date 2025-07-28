@@ -255,6 +255,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         Add => Str(l.clone() + r)
                     );
 
+                    // and & or
+                    opmatch!(
+                        match op, &*a, &*b => Bool(l), Bool(r) if
+                        LogicalAnd => Bool(*l && *r),
+                        LogicalOr => Bool(*l || *r)
+                    );
+
                     // not
                     opmatch!(
                         match op, &*a, &*b => Bool(l), _ if

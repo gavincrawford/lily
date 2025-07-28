@@ -38,7 +38,7 @@ test!(comparison_numerical => (
 ));
 
 test!(comparison_boolean => (
-    a := 4
+    a := 6
 ));
 
 test!(functions => (

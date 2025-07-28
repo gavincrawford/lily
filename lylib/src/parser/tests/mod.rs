@@ -44,12 +44,14 @@ fn math() {
 #[test]
 fn comparisons() {
     parse_eq!(
-        "let a = 100 < 200; let b = 100 <= 200; let c = 200 > 100; let d = 200 >= 100; let e = !true;";
+        "let a = 100 < 200; let b = 100 <= 200; let c = 200 > 100; let d = 200 >= 100; let e = !true; let f = true && false; let g = true || false;";
         node!(declare a => node!(op lit!(100), LogicalL, lit!(200))),
         node!(declare b => node!(op lit!(100), LogicalLe, lit!(200))),
         node!(declare c => node!(op lit!(200), LogicalG, lit!(100))),
         node!(declare d => node!(op lit!(200), LogicalGe, lit!(100))),
-        node!(declare e => node!(op lit!(true), LogicalNot, lit!(Token::Undefined)))
+        node!(declare e => node!(op lit!(true), LogicalNot, lit!(Token::Undefined))),
+        node!(declare f => node!(op lit!(true), LogicalAnd, lit!(false))),
+        node!(declare g => node!(op lit!(true), LogicalOr, lit!(false)))
     );
 }
 

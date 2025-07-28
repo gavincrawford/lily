@@ -7,6 +7,8 @@
 use super::*;
 use Token::*;
 
+// TODO write new macros to improve on lexer test clarity
+
 #[test]
 fn variable_assignment() {
     let result = Lexer::new().lex("let var1 = 1; let var2 = 2;".into());
@@ -74,21 +76,23 @@ fn math() {
 
 #[test]
 fn logic() {
-    let result = Lexer::new().lex("1 == 2;".into());
+    let result = Lexer::new().lex("1 == 2; 1 != 2;".into());
     assert!(result.is_ok());
     assert_eq!(
         result.unwrap(),
-        vec![Number(1.), LogicalEq, Number(2.), Endl]
+        vec![
+            Number(1.),
+            LogicalEq,
+            Number(2.),
+            Endl,
+            Number(1.),
+            LogicalNeq,
+            Number(2.),
+            Endl
+        ]
     );
 
-    let result = Lexer::new().lex("1 != 2;".into());
-    assert!(result.is_ok());
-    assert_eq!(
-        result.unwrap(),
-        vec![Number(1.), LogicalNeq, Number(2.), Endl]
-    );
-
-    let result = Lexer::new().lex("1 > 2 >= 3;".into());
+    let result = Lexer::new().lex("1 > 2 >= 3; 1 < 2 <= 3;".into());
     assert!(result.is_ok());
     assert_eq!(
         result.unwrap(),
@@ -98,21 +102,29 @@ fn logic() {
             Number(2.),
             LogicalGe,
             Number(3.),
-            Endl
-        ]
-    );
-
-    let result = Lexer::new().lex("1 < 2 <= 3;".into());
-    assert!(result.is_ok());
-    assert_eq!(
-        result.unwrap(),
-        vec![
+            Endl,
             Number(1.),
             LogicalL,
             Number(2.),
             LogicalLe,
             Number(3.),
             Endl
+        ]
+    );
+
+    let result = Lexer::new().lex(" true && false; true || false;".into());
+    assert!(result.is_ok());
+    assert_eq!(
+        result.unwrap(),
+        vec![
+            Bool(true),
+            LogicalAnd,
+            Bool(false),
+            Endl,
+            Bool(true),
+            LogicalOr,
+            Bool(false),
+            Endl,
         ]
     );
 }

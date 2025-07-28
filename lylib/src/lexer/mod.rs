@@ -85,6 +85,14 @@ impl Lexer {
                             self.equality_register = Some(LogicalL);
                             mode = CaptureMode::Equality;
                         }
+                        '&' => {
+                            self.equality_register = Some(LogicalAnd);
+                            mode = CaptureMode::Equality;
+                        }
+                        '|' => {
+                            self.equality_register = Some(LogicalOr);
+                            mode = CaptureMode::Equality;
+                        }
 
                         // numbers
                         c if c.is_numeric() && self.keyword_register.is_empty() => {
@@ -161,6 +169,12 @@ impl Lexer {
                             (LogicalL, _) => tokens.push(LogicalL),
                             (LogicalG, '=') => tokens.push(LogicalGe),
                             (LogicalG, _) => tokens.push(LogicalG),
+                            (LogicalAnd, '&') => {
+                                tokens.push(LogicalAnd);
+                            }
+                            (LogicalOr, '|') => {
+                                tokens.push(LogicalOr);
+                            }
                             _ => {
                                 tokens.push(LogicalNot);
                                 self.keyword_register.push(c);

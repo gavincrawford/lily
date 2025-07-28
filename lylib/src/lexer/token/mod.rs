@@ -40,6 +40,8 @@ pub enum Token {
     LogicalGe,
     LogicalL,
     LogicalLe,
+    LogicalAnd,
+    LogicalOr,
 
     // math ops
     Add,

@@ -377,7 +377,9 @@ impl Parser {
                 | Some(Token::LogicalG)
                 | Some(Token::LogicalGe)
                 | Some(Token::LogicalEq)
-                | Some(Token::LogicalNeq) => Ok(ASTNode::Op {
+                | Some(Token::LogicalNeq)
+                | Some(Token::LogicalAnd)
+                | Some(Token::LogicalOr) => Ok(ASTNode::Op {
                     lhs: primary.clone(),
                     op: self.next().unwrap(), // safety: peek
                     rhs: self
