@@ -1,48 +1,6 @@
-//! A collection of macros that make writing tests easier and slimmer.
-
-/// Shorthand for creating and executing the parser, and comparing its output to an expression.
-#[macro_export]
-macro_rules! parse_eq {
-    ($code:expr; $($block:expr),*) => {
-        (|| {
-            let result = Parser::new(Lexer::new().lex($code.into()).unwrap()).parse();
-            assert!(result.is_ok(), "Parser failed: {:?}", result);
-            assert_eq!(result.unwrap(), block!($($block),*));
-        })()
-    };
-    ($code:expr, $path:expr; $($block:expr),*) => {
-        (|| {
-            let mut parser = Parser::new(Lexer::new().lex($code.into()).unwrap());
-            parser.set_pwd($path.into());
-            let result = parser.parse();
-            assert!(result.is_ok(), "Parser failed: {:?}", result);
-            assert_eq!(result.unwrap(), block!($($block),*));
-        })()
-    };
-}
-
-/// Shorthand for executing test code located at the provided path.
-#[macro_export]
-macro_rules! interpret {
-    ($path:expr) => {{
-        // interpret file
-        use std::io::Cursor;
-        let mut i = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
-        let mut p = Parser::new(Lexer::new().lex(include_str!($path).to_string()).unwrap());
-        p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
-        let ast = p.parse().unwrap();
-        i.execute(ast).unwrap();
-
-        // read output
-        let mut buf = String::new();
-        let mut output = i.output.borrow_mut();
-        output.set_position(0);
-        output.read_to_string(&mut buf).unwrap();
-        drop(output);
-
-        (i, buf)
-    }};
-}
+//! A collection of macros for simplifying the process of making `ASTNode`s.
+//! The macros here are primarily used for testing, where we compare against large hand-made
+//! `ASTNode` trees, or anywhere we need to instantiate nodes easily.
 
 /// Shorthand for creating a literal.
 #[macro_export]
