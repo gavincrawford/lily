@@ -3,7 +3,6 @@
 
 use super::*;
 use anyhow::Result;
-use crate::get_global_interner;
 
 pub mod drop;
 pub mod svtable;
@@ -11,11 +10,11 @@ pub mod variable;
 
 /// This trait can be added to any type to give it the ability to be accessed by identifier.
 pub(crate) trait MemoryInterface {
-    fn get_owned(&self, id: String) -> Result<Variable>;
-    fn get_ref(&self, id: String) -> Result<Rc<RefCell<Variable>>>;
-    fn get_module(&self, id: String) -> Result<Rc<RefCell<SVTable>>>;
-    fn declare(&mut self, id: String, value: Variable, scope: usize) -> Result<()>;
-    fn assign(&mut self, id: String, value: Variable, scope: usize) -> Result<()>;
+    fn get_owned(&self, id: usize) -> Result<Variable>;
+    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>>;
+    fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>>;
+    fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<()>;
+    fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<()>;
 }
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
@@ -23,7 +22,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     ///
     /// Some identifiers reference variables within stacks of modules, and this function resolves
     /// these long chains of reference into the relevant target and variable name.
-    fn resolve_access_target(&self, id: &ID) -> Result<(Rc<RefCell<dyn MemoryInterface>>, String)> {
+    fn resolve_access_target(&self, id: &ID) -> Result<(Rc<RefCell<dyn MemoryInterface>>, usize)> {
         // get relevant module pointer
         let mut module: Rc<RefCell<dyn MemoryInterface>> = match &self.mod_id {
             Some(mod_id) => mod_id.clone(),
@@ -32,23 +31,23 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
         // get variable id, stepping down if required
         let id = match id.get_kind() {
-            IDKind::Literal(id) => get_global_interner().lock().unwrap().resolve(id).to_string(),
+            IDKind::Literal(id) => id,
             IDKind::Member {
                 parent: _,
                 member: _,
             } => {
-                let path = id.to_path_compat();
-                for item in &path[0..(path.len() - 1)] {
+                let path = id.to_path_interned();
+                for &item in &path[0..(path.len() - 1)] {
                     // get mutable module ref
                     let module_copy = &*module.clone();
                     let module_ref = module_copy.borrow_mut();
 
-                    if let Ok(v) = module_ref.get_module(item.to_owned()) {
+                    if let Ok(v) = module_ref.get_module(item) {
                         // if this is a simple module, return that and continue
                         module = v;
                     } else {
                         // otherwise, this is a structure or list deref, so we have to find its SVT
-                        let item_ref = module_ref.get_ref(item.to_owned()).unwrap();
+                        let item_ref = module_ref.get_ref(item).unwrap();
                         match &*item_ref.borrow() {
                             Variable::Owned(ASTNode::Instance {
                                 kind: _,
@@ -62,7 +61,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         };
                     };
                 }
-                path.last().unwrap().to_owned()
+                *path.last().unwrap()
             }
         };
 

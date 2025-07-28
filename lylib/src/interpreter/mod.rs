@@ -421,18 +421,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::Module { alias, body } => {
                 if let Some(mod_name) = alias {
-                    // insert named modules - resolve interned ID to string
-                    let mod_name_str = crate::get_global_interner()
-                        .lock()
-                        .unwrap()
-                        .resolve(*mod_name)
-                        .to_string();
+                    // insert named modules using interned ID
                     let temp = self.mod_id.to_owned();
                     if let Some(mod_pointer) = temp.to_owned() {
                         self.mod_id =
-                            Some(mod_pointer.borrow_mut().add_module(mod_name_str.clone()));
+                            Some(mod_pointer.borrow_mut().add_module(*mod_name));
                     } else {
-                        self.mod_id = Some(self.memory.borrow_mut().add_module(mod_name_str));
+                        self.mod_id = Some(self.memory.borrow_mut().add_module(*mod_name));
                     }
 
                     // execute body

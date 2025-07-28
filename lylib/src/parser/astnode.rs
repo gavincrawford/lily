@@ -133,8 +133,8 @@ impl ASTNode {
                 }
                 let mut svt = SVTable::new();
                 for (target, value) in default_fields {
-                    // get the first value in the path
-                    let id = target.to_path_compat().first().unwrap().to_owned();
+                    // get the first value in the interned path
+                    let id = *target.to_path_interned().first().unwrap();
 
                     // add it to the table
                     svt.declare(id, value.into(), 0)?;

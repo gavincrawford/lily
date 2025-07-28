@@ -90,11 +90,9 @@ impl Ord for Variable {
 }
 
 impl MemoryInterface for Variable {
-    fn get_owned(&self, id: String) -> Result<Variable> {
+    fn get_owned(&self, id: usize) -> Result<Variable> {
         if let Variable::Owned(ASTNode::List(items)) = self {
-            // saftey: checked in interpreter
-            let idx = id.parse::<usize>().unwrap();
-            let item = items.get(idx).context("index out of bounds")?;
+            let item = items.get(id).context("index out of bounds")?;
             let inner = item.borrow().clone();
             Ok(inner)
         } else {
@@ -102,37 +100,31 @@ impl MemoryInterface for Variable {
         }
     }
 
-    fn get_ref(&self, id: String) -> Result<Rc<RefCell<Variable>>> {
+    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>> {
         if let Variable::Owned(ASTNode::List(items)) = self {
-            // saftey: checked in interpreter
-            let idx = id.parse::<usize>().unwrap();
-            let item = items.get(idx).context("index out of bounds")?;
+            let item = items.get(id).context("index out of bounds")?;
             Ok(item.clone())
         } else {
             bail!("invalid access to variable '{:?}'", self);
         }
     }
 
-    fn get_module(&self, _: String) -> Result<Rc<RefCell<SVTable>>> {
+    fn get_module(&self, _: usize) -> Result<Rc<RefCell<SVTable>>> {
         bail!("variables cannot contain modules");
     }
 
-    fn declare(&mut self, id: String, value: Variable, _: usize) -> Result<()> {
+    fn declare(&mut self, id: usize, value: Variable, _: usize) -> Result<()> {
         if let Variable::Owned(ASTNode::List(items)) = self {
-            // saftey: checked in interpreter
-            let idx = id.parse::<usize>().unwrap();
-            items.insert(idx, value.into());
+            items.insert(id, value.into());
             Ok(())
         } else {
             bail!("invalid declaration to variable '{:?}'", self);
         }
     }
 
-    fn assign(&mut self, id: String, value: Variable, _: usize) -> Result<()> {
+    fn assign(&mut self, id: usize, value: Variable, _: usize) -> Result<()> {
         if let Variable::Owned(ASTNode::List(items)) = self {
-            // saftey: checked in interpreter
-            let idx = id.parse::<usize>().unwrap();
-            *items.get_mut(idx).context("index out of bounds")? = value.into();
+            *items.get_mut(id).context("index out of bounds")? = value.into();
             Ok(())
         } else {
             bail!("invalid assignment to variable '{:?}'", self);
