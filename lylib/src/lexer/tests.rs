@@ -14,30 +14,41 @@ use Token::*;
 /// ```rust
 /// # use lylib::*;
 /// # use lylib::lexer::Token::*;
-/// lex_eq!("let x = 5;" => Let, Identifier("x".into()), Equal, Number(5.), Endl);
+/// lex_eq!("let x = 5;" => i => Let, Identifier(i.intern("x")), Equal, Number(5.), Endl);
+/// // or...
+/// lex_eq!("1 + 2;" => i => Number(1.), Add, Number(2.), Endl);
 /// ```
 #[macro_export]
 macro_rules! lex_eq {
     ($input:expr => $($token:expr),*) => {
         let result = Lexer::new().lex($input.into());
-        assert!(result.is_ok(), "Lexer failed: {:?}", result);
+        lex_eq!(@compare result, $($token),*);
+    };
+    ($input:expr => $interner:ident => $($token:expr),*) => {
+        let result = Lexer::new().lex($input.into());
+        let mut $interner = crate::get_global_interner().lock().unwrap();
+        lex_eq!(@compare result, $($token),*);
+        drop($interner);
+    };
+    (@compare $result:expr, $($token:expr),*) => {
+        assert!($result.is_ok(), "Lexer failed: {:?}", $result);
         assert_eq!(
-            result.unwrap(),
+            $result.unwrap(),
             vec![$($token),*]
         );
-    };
+    }
 }
 
 #[test]
 fn variable_assignment() {
-    lex_eq!("let var1 = 1; let var2 = 2;" =>
+    lex_eq!("let var1 = 1; let var2 = 2;" => i =>
         Let,
-        Identifier("var1".into()),
+        Identifier(i.intern("var1")),
         Equal,
         Number(1.),
         Endl,
         Let,
-        Identifier("var2".into()),
+        Identifier(i.intern("var2")),
         Equal,
         Number(2.),
         Endl
@@ -149,30 +160,30 @@ fn conditionals() {
 
 #[test]
 fn functions() {
-    lex_eq!("func func_name a b do; return a + b; end; func_name(a, b)" =>
+    lex_eq!("func func_name a b do; return a + b; end; func_name(a, b)" => i =>
         Function,
-        Identifier("func_name".into()),
-        Identifier("a".into()),
-        Identifier("b".into()),
+        Identifier(i.intern("func_name")),
+        Identifier(i.intern("a")),
+        Identifier(i.intern("b")),
         BlockStart,
         Endl,
         Return,
-        Identifier("a".into()),
+        Identifier(i.intern("a")),
         Add,
-        Identifier("b".into()),
+        Identifier(i.intern("b")),
         Endl,
         BlockEnd,
         Endl,
-        Identifier("func_name".into()),
+        Identifier(i.intern("func_name")),
         ParenOpen,
-        Identifier("a".into()),
+        Identifier(i.intern("a")),
         Comma,
-        Identifier("b".into()),
+        Identifier(i.intern("b")),
         ParenClose
     );
 
-    lex_eq!("function(1 + 2, 3 + 4)" =>
-        Identifier("function".into()),
+    lex_eq!("function(1 + 2, 3 + 4)" => i =>
+        Identifier(i.intern("function")),
         ParenOpen,
         Number(1.),
         Add,
@@ -222,9 +233,9 @@ fn parens() {
 
 #[test]
 fn lists() {
-    lex_eq!("let list = [0, false, 'a']; let value = list[0];" =>
+    lex_eq!("let list = [0, false, 'a']; let value = list[0];" => i =>
         Let,
-        Identifier("list".into()),
+        Identifier(i.intern("list")),
         Equal,
         BracketOpen,
         Number(0.),
@@ -235,9 +246,9 @@ fn lists() {
         BracketClose,
         Endl,
         Let,
-        Identifier("value".into()),
+        Identifier(i.intern("value")),
         Equal,
-        Identifier("list".into()),
+        Identifier(i.intern("list")),
         BracketOpen,
         Number(0.),
         BracketClose,
@@ -254,37 +265,37 @@ fn loops() {
 
 #[test]
 fn modules() {
-    lex_eq!("import \"./module.ly\"; import \"./module.ly\" as alias;" =>
+    lex_eq!("import \"./module.ly\"; import \"./module.ly\" as alias;" => i =>
         Import,
         Str("./module.ly".into()),
         Endl,
         Import,
         Str("./module.ly".into()),
         As,
-        Identifier("alias".into()),
+        Identifier(i.intern("alias")),
         Endl
     );
 }
 
 #[test]
 fn structs() {
-    lex_eq!("struct Number do; let value = 0; end; let instance = new Number;" =>
+    lex_eq!("struct Number do; let value = 0; end; let instance = new Number;" => i =>
         Struct,
-        Identifier("Number".into()),
+        Identifier(i.intern("Number")),
         BlockStart,
         Endl,
         Let,
-        Identifier("value".into()),
+        Identifier(i.intern("value")),
         Equal,
         Number(0.),
         Endl,
         BlockEnd,
         Endl,
         Let,
-        Identifier("instance".into()),
+        Identifier(i.intern("instance")),
         Equal,
         New,
-        Identifier("Number".into()),
+        Identifier(i.intern("Number")),
         Endl
     );
 }

@@ -29,7 +29,8 @@ impl StringInterner {
     ///
     /// If the string is already interned, returns the existing identifier.
     /// Otherwise, allocates a new identifier and stores the string.
-    pub fn intern(&mut self, string: String) -> usize {
+    pub fn intern(&mut self, string: impl Into<String>) -> usize {
+        let string = string.into();
         if let Some(&id) = self.indices.get(&string) {
             // string already interned, return existing ID
             id
@@ -158,4 +159,3 @@ mod tests {
         }
     }
 }
-

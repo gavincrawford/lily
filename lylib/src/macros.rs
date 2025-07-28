@@ -2,6 +2,18 @@
 //! The macros here are primarily used for testing, where we compare against large hand-made
 //! `ASTNode` trees, or anywhere we need to instantiate nodes easily.
 
+// NOTE: temporary. taking a lock of the global interner for every single instance of these macros
+// is completely excessive
+#[macro_export]
+macro_rules! resolve {
+    ($id:expr) => {{
+        let mut i = get_global_interner().lock().unwrap();
+        let id = i.intern($id);
+        drop(i);
+        id
+    }};
+}
+
 /// Shorthand for creating a literal.
 #[macro_export]
 macro_rules! lit {
@@ -20,7 +32,7 @@ macro_rules! lit {
 #[macro_export]
 macro_rules! ident {
     ($id:expr) => {
-        lit!(Token::Identifier($id.into()))
+        lit!(Token::Identifier(resolve!($id)))
     };
 }
 
@@ -85,8 +97,8 @@ macro_rules! node {
     };
     (func $fn:tt($($arg:tt),*) => $body:expr) => {
         ASTNode::Function {
-            id: ID::new(stringify!($fn)),
-            arguments: vec![$(String::from(stringify!($arg))),*],
+            id: ID::from_interned(resolve!(stringify!($fn))),
+            arguments: vec![$(resolve!(stringify!($arg))),*],
             body: $body,
         }.into()
     };
@@ -97,15 +109,15 @@ macro_rules! node {
     // modules
     (mod $id:tt => $body:expr) => {
         ASTNode::Module {
-            alias: Some(stringify!($id).into()),
+            alias: Some(resolve!(stringify!($id)).into()),
             body: $body,
         }.into()
     };
 
     // structures
-    (struct $id:expr => $body:expr) => {
+    (struct $id:tt => $body:expr) => {
         ASTNode::Struct {
-            id: ID::new(stringify!($id)),
+            id: ID::from_interned(resolve!(stringify!($id))),
             body: $body,
         }.into()
     };
