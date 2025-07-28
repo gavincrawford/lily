@@ -2,7 +2,7 @@ struct Node do
   let l = -1
   let r = -1
   let v = 0
-  func constructor nv nl nr do
+  func Node nv nl nr do
     v = nv
     l = nl
     r = nr

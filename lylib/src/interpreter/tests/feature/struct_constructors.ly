@@ -1,5 +1,5 @@
 struct DefinedConstructor do
-  func constructor x y do
+  func DefinedConstructor x y do
     a = x
     b = y
   end
