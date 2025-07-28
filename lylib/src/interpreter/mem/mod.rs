@@ -3,6 +3,7 @@
 
 use super::*;
 use anyhow::Result;
+use crate::get_global_interner;
 
 pub mod drop;
 pub mod svtable;
@@ -31,12 +32,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
         // get variable id, stepping down if required
         let id = match id.get_kind() {
-            IDKind::Literal(id) => id,
+            IDKind::Literal(id) => get_global_interner().lock().unwrap().resolve(id).to_string(),
             IDKind::Member {
                 parent: _,
                 member: _,
             } => {
-                let path = id.to_path();
+                let path = id.to_path_compat();
                 for item in &path[0..(path.len() - 1)] {
                     // get mutable module ref
                     let module_copy = &*module.clone();

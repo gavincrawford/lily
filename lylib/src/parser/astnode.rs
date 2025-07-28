@@ -8,7 +8,7 @@ pub enum ASTNode {
     Block(Vec<Rc<ASTNode>>),
     /// Holds a block, but represents a separate module.
     Module {
-        alias: Option<String>,
+        alias: Option<usize>,
         body: Rc<ASTNode>,
     },
 
@@ -26,7 +26,7 @@ pub enum ASTNode {
     },
     Function {
         id: ID,
-        arguments: Vec<String>,
+        arguments: Vec<usize>,
         body: Rc<ASTNode>,
     },
     FunctionCall {
@@ -113,7 +113,7 @@ impl ASTNode {
                             // if this field is literal, add it, bail otherwise
                             if let ASTNode::Literal(Token::Identifier(variable)) = &**target {
                                 default_fields.push((
-                                    ID::new(variable),
+                                    ID::from_interned(*variable),
                                     Variable::Owned(ASTNode::inner_to_owned(&value)),
                                 ));
                             } else {
@@ -134,7 +134,7 @@ impl ASTNode {
                 let mut svt = SVTable::new();
                 for (target, value) in default_fields {
                     // get the first value in the path
-                    let id = target.to_path().first().unwrap().to_owned();
+                    let id = target.to_path_compat().first().unwrap().to_owned();
 
                     // add it to the table
                     svt.declare(id, value.into(), 0)?;

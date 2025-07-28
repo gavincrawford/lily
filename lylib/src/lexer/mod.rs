@@ -3,6 +3,7 @@
 mod token;
 pub use token::Token;
 
+use crate::get_global_interner;
 use anyhow::{bail, Context, Result};
 mod tests;
 
@@ -24,7 +25,7 @@ pub struct Lexer {
 }
 
 impl Lexer {
-    /// Creates a new lexer.
+    /// Creates a new lexer with the provided interner.
     pub fn new() -> Self {
         Self {
             number_register: String::new(),
@@ -36,6 +37,8 @@ impl Lexer {
 
     /// Lexes the provided file, as a string, into a vector of tokens.
     pub fn lex(&mut self, buf: String) -> Result<Vec<Token>> {
+        // TODO no unwrap
+        let mut interner = get_global_interner().lock().unwrap();
         use Token::*;
         let buf = buf.replace("\n", ";");
         let mut chars = buf.chars().peekable();
@@ -115,7 +118,9 @@ impl Lexer {
                                 tokens.push(token);
                             } else if !self.keyword_register.is_empty() {
                                 // otherwise, it'd be an identifier
-                                tokens.push(Identifier(self.keyword_register.clone()));
+                                tokens.push(Identifier(
+                                    interner.intern(self.keyword_register.clone()),
+                                ));
                             }
                             self.keyword_register.clear();
 
@@ -138,7 +143,9 @@ impl Lexer {
                             if let Some(token) = self.keyword_from_register() {
                                 tokens.push(token);
                             } else if !self.keyword_register.is_empty() {
-                                tokens.push(Identifier(self.keyword_register.clone()));
+                                tokens.push(Identifier(
+                                    interner.intern(self.keyword_register.clone()),
+                                ));
                             }
                             self.keyword_register.clear();
                             tokens.push(Endl);

@@ -1,6 +1,7 @@
 //! Implements the SVTable, or the scoped-variable table.
 
 use super::*;
+use crate::get_global_interner;
 use anyhow::{bail, Result};
 use rustc_hash::FxHashMap;
 use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
@@ -171,8 +172,18 @@ impl Display for SVTable {
                     body,
                 } => format!(
                     "{}({}) => {}",
-                    id.to_path().join("."),
-                    arguments.join(", "),
+                    id.to_path_compat().join("."),
+                    arguments
+                        .iter()
+                        .map(|&arg_id| {
+                            get_global_interner()
+                                .lock()
+                                .unwrap()
+                                .resolve(arg_id)
+                                .to_string()
+                        })
+                        .collect::<Vec<String>>()
+                        .join(", "),
                     prettify(body.clone())
                 ),
                 other => format!("{other:?}"),

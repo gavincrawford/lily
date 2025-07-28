@@ -6,7 +6,7 @@ mod from;
 pub enum Token {
     // variables
     Equal,
-    Identifier(String),
+    Identifier(usize),
     Function,
     Struct,
     Return,

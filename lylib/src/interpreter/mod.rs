@@ -116,7 +116,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // get function reference, bail if none found
                 if let ASTNode::Literal(Token::Identifier(id)) = &**target {
                     // get function defined by this ID
-                    let id = ID::new(id);
+                    let id = ID::from_interned(*id);
                     let variable = self.get(&id)?;
 
                     // resolve arguments to their literal values
@@ -391,7 +391,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
                     // if this literal is an identifier, return the internal value
-                    if let Variable::Owned(var) = self.get(&ID::new(identifier))? {
+                    if let Variable::Owned(var) = self.get(&ID::from_interned(*identifier))? {
                         return Ok(Some(var.into()));
                     }
                     Ok(None)
@@ -421,14 +421,18 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::Module { alias, body } => {
                 if let Some(mod_name) = alias {
-                    // insert named modules
+                    // insert named modules - resolve interned ID to string
+                    let mod_name_str = crate::get_global_interner()
+                        .lock()
+                        .unwrap()
+                        .resolve(*mod_name)
+                        .to_string();
                     let temp = self.mod_id.to_owned();
                     if let Some(mod_pointer) = temp.to_owned() {
                         self.mod_id =
-                            Some(mod_pointer.borrow_mut().add_module(mod_name.to_owned()));
+                            Some(mod_pointer.borrow_mut().add_module(mod_name_str.clone()));
                     } else {
-                        self.mod_id =
-                            Some(self.memory.borrow_mut().add_module(mod_name.to_owned()));
+                        self.mod_id = Some(self.memory.borrow_mut().add_module(mod_name_str));
                     }
 
                     // execute body

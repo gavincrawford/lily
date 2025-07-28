@@ -235,7 +235,7 @@ impl Parser {
             Some(Token::Identifier(name)) => {
                 self.expect(Token::BlockStart)?;
                 Ok(ASTNode::Struct {
-                    id: ID::new(name),
+                    id: ID::from_interned(name),
                     body: self.parse()?,
                 }
                 .into())
@@ -260,7 +260,7 @@ impl Parser {
                 }
                 self.expect(Token::BlockStart)?;
                 Ok(ASTNode::Function {
-                    id: ID::new(name),
+                    id: ID::from_interned(name),
                     body: self.parse().context("failed to parse function body")?,
                     arguments,
                 }
