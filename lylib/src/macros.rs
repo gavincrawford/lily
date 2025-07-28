@@ -2,13 +2,23 @@
 //! The macros here are primarily used for testing, where we compare against large hand-made
 //! `ASTNode` trees, or anywhere we need to instantiate nodes easily.
 
-// NOTE: temporary. taking a lock of the global interner for every single instance of these macros
-// is completely excessive
+/// Converts a string to an interned identifier.
 #[macro_export]
-macro_rules! resolve {
+macro_rules! intern {
     ($id:expr) => {{
         let mut i = get_global_interner().lock().unwrap();
         let id = i.intern($id);
+        drop(i);
+        id
+    }};
+}
+
+/// Resolves an interned identifier backwards to the original string.
+#[macro_export]
+macro_rules! resolve {
+    ($id:expr) => {{
+        let i = get_global_interner().lock().unwrap();
+        let id = i.resolve($id).to_owned();
         drop(i);
         id
     }};
@@ -32,7 +42,7 @@ macro_rules! lit {
 #[macro_export]
 macro_rules! ident {
     ($id:expr) => {
-        lit!(Token::Identifier(resolve!($id)))
+        lit!(Token::Identifier(intern!($id)))
     };
 }
 
@@ -97,8 +107,8 @@ macro_rules! node {
     };
     (func $fn:tt($($arg:tt),*) => $body:expr) => {
         ASTNode::Function {
-            id: ID::from_interned(resolve!(stringify!($fn))),
-            arguments: vec![$(resolve!(stringify!($arg))),*],
+            id: ID::from_interned(intern!(stringify!($fn))),
+            arguments: vec![$(intern!(stringify!($arg))),*],
             body: $body,
         }.into()
     };
@@ -109,7 +119,7 @@ macro_rules! node {
     // modules
     (mod $id:tt => $body:expr) => {
         ASTNode::Module {
-            alias: Some(resolve!(stringify!($id)).into()),
+            alias: Some(intern!(stringify!($id)).into()),
             body: $body,
         }.into()
     };
@@ -117,7 +127,7 @@ macro_rules! node {
     // structures
     (struct $id:tt => $body:expr) => {
         ASTNode::Struct {
-            id: ID::from_interned(resolve!(stringify!($id))),
+            id: ID::from_interned(intern!(stringify!($id))),
             body: $body,
         }.into()
     };

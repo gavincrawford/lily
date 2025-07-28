@@ -36,7 +36,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 parent: _,
                 member: _,
             } => {
-                let path = id.to_path_interned();
+                let path = id.to_path();
                 for &item in &path[0..(path.len() - 1)] {
                     // get mutable module ref
                     let module_copy = &*module.clone();

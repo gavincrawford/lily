@@ -159,7 +159,7 @@ impl Display for SVTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn prettify(node: Rc<ASTNode>) -> String {
             match &*node {
-                ASTNode::Literal(Token::Identifier(id)) => id.to_string(),
+                ASTNode::Literal(Token::Identifier(id)) => resolve!(*id),
                 ASTNode::Literal(token) => format!("{token:?}"),
                 ASTNode::Op { lhs, op, rhs } => format!(
                     "{} {:?} {}",
@@ -180,16 +180,14 @@ impl Display for SVTable {
                     body,
                 } => format!(
                     "{}({}) => {}",
-                    id.to_path_compat().join("."),
+                    id.to_path()
+                        .iter()
+                        .map(|id| resolve!(*id))
+                        .collect::<Vec<String>>()
+                        .join("."),
                     arguments
                         .iter()
-                        .map(|&arg_id| {
-                            get_global_interner()
-                                .lock()
-                                .unwrap()
-                                .resolve(arg_id)
-                                .to_string()
-                        })
+                        .map(|id| resolve!(*id))
                         .collect::<Vec<String>>()
                         .join(", "),
                     prettify(body.clone())

@@ -99,40 +99,11 @@ impl ID {
         &self.id
     }
 
-    /// Converts an `ID` into a vector of strings representing the path.
-    pub fn to_path(&self, interner: &StringInterner) -> Vec<String> {
-        let mut path = Vec::new();
-        self.collect_path(&self.id, &mut path, interner);
-        path
-    }
-
-    // TODO: remove after stabilizing interning
-    /// Converts an `ID` into a vector of strings using the global interner.
-    /// This is a compatibility method during the transition.
-    pub fn to_path_compat(&self) -> Vec<String> {
-        let mut path = Vec::new();
-        let interner = get_global_interner().lock().unwrap();
-        self.collect_path(&self.id, &mut path, &interner);
-        path
-    }
-
     /// Converts an `ID` into a vector of interned identifiers (usize).
-    pub fn to_path_interned(&self) -> Vec<usize> {
+    pub fn to_path(&self) -> Vec<usize> {
         let mut path = Vec::new();
         self.collect_path_interned(&self.id, &mut path);
         path
-    }
-
-    // TODO: remove after stabilizing interning
-    /// Helper function to recursively collect path components.
-    fn collect_path(&self, kind: &IDKind, path: &mut Vec<String>, interner: &StringInterner) {
-        match kind {
-            IDKind::Literal(id) => path.push(interner.resolve(*id).to_string()),
-            IDKind::Member { parent, member } => {
-                self.collect_path(parent, path, interner);
-                self.collect_path(member, path, interner);
-            }
-        }
     }
 
     /// Helper function to recursively collect interned path components.
