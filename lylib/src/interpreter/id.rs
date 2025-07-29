@@ -50,8 +50,41 @@ impl ID {
 
     /// Creates a new ID from an already-interned identifier.
     pub fn from_interned(id: usize) -> Self {
-        Self {
-            id: IDKind::Literal(id),
+        // NOTE: converting the id back into a string here has a fairly significant performance
+        // cost. might want to consider more options
+
+        // resolve the interned ID to check if it contains dots
+        let string = {
+            let interner = get_global_interner().lock().unwrap();
+            interner.resolve(id).to_string()
+        };
+
+        if string.contains('.') {
+            // if it contains dots, parse it as member access using existing logic
+            let mut interner = get_global_interner().lock().unwrap();
+            let mut parts = string.split('.').map(|s| {
+                let interned_id = interner.intern(s.to_string());
+                Rc::new(IDKind::Literal(interned_id))
+            });
+            let mut parent = parts.next().expect("expected identifier");
+
+            // build the nested member structure
+            for member in parts {
+                parent = Rc::new(IDKind::Member {
+                    parent,
+                    member: member.clone(),
+                });
+            }
+
+            // return the constructed member access
+            Self {
+                id: (*parent).clone(),
+            }
+        } else {
+            // otherwise, it's a simple literal
+            Self {
+                id: IDKind::Literal(id),
+            }
         }
     }
 

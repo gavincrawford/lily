@@ -38,16 +38,22 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             } => {
                 let path = id.to_path();
                 for &item in &path[0..(path.len() - 1)] {
-                    // get mutable module ref
-                    let module_copy = &*module.clone();
-                    let module_ref = module_copy.borrow_mut();
+                    // try to get module first, then check if it's a struct/list access
+                    let module_result = {
+                        let module_ref = module.borrow();
+                        module_ref.get_module(item)
+                    };
 
-                    if let Ok(v) = module_ref.get_module(item) {
-                        // if this is a simple module, return that and continue
+                    if let Ok(v) = module_result {
+                        // if this is a simple module, use that and continue
                         module = v;
                     } else {
                         // otherwise, this is a structure or list deref, so we have to find its SVT
-                        let item_ref = module_ref.get_ref(item).unwrap();
+                        let item_ref = {
+                            let module_ref = module.borrow();
+                            module_ref.get_ref(item).unwrap()
+                        };
+
                         match &*item_ref.borrow() {
                             Variable::Owned(ASTNode::Instance {
                                 kind: _,
