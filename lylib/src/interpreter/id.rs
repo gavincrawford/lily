@@ -55,38 +55,10 @@ impl ID {
         }
     }
 
-    // TODO: remove after stabilizing interning
-    /// Creates a new ID from a string using the global interner.
-    /// This is a compatibility method during the transition to explicit interner passing.
-    pub fn new_compat(id: impl Into<String>) -> Self {
-        let id = id.into();
-        if id.contains('.') {
-            // if the id has an access pattern, process it
-            let mut parts = id.split('.').map(|s| {
-                let interned_id = get_global_interner().lock().unwrap().intern(s.to_string());
-                Rc::new(IDKind::Literal(interned_id))
-            });
-            let mut parent = parts.next().expect("expected identifier");
-
-            // build the nested member structure
-            for member in parts {
-                parent = Rc::new(IDKind::Member {
-                    parent,
-                    member: member.clone(),
-                });
-            }
-
-            // return the constructed member access
-            Self {
-                id: (*parent).clone(),
-            }
-        } else {
-            // otherwise, this id is literal
-            let interned_id = get_global_interner().lock().unwrap().intern(id);
-            Self {
-                id: IDKind::Literal(interned_id),
-            }
-        }
+    // Creates a new ID from a string, interning it in the process.
+    pub fn from_str(string: impl Into<String>) -> Self {
+        let mut interner = get_global_interner().lock().unwrap();
+        ID::new(string, &mut interner)
     }
 
     /// Gets the inner `IDKind` of this identifier.
@@ -115,11 +87,5 @@ impl ID {
                 self.collect_path_interned(member, path);
             }
         }
-    }
-}
-
-impl From<&str> for ID {
-    fn from(value: &str) -> Self {
-        ID::new_compat(value)
     }
 }
