@@ -10,8 +10,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 if let ASTNode::Literal(Token::Number(index)) =
                     &*self.execute_expr(index.clone())?.unwrap()
                 {
-                    // TODO: This creates an interned string from a number index, which may not be correct
-                    // We need access to interner here to properly handle this case
+                    // convert numeric index to usize for array access
                     let member = IDKind::Literal(*index as usize).into();
                     return Ok(ID {
                         id: IDKind::Member { parent, member },
