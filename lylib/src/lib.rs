@@ -4,10 +4,10 @@ pub mod lexer;
 pub mod parser;
 pub use anyhow;
 
-// global interner for temporary compatibility during transition
-// TODO: remove this once interner is properly threaded through the system
 use crate::interner::StringInterner;
 use std::sync::{Mutex, OnceLock};
+/// Global interner. Used just about everywhere to access interned values and their respective
+/// string counterparts.
 static GLOBAL_INTERNER: OnceLock<Mutex<StringInterner>> = OnceLock::new();
 
 pub fn get_global_interner() -> &'static Mutex<StringInterner> {
