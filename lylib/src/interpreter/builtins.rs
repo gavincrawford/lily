@@ -4,9 +4,7 @@ use crate::lit;
 impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Adds an arbitrary external function to this interpreter.
     pub fn inject_extern(&mut self, id: impl Into<String>, closure: Rc<ExFn>) -> Result<()> {
-        let id = id.into();
-        let mut interner = get_global_interner().lock().unwrap();
-        self.declare(&ID::new(id, &mut interner), Variable::Extern(closure))
+        self.declare(&ID::from_str(id), Variable::Extern(closure))
     }
 
     // `Interpreter::new`, and we don't want anyone using it twice.

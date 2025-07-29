@@ -54,9 +54,7 @@ impl SVTable {
         if let Some(module) = self.modules.get(&name) {
             Ok(module.clone())
         } else {
-            let interner = get_global_interner().lock().unwrap();
-            let name_str = interner.resolve(name);
-            bail!("failed to find module '{}'", name_str);
+            bail!("failed to find module '{}'", resolve!(name));
         }
     }
 
@@ -89,9 +87,7 @@ impl MemoryInterface for SVTable {
         }
 
         // if no value is found, bail
-        let interner = get_global_interner().lock().unwrap();
-        let id_str = interner.resolve(id);
-        bail!("failed to get owned value {:?}", id_str)
+        bail!("failed to get owned value {:?}", resolve!(id))
     }
 
     fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>> {
@@ -103,18 +99,14 @@ impl MemoryInterface for SVTable {
         }
 
         // if no value is found, bail
-        let interner = get_global_interner().lock().unwrap();
-        let id_str = interner.resolve(id);
-        bail!("failed to get owned value {:?}", id_str)
+        bail!("failed to get owned value {:?}", resolve!(id))
     }
 
     fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>> {
         match self.modules.get(&id) {
             Some(module) => Ok(module.clone()),
             _ => {
-                let interner = get_global_interner().lock().unwrap();
-                let id_str = interner.resolve(id);
-                bail!("could not find module '{:?}'", id_str)
+                bail!("could not find module '{:?}'", resolve!(id))
             }
         }
     }
@@ -130,9 +122,7 @@ impl MemoryInterface for SVTable {
             .get_scope(scope)
             .context(format!("cannot delcare at scope {scope}",))?;
         if let Some(_) = var_map.insert(id, Rc::new(RefCell::new(value))) {
-            let interner = get_global_interner().lock().unwrap();
-            let id_str = interner.resolve(id);
-            bail!("variable '{}' already exists", id_str);
+            bail!("variable '{}' already exists", resolve!(id));
         }
         Ok(())
     }
@@ -205,10 +195,6 @@ impl Display for SVTable {
             let mut keys = scope.keys().collect::<Vec<&usize>>();
             keys.sort();
             for &key in keys {
-                // resolve key to string for display
-                let interner = get_global_interner().lock().unwrap();
-                let key_str = interner.resolve(key);
-
                 // obtain debug string respective to variable value
                 let value = scope.get(&key).unwrap();
                 let dbg_ln = match &*value.borrow() {
@@ -220,7 +206,7 @@ impl Display for SVTable {
 
                 // tab out endlines to keep indents, and print it
                 let dbg_ln = dbg_ln.replace("\n", "\n\t");
-                writeln!(f, "\t{key_str} = {dbg_ln}")?;
+                writeln!(f, "\t{} = {dbg_ln}", resolve!(key))?;
             }
         }
         Ok(())
