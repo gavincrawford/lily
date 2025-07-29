@@ -1,6 +1,7 @@
 use clap::ArgMatches;
 use lylib::{
     anyhow::{Context, Result},
+    get_global_interner, intern,
     interpreter::*,
     lexer::*,
     parser::*,
@@ -46,7 +47,7 @@ pub fn execute(args: ArgMatches) -> Result<()> {
 fn stdlib() -> Result<Vec<Rc<ASTNode>>> {
     let mut lexer = Lexer::new();
     Ok(vec![ASTNode::Module {
-        alias: Some("math".into()),
+        alias: Some(intern!("math")),
         body: Parser::new(lexer.lex(include_str!("./std/math.ly").into()).unwrap()).parse()?,
     }
     .into()])
