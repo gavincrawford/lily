@@ -1,6 +1,6 @@
 //! ID structure that allows for many kinds of identifiers.
 
-use crate::{get_global_interner, interner::StringInterner};
+use crate::{get_global_interner, intern, resolve};
 use std::rc::Rc;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -18,35 +18,6 @@ pub enum IDKind {
 }
 
 impl ID {
-    /// Creates a new ID from a literal identifier using the provided interner.
-    pub fn new(id: impl Into<String>, interner: &mut StringInterner) -> Self {
-        let id = id.into();
-        if id.contains('.') {
-            // if the id has an access pattern, process it
-            let mut parts = id
-                .split('.')
-                .map(|s| Rc::new(IDKind::Literal(interner.intern(s.to_string()))));
-            let mut parent = parts.next().expect("expected identifier");
-
-            // build the nested member structure
-            for member in parts {
-                parent = Rc::new(IDKind::Member {
-                    parent,
-                    member: member.clone(),
-                });
-            }
-
-            // return the constructed member access
-            Self {
-                id: (*parent).clone(),
-            }
-        } else {
-            // otherwise, this id is literal
-            Self {
-                id: IDKind::Literal(interner.intern(id)),
-            }
-        }
-    }
 
     /// Creates a new ID from an already-interned identifier.
     pub fn from_interned(id: usize) -> Self {
@@ -54,16 +25,12 @@ impl ID {
         // cost. might want to consider more options
 
         // resolve the interned ID to check if it contains dots
-        let string = {
-            let interner = get_global_interner().lock().unwrap();
-            interner.resolve(id).to_string()
-        };
+        let string = resolve!(id);
 
         if string.contains('.') {
             // if it contains dots, parse it as member access using existing logic
-            let mut interner = get_global_interner().lock().unwrap();
             let mut parts = string.split('.').map(|s| {
-                let interned_id = interner.intern(s.to_string());
+                let interned_id = intern!(s.to_string());
                 Rc::new(IDKind::Literal(interned_id))
             });
             let mut parent = parts.next().expect("expected identifier");
@@ -88,10 +55,35 @@ impl ID {
         }
     }
 
-    // Creates a new ID from a string, interning it in the process.
+    /// Creates a new ID from a string, interning it in the process.
     pub fn from_str(string: impl Into<String>) -> Self {
-        let mut interner = get_global_interner().lock().unwrap();
-        ID::new(string, &mut interner)
+        let string = string.into();
+        if string.contains('.') {
+            // if the id has an access pattern, process it
+            let mut parts = string.split('.').map(|s| {
+                let interned_id = intern!(s.to_string());
+                Rc::new(IDKind::Literal(interned_id))
+            });
+            let mut parent = parts.next().expect("expected identifier");
+
+            // build the nested member structure
+            for member in parts {
+                parent = Rc::new(IDKind::Member {
+                    parent,
+                    member: member.clone(),
+                });
+            }
+
+            // return the constructed member access
+            Self {
+                id: (*parent).clone(),
+            }
+        } else {
+            // otherwise, this id is literal
+            Self {
+                id: IDKind::Literal(intern!(string)),
+            }
+        }
     }
 
     /// Gets the inner `IDKind` of this identifier.

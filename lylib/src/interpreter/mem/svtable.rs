@@ -1,7 +1,6 @@
 //! Implements the SVTable, or the scoped-variable table.
 
 use super::*;
-use crate::get_global_interner;
 use anyhow::{bail, Result};
 use rustc_hash::FxHashMap;
 use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
