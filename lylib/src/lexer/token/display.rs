@@ -1,4 +1,4 @@
-use super::*;
+use crate::{lexer::*, resolve};
 use std::fmt::Display;
 
 impl Display for Token {
@@ -9,9 +9,7 @@ impl Display for Token {
             Str(v) => write!(f, "{v}"),
             Number(v) => write!(f, "{v}"),
             Char(v) => write!(f, "{v}"),
-            // TODO: this should resolve the interned ID back to string, but Display trait
-            // doesn't have access to interner. For now, show the numeric ID.
-            Identifier(v) => write!(f, "#{v}"),
+            Identifier(v) => write!(f, "#{}", resolve!(*v)),
             _ => write!(f, "{self:?}"),
         }?;
         Ok(())
