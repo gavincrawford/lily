@@ -15,4 +15,4 @@ pub fn get_global_interner() -> &'static Mutex<StringInterner> {
 }
 
 #[macro_use]
-pub(crate) mod macros;
+mod macros;
