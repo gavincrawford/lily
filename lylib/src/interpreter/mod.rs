@@ -121,7 +121,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         (variable, id)
                     }
                     ASTNode::Deref { .. } => {
-                        let id = self.resolve_deref_to_id(target)?;
+                        let id = self.node_to_id(target.clone())?;
                         let variable = self.get(&id)?;
                         (variable, id)
                     }
@@ -405,13 +405,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::Deref { .. } => {
                 // resolve deref to ID and get the value
-                let deref_id = self
-                    .resolve_deref_to_id(&statement)
-                    .context("failed to resolve deref chain to ID")?;
-
-                let variable = self
-                    .get(&deref_id)
-                    .context("failed to get value from deref chain")?;
+                let deref_id = self.node_to_id(statement)?;
+                let variable = self.get(&deref_id)?;
 
                 // convert variable back to AST node
                 match variable {
@@ -471,37 +466,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             _ => {
                 todo!()
             }
-        }
-    }
-
-    /// Resolves a deref chain into an ID that can be used with the memory system.
-    /// Only works for Module and Instance nodes.
-    fn resolve_deref_to_id(&self, node: &ASTNode) -> Result<ID> {
-        // TODO: This solution is only temporary. I plan on wrapping the usize identifiers in the
-        // ID struct or removing it entirely after these changes.
-        match node {
-            ASTNode::Deref { parent, child } => {
-                // recursively resolve the parent to get its ID
-                let parent_id = self.resolve_deref_to_id(parent)?;
-
-                // get the child identifier
-                if let ASTNode::Literal(Token::Identifier(child_id)) = &**child {
-                    // construct a member access ID
-                    let parent_kind = Rc::new(parent_id.get_kind());
-                    let child_kind = Rc::new(IDKind::Literal(*child_id));
-
-                    Ok(ID {
-                        id: IDKind::Member {
-                            parent: parent_kind,
-                            member: child_kind,
-                        },
-                    })
-                } else {
-                    bail!("deref child must be an identifier, found {:?}", child);
-                }
-            }
-            ASTNode::Literal(Token::Identifier(id)) => Ok(ID::from_interned(*id)),
-            _ => bail!("can only resolve deref chains starting with identifiers or other derefs"),
         }
     }
 }

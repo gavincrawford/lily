@@ -18,9 +18,25 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 }
                 panic!()
             }
-            ASTNode::Deref { .. } => {
-                // use the dedicated deref resolution method
-                self.resolve_deref_to_id(&node)
+            ASTNode::Deref { parent, child } => {
+                // recursively resolve the parent to get its ID
+                let parent_id = self.node_to_id(parent.clone())?;
+
+                // get the child identifier
+                if let ASTNode::Literal(Token::Identifier(child_id)) = &**child {
+                    // construct a member access ID
+                    let parent_kind = Rc::new(parent_id.get_kind());
+                    let child_kind = Rc::new(IDKind::Literal(*child_id));
+
+                    Ok(ID {
+                        id: IDKind::Member {
+                            parent: parent_kind,
+                            member: child_kind,
+                        },
+                    })
+                } else {
+                    bail!("deref child must be an identifier, found {:?}", child);
+                }
             }
             _ => {
                 bail!("cannot convert '{:?}' to ID", node)
