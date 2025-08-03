@@ -57,6 +57,7 @@ pub enum Token {
 
     // other
     Comma,
+    Dot,
     New,
     Endl,
 }

@@ -133,8 +133,17 @@ impl Lexer {
                                 _ => {}
                             }
                         }
-                        c if c.is_alphanumeric() || c == '_' || c == '.' => {
+                        c if c.is_alphanumeric() || c == '_' => {
                             self.keyword_register.push(c);
+                        }
+                        '.' => {
+                            if !self.keyword_register.is_empty() {
+                                tokens.push(Identifier(
+                                    interner.intern(self.keyword_register.clone()),
+                                ));
+                            }
+                            self.keyword_register.clear();
+                            tokens.push(Dot);
                         }
 
                         // endlines

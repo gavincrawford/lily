@@ -41,7 +41,7 @@ macro_rules! lex_eq {
 
 #[test]
 fn variable_assignment() {
-    lex_eq!("let var1 = 1; let var2 = 2;" => i =>
+    lex_eq!("let var1 = 1; let var2 = 2; let var1.var2 = 3;" => i =>
         Let,
         Identifier(i.intern("var1")),
         Equal,
@@ -51,6 +51,13 @@ fn variable_assignment() {
         Identifier(i.intern("var2")),
         Equal,
         Number(2.),
+        Endl,
+        Let,
+        Identifier(i.intern("var1")),
+        Dot,
+        Identifier(i.intern("var2")),
+        Equal,
+        Number(3.),
         Endl
     );
 }
