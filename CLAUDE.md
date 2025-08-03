@@ -47,7 +47,8 @@ cargo run -- <file.ly> --debugast     # Debug mode - prints AST during execution
 
 ### Key Architectural Details
 
-- **Memory Management**: Uses `SVTable` (Scope-Variable Table) with reference counting (`Rc<RefCell<>>`)
+- **Memory Management**: Uses `SVTable` (Scope-Variable Table) with reference counting (`Rc<RefCell<>>`) and string interning for efficient identifier storage
+- **String Interning**: Global `StringInterner` deduplicates strings, using `usize` indices for fast lookups
 - **Variable System**: Supports scoped variables, modules, and function execution contexts
 - **Built-ins**: Standard functions like `print`, `len`, `sort`, `chars` in `interpreter/builtins.rs`
 - **Standard Library**: Located in `ly/src/std/` (currently only contains `math.ly`)
@@ -56,7 +57,9 @@ cargo run -- <file.ly> --debugast     # Debug mode - prints AST during execution
 
 - **lylib/src/interpreter/mod.rs**: Interpreter implementation, executes syntax trees
 - **lylib/src/interpreter/mem/**: Memory management subsystem with variable tracking and scope tables
+- **lylib/src/interpreter/id.rs**: Identifier class declaration and associated functions
 - **lylib/src/interpreter/tests/**: Extensive test suite organized by feature/builtin/implementation categories
+- **lylib/src/interner.rs**: String interning system for memory optimization
 - **lylib/src/parser/mod.rs**: Parser implementation, converts tokens into a syntax tree
 - **lylib/src/parser/astnode.rs**: AST node variant definitions
 - **ly/src/execute.rs**: Main execution logic for the CLI
@@ -80,6 +83,8 @@ The project uses an extensive macro system (`lylib/src/macros.rs`) to simplify A
 
 ### Core AST Macros
 
+- **`intern!()`** - Converts string to interned identifier: `intern!("variable_name")`
+- **`resolve!()`** - Resolves interned identifier back to string: `resolve!(id)`
 - **`lit!()`** - Creates literal AST nodes: `lit!(42)`, `lit!(Token::Str("hello"))`
 - **`ident!()`** - Creates identifier literals: `ident!("variable_name")`
 - **`block!()`** - Creates block AST nodes: `block!(node1, node2, node3)`

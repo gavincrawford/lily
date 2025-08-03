@@ -1,6 +1,7 @@
 //! ID structure that allows for many kinds of identifiers.
 
-use super::*;
+use crate::{get_global_interner, intern, resolve};
+use std::rc::Rc;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct ID {
@@ -9,7 +10,7 @@ pub struct ID {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum IDKind {
-    Literal(String),
+    Literal(usize),
     Member {
         parent: Rc<IDKind>,
         member: Rc<IDKind>,
@@ -17,14 +18,52 @@ pub enum IDKind {
 }
 
 impl ID {
-    /// Creates a new ID from a literal identifier.
-    pub fn new(id: impl Into<String>) -> Self {
-        let id = id.into();
-        if id.contains('.') {
+
+    /// Creates a new ID from an already-interned identifier.
+    pub fn from_interned(id: usize) -> Self {
+        // NOTE: converting the id back into a string here has a fairly significant performance
+        // cost. might want to consider more options
+
+        // resolve the interned ID to check if it contains dots
+        let string = resolve!(id);
+
+        if string.contains('.') {
+            // if it contains dots, parse it as member access using existing logic
+            let mut parts = string.split('.').map(|s| {
+                let interned_id = intern!(s.to_string());
+                Rc::new(IDKind::Literal(interned_id))
+            });
+            let mut parent = parts.next().expect("expected identifier");
+
+            // build the nested member structure
+            for member in parts {
+                parent = Rc::new(IDKind::Member {
+                    parent,
+                    member: member.clone(),
+                });
+            }
+
+            // return the constructed member access
+            Self {
+                id: (*parent).clone(),
+            }
+        } else {
+            // otherwise, it's a simple literal
+            Self {
+                id: IDKind::Literal(id),
+            }
+        }
+    }
+
+    /// Creates a new ID from a string, interning it in the process.
+    pub fn from_str(string: impl Into<String>) -> Self {
+        let string = string.into();
+        if string.contains('.') {
             // if the id has an access pattern, process it
-            let mut parts = id
-                .split('.')
-                .map(|s| Rc::new(IDKind::Literal(s.to_string())));
+            let mut parts = string.split('.').map(|s| {
+                let interned_id = intern!(s.to_string());
+                Rc::new(IDKind::Literal(interned_id))
+            });
             let mut parent = parts.next().expect("expected identifier");
 
             // build the nested member structure
@@ -42,7 +81,7 @@ impl ID {
         } else {
             // otherwise, this id is literal
             Self {
-                id: IDKind::Literal(id),
+                id: IDKind::Literal(intern!(string)),
             }
         }
     }
@@ -57,46 +96,20 @@ impl ID {
         &self.id
     }
 
-    /// Converts an `ID` into a vector of strings representing the path.
-    pub fn to_path(&self) -> Vec<String> {
+    /// Converts an `ID` into a vector of interned identifiers (usize).
+    pub fn to_path(&self) -> Vec<usize> {
         let mut path = Vec::new();
-        self.collect_path(&self.id, &mut path);
+        self.collect_path_interned(&self.id, &mut path);
         path
     }
 
-    /// Helper function to recursively collect path components.
-    fn collect_path(&self, kind: &IDKind, path: &mut Vec<String>) {
+    /// Helper function to recursively collect interned path components.
+    fn collect_path_interned(&self, kind: &IDKind, path: &mut Vec<usize>) {
         match kind {
-            IDKind::Literal(name) => path.push(name.clone()),
+            IDKind::Literal(id) => path.push(*id),
             IDKind::Member { parent, member } => {
-                self.collect_path(parent, path);
-                self.collect_path(member, path);
-            }
-        }
-    }
-}
-
-impl From<&str> for ID {
-    fn from(value: &str) -> Self {
-        if value.contains('.') {
-            let mut parts = value
-                .split('.')
-                .map(|s| Rc::new(IDKind::Literal(s.to_string())));
-            let mut parent = parts.next().expect("expected identifier");
-
-            for member in parts {
-                parent = Rc::new(IDKind::Member {
-                    parent,
-                    member: member.clone(),
-                });
-            }
-
-            Self {
-                id: (*parent).clone(),
-            }
-        } else {
-            Self {
-                id: IDKind::Literal(value.into()),
+                self.collect_path_interned(parent, path);
+                self.collect_path_interned(member, path);
             }
         }
     }

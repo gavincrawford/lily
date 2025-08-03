@@ -10,9 +10,9 @@ use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
 #[derive(Debug, PartialEq)]
 pub struct SVTable {
     /// Holds all the scope frames, each of which hold their respective variables.
-    table: Vec<FxHashMap<String, Rc<RefCell<Variable>>>>,
+    table: Vec<FxHashMap<usize, Rc<RefCell<Variable>>>>,
     /// Holds all the modules defined at this SVTable's scope.
-    modules: FxHashMap<String, Rc<RefCell<SVTable>>>,
+    modules: FxHashMap<usize, Rc<RefCell<SVTable>>>,
 }
 
 impl SVTable {
@@ -27,35 +27,33 @@ impl SVTable {
     }
 
     /// Returns the iterator to the internal list of frames.
-    pub fn iter(&self) -> Iter<'_, FxHashMap<String, Rc<RefCell<Variable>>>> {
+    pub fn iter(&self) -> Iter<'_, FxHashMap<usize, Rc<RefCell<Variable>>>> {
         self.table.iter()
     }
 
     /// Returns the inner list of frames.
-    pub fn inner(&self) -> &Vec<FxHashMap<String, Rc<RefCell<Variable>>>> {
+    pub fn inner(&self) -> &Vec<FxHashMap<usize, Rc<RefCell<Variable>>>> {
         &self.table
     }
 
     /// Returns the inner list of frames, mutable.
-    pub fn inner_mut(&mut self) -> &mut Vec<FxHashMap<String, Rc<RefCell<Variable>>>> {
+    pub fn inner_mut(&mut self) -> &mut Vec<FxHashMap<usize, Rc<RefCell<Variable>>>> {
         &mut self.table
     }
 
     /// Adds a new module. Returns a reference to the newly created module.
-    pub fn add_module(&mut self, name: impl Into<String>) -> Rc<RefCell<SVTable>> {
-        let name = name.into();
+    pub fn add_module(&mut self, name: usize) -> Rc<RefCell<SVTable>> {
         self.modules
-            .insert(name.to_owned(), RefCell::new(SVTable::new()).into());
-        self.modules.get(&name.to_owned()).unwrap().to_owned()
+            .insert(name, RefCell::new(SVTable::new()).into());
+        self.modules.get(&name).unwrap().to_owned()
     }
 
     /// Gets a module by name. Returns an immutable reference to the module if found.
-    pub fn get_module(&self, name: impl Into<String>) -> Result<Rc<RefCell<SVTable>>> {
-        let name = name.into();
+    pub fn get_module(&self, name: usize) -> Result<Rc<RefCell<SVTable>>> {
         if let Some(module) = self.modules.get(&name) {
             Ok(module.clone())
         } else {
-            bail!("failed to find module '{}'", name);
+            bail!("failed to find module '{}'", resolve!(name));
         }
     }
 
@@ -68,7 +66,7 @@ impl SVTable {
     pub fn get_scope(
         &mut self,
         index: usize,
-    ) -> Option<&mut FxHashMap<String, Rc<RefCell<Variable>>>> {
+    ) -> Option<&mut FxHashMap<usize, Rc<RefCell<Variable>>>> {
         self.table.get_mut(index)
     }
 
@@ -79,7 +77,7 @@ impl SVTable {
 }
 
 impl MemoryInterface for SVTable {
-    fn get_owned(&self, id: String) -> Result<Variable> {
+    fn get_owned(&self, id: usize) -> Result<Variable> {
         // find id in any scope and return owned
         for scope in self.iter().rev() {
             if let Some(variable) = scope.get(&id) {
@@ -88,10 +86,10 @@ impl MemoryInterface for SVTable {
         }
 
         // if no value is found, bail
-        bail!("failed to get owned value {:?}", id)
+        bail!("failed to get owned value {:?}", resolve!(id))
     }
 
-    fn get_ref(&self, id: String) -> Result<Rc<RefCell<Variable>>> {
+    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>> {
         // find id in any scope and return reference
         for scope in self.iter().rev() {
             if let Some(variable) = scope.get(&id) {
@@ -100,19 +98,19 @@ impl MemoryInterface for SVTable {
         }
 
         // if no value is found, bail
-        bail!("failed to get owned value {:?}", id)
+        bail!("failed to get owned value {:?}", resolve!(id))
     }
 
-    fn get_module(&self, id: String) -> Result<Rc<RefCell<SVTable>>> {
+    fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>> {
         match self.modules.get(&id) {
             Some(module) => Ok(module.clone()),
             _ => {
-                bail!("could not find module '{:?}'", id)
+                bail!("could not find module '{:?}'", resolve!(id))
             }
         }
     }
 
-    fn declare(&mut self, id: String, value: Variable, scope: usize) -> Result<()> {
+    fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<()> {
         // add scopes if necessary
         while self.scopes() <= scope {
             self.add_scope();
@@ -122,13 +120,13 @@ impl MemoryInterface for SVTable {
         let var_map = self
             .get_scope(scope)
             .context(format!("cannot delcare at scope {scope}",))?;
-        if let Some(_) = var_map.insert(id.to_owned(), Rc::new(RefCell::new(value))) {
-            bail!("variable '{}' already exists", id);
+        if let Some(_) = var_map.insert(id, Rc::new(RefCell::new(value))) {
+            bail!("variable '{}' already exists", resolve!(id));
         }
         Ok(())
     }
 
-    fn assign(&mut self, id: String, value: Variable, scope: usize) -> Result<()> {
+    fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<()> {
         // replace the value of the top-most variable if possible
         for scope in self.iter().rev() {
             if let Some(variable) = scope.get(&id) {
@@ -141,7 +139,7 @@ impl MemoryInterface for SVTable {
         let var_map = self
             .get_scope(scope)
             .context(format!("cannot assign at scope {scope}",))?;
-        var_map.insert(id.to_owned(), Rc::new(RefCell::new(value)));
+        var_map.insert(id, Rc::new(RefCell::new(value)));
         Ok(())
     }
 }
@@ -150,7 +148,7 @@ impl Display for SVTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn prettify(node: Rc<ASTNode>) -> String {
             match &*node {
-                ASTNode::Literal(Token::Identifier(id)) => id.to_string(),
+                ASTNode::Literal(Token::Identifier(id)) => resolve!(*id),
                 ASTNode::Literal(token) => format!("{token:?}"),
                 ASTNode::Op { lhs, op, rhs } => format!(
                     "{} {:?} {}",
@@ -171,8 +169,16 @@ impl Display for SVTable {
                     body,
                 } => format!(
                     "{}({}) => {}",
-                    id.to_path().join("."),
-                    arguments.join(", "),
+                    id.to_path()
+                        .iter()
+                        .map(|id| resolve!(*id))
+                        .collect::<Vec<String>>()
+                        .join("."),
+                    arguments
+                        .iter()
+                        .map(|id| resolve!(*id))
+                        .collect::<Vec<String>>()
+                        .join(", "),
                     prettify(body.clone())
                 ),
                 other => format!("{other:?}"),
@@ -184,12 +190,12 @@ impl Display for SVTable {
             // log scope level
             writeln!(f, "scope {scope_idx}")?;
 
-            // iterate through scope values, sorted
-            let mut keys = scope.keys().collect::<Vec<&String>>();
+            // iterate through scope values, sorted by key name
+            let mut keys = scope.keys().collect::<Vec<&usize>>();
             keys.sort();
-            for key in keys {
+            for &key in keys {
                 // obtain debug string respective to variable value
-                let value = scope.get(key).unwrap();
+                let value = scope.get(&key).unwrap();
                 let dbg_ln = match &*value.borrow() {
                     Variable::Owned(node) => prettify(node.to_owned().into()).to_string(),
                     Variable::Function(reference) => format!("&{}", prettify(reference.clone())),
@@ -199,7 +205,7 @@ impl Display for SVTable {
 
                 // tab out endlines to keep indents, and print it
                 let dbg_ln = dbg_ln.replace("\n", "\n\t");
-                writeln!(f, "\t{key} = {dbg_ln}")?;
+                writeln!(f, "\t{} = {dbg_ln}", resolve!(key))?;
             }
         }
         Ok(())

@@ -35,7 +35,7 @@ macro_rules! interpret {
 macro_rules! var_eq_literal {
     ($interpreter:expr, $id:tt, $token:expr) => {
         assert_eq!(
-            $interpreter.get(&ID::new(stringify!($id))).unwrap(),
+            $interpreter.get(&ID::from_str(stringify!($id))).unwrap(),
             Variable::Owned(ASTNode::inner_to_owned(&lit!($token))).into(),
         );
     };
@@ -45,7 +45,7 @@ macro_rules! var_eq_literal {
 macro_rules! var_eq {
     ($interpreter:expr, $id:tt, $node:expr) => {
         assert_eq!(
-            $interpreter.get(&ID::new(stringify!($id))).unwrap(),
+            $interpreter.get(&ID::from_str(stringify!($id))).unwrap(),
             Variable::Owned($node).into(),
         );
     };

@@ -37,8 +37,8 @@ fn lists() {
     parse_eq!(
         "let list = [0, false, 'a']; let value = list[0]; list[0] = 0; list.obj = 0;";
         node!(declare list => node!([lit!(0), lit!(false), lit!('a')])),
-        node!(declare value => node!(list[0])),
-        node!(assign node!(list[0]) => lit!(0)),
+        node!(declare value => node!(index ident!("list"), 0)),
+        node!(assign node!(index ident!("list"), 0) => lit!(0)),
         node!(assign ident!("list.obj") => lit!(0))
     );
 }
@@ -48,8 +48,11 @@ fn indices() {
     parse_eq!(
         "let a = list[1][2][3]; let b = (list[1])[2]; let c = list[(1 + 1)];";
         node!(declare a => node!(index node!(index node!(index ident!("list"), 1), 2), 3)),
-        node!(declare b => node!(index node!(list[1]), 2)),
-        node!(declare c => node!(list[node!(op lit!(1), Add, lit!(1))]))
+        node!(declare b => node!(index node!(index ident!("list"), 1), 2)),
+        node!(declare c => ASTNode::Index {
+            target: ident!("list"),
+            index: node!(op lit!(1), Add, lit!(1)),
+        }.into())
     );
 }
 

@@ -2,6 +2,28 @@
 //! The macros here are primarily used for testing, where we compare against large hand-made
 //! `ASTNode` trees, or anywhere we need to instantiate nodes easily.
 
+/// Converts a string to an interned identifier.
+#[macro_export]
+macro_rules! intern {
+    ($id:expr) => {{
+        let mut i = get_global_interner().lock().unwrap();
+        let id = i.intern($id);
+        drop(i);
+        id
+    }};
+}
+
+/// Resolves an interned identifier backwards to the original string.
+#[macro_export]
+macro_rules! resolve {
+    ($id:expr) => {{
+        let i = get_global_interner().lock().unwrap();
+        let id = i.resolve($id).to_owned();
+        drop(i);
+        id
+    }};
+}
+
 /// Shorthand for creating a literal.
 #[macro_export]
 macro_rules! lit {
@@ -20,7 +42,7 @@ macro_rules! lit {
 #[macro_export]
 macro_rules! ident {
     ($id:expr) => {
-        lit!(Token::Identifier($id.into()))
+        lit!(Token::Identifier(intern!($id)))
     };
 }
 
@@ -85,8 +107,8 @@ macro_rules! node {
     };
     (func $fn:tt($($arg:tt),*) => $body:expr) => {
         ASTNode::Function {
-            id: ID::new(stringify!($fn)),
-            arguments: vec![$(String::from(stringify!($arg))),*],
+            id: ID::from_interned(intern!(stringify!($fn))),
+            arguments: vec![$(intern!(stringify!($arg))),*],
             body: $body,
         }.into()
     };
@@ -97,15 +119,15 @@ macro_rules! node {
     // modules
     (mod $id:tt => $body:expr) => {
         ASTNode::Module {
-            alias: Some(stringify!($id).into()),
+            alias: Some(intern!(stringify!($id)).into()),
             body: $body,
         }.into()
     };
 
     // structures
-    (struct $id:expr => $body:expr) => {
+    (struct $id:tt => $body:expr) => {
         ASTNode::Struct {
-            id: ID::new(stringify!($id)),
+            id: ID::from_interned(intern!(stringify!($id))),
             body: $body,
         }.into()
     };

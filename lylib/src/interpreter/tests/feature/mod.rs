@@ -55,13 +55,6 @@ test!(loops_nested => (
     x := 25
 ));
 
-test!(indices => (
-    idx_a := 2,
-    idx_b := 3,
-    assignment_flat := 1,
-    assignment_nested := 1,
-));
-
 test!(indices_dangling => (
     dangling := 10
 ));
@@ -69,6 +62,14 @@ test!(indices_dangling => (
 test!(indices_indirect => (
     read := 5,
     write := 0
+));
+
+test!(indices_assignment => (
+    result == node!([
+        lit!(999),
+        lit!(777),
+        lit!(300)
+    ])
 ));
 
 test!(indices_nested => (

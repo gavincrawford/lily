@@ -25,7 +25,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .unwrap()
                     .to_owned();
                 self.declare(
-                    &ID::new(arg),
+                    &ID::from_interned(*arg),
                     Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
                 )?;
             }
