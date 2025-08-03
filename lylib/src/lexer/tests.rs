@@ -26,7 +26,7 @@ macro_rules! lex_eq {
     };
     ($input:expr => $interner:ident => $($token:expr),*) => {
         let result = Lexer::new().lex($input.into());
-        let mut $interner = crate::get_global_interner().lock().unwrap();
+        let mut $interner = crate::get_global_interner().unwrap();
         lex_eq!(@compare result, $($token),*);
         drop($interner);
     };

@@ -10,12 +10,24 @@ pub use anyhow;
 mod macros;
 
 use crate::interner::StringInterner;
-use std::sync::{Mutex, OnceLock};
+use anyhow::Result;
+use std::sync::{Mutex, MutexGuard, OnceLock};
 
 /// Global interner. Used just about everywhere to access interned values and their respective
 /// string counterparts.
 static GLOBAL_INTERNER: OnceLock<Mutex<StringInterner>> = OnceLock::new();
 
-pub fn get_global_interner() -> &'static Mutex<StringInterner> {
-    GLOBAL_INTERNER.get_or_init(|| Mutex::new(StringInterner::new()))
+/// Fetches a lock of the global interner. If a lock cannot be acquired, this function will return
+/// `Err`. Only one lock should be active at any given time.
+pub fn get_global_interner() -> Result<MutexGuard<'static, StringInterner>> {
+    if let Ok(mutex_guard) = GLOBAL_INTERNER
+        .get_or_init(|| Mutex::new(StringInterner::new()))
+        .lock()
+    {
+        Ok(mutex_guard)
+    } else {
+        Err(anyhow::anyhow!(
+            "failed to lock interner due to conflicting usage"
+        ))
+    }
 }

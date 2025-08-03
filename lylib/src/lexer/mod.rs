@@ -37,8 +37,7 @@ impl Lexer {
 
     /// Lexes the provided file, as a string, into a vector of tokens.
     pub fn lex(&mut self, buf: String) -> Result<Vec<Token>> {
-        // TODO no unwrap
-        let mut interner = get_global_interner().lock().unwrap();
+        let mut interner = get_global_interner()?;
         use Token::*;
         let buf = buf.replace("\n", ";");
         let mut chars = buf.chars().peekable();

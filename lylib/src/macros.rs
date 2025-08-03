@@ -6,7 +6,7 @@
 #[macro_export]
 macro_rules! intern {
     ($id:expr) => {{
-        let mut i = get_global_interner().lock().unwrap();
+        let mut i = get_global_interner().unwrap();
         let id = i.intern($id);
         drop(i);
         id
@@ -17,7 +17,7 @@ macro_rules! intern {
 #[macro_export]
 macro_rules! resolve {
     ($id:expr) => {{
-        let i = get_global_interner().lock().unwrap();
+        let i = get_global_interner().unwrap();
         let id = i.resolve($id).to_owned();
         drop(i);
         id
