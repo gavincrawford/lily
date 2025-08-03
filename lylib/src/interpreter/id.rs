@@ -1,6 +1,6 @@
 //! ID structure that allows for many kinds of identifiers.
 
-use crate::{get_global_interner, intern, resolve};
+use crate::{get_global_interner, intern};
 use std::rc::Rc;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -20,37 +20,8 @@ pub enum IDKind {
 impl ID {
     /// Creates a new ID from an already-interned identifier.
     pub fn from_interned(id: usize) -> Self {
-        // NOTE: converting the id back into a string here has a fairly significant performance
-        // cost. might want to consider more options
-
-        // resolve the interned ID to check if it contains dots
-        let string = resolve!(id);
-
-        if string.contains('.') {
-            // if it contains dots, parse it as member access using existing logic
-            let mut parts = string.split('.').map(|s| {
-                let interned_id = intern!(s.to_string());
-                Rc::new(IDKind::Literal(interned_id))
-            });
-            let mut parent = parts.next().expect("expected identifier");
-
-            // build the nested member structure
-            for member in parts {
-                parent = Rc::new(IDKind::Member {
-                    parent,
-                    member: member.clone(),
-                });
-            }
-
-            // return the constructed member access
-            Self {
-                id: (*parent).clone(),
-            }
-        } else {
-            // otherwise, it's a simple literal
-            Self {
-                id: IDKind::Literal(id),
-            }
+        Self {
+            id: IDKind::Literal(id),
         }
     }
 
