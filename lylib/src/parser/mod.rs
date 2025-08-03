@@ -197,6 +197,20 @@ impl Parser {
         Ok(ASTNode::Index { target, index }.into())
     }
 
+    /// Parses a deref operation.
+    fn parse_deref(&mut self, parent: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
+        self.expect(Token::Dot)?;
+
+        // expect an identifier after the dot
+        let child = match self.next() {
+            Some(Token::Identifier(id)) => ASTNode::Literal(Token::Identifier(id)).into(),
+            Some(token) => bail!("expected identifier after '.', found {:?}", token),
+            None => bail!("unexpected EOF after '.'"),
+        };
+
+        Ok(ASTNode::Deref { parent, child }.into())
+    }
+
     /// Parses a while loop.
     fn parse_while(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::While)?;
@@ -394,6 +408,9 @@ impl Parser {
                 // indexes
                 Some(Token::BracketOpen) => self.parse_index(primary.clone()),
 
+                // deref operations
+                Some(Token::Dot) => self.parse_deref(primary.clone()),
+
                 // assignments
                 Some(Token::Equal) => self.parse_assignment(primary.clone()),
 
@@ -432,12 +449,16 @@ impl Parser {
             }
 
             // literals
-            Some(Token::Identifier(_))
-            | Some(Token::Number(_))
+            Some(Token::Number(_))
             | Some(Token::Str(_))
             | Some(Token::Bool(_))
             | Some(Token::Char(_)) => {
-                Ok(ASTNode::Literal(self.next().expect("expected literal, found EOF")).into())
+                Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
+            }
+
+            // identifiers
+            Some(Token::Identifier(_)) => {
+                Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
             }
 
             // logical not

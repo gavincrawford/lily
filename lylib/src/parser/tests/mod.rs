@@ -39,7 +39,7 @@ fn lists() {
         node!(declare list => node!([lit!(0), lit!(false), lit!('a')])),
         node!(declare value => node!(index ident!("list"), 0)),
         node!(assign node!(index ident!("list"), 0) => lit!(0)),
-        node!(assign ident!("list.obj") => lit!(0))
+        node!(assign node!(list.obj) => lit!(0))
     );
 }
 

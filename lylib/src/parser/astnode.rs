@@ -24,6 +24,10 @@ pub enum ASTNode {
         target: Rc<ASTNode>,
         value: Rc<ASTNode>,
     },
+    Deref {
+        parent: Rc<ASTNode>,
+        child: Rc<ASTNode>,
+    },
     Function {
         id: ID,
         arguments: Vec<usize>,

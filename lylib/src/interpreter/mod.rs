@@ -113,103 +113,106 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(None)
             }
             ASTNode::FunctionCall { target, arguments } => {
-                // get function reference, bail if none found
-                if let ASTNode::Literal(Token::Identifier(id)) = &**target {
-                    // get function defined by this ID
-                    let id = ID::from_interned(*id);
-                    let variable = self.get(&id)?;
+                // get target variable
+                let (variable, id) = match &**target {
+                    ASTNode::Literal(Token::Identifier(id)) => {
+                        let id = ID::from_interned(*id);
+                        let variable = self.get(&id)?;
+                        (variable, id)
+                    }
+                    ASTNode::Deref { .. } => {
+                        let id = self.resolve_deref_to_id(target)?;
+                        let variable = self.get(&id)?;
+                        (variable, id)
+                    }
+                    other => bail!("cannot call {:?}", other),
+                };
 
-                    // resolve arguments to their literal values
-                    // we do this BEFORE to allow arguments to access their relative scope
-                    let mut resolved_args = vec![];
-                    for arg in arguments {
-                        resolved_args.push(
-                            self.execute_expr(arg.clone())
-                                .context("failed to evaluate argument in extern")?
-                                .unwrap_or(lit!(Token::Undefined))
-                                .to_owned(),
-                        );
+                // resolve arguments to their literal values
+                // we do this BEFORE to allow arguments to access their relative scope
+                let mut resolved_args = vec![];
+                for arg in arguments {
+                    resolved_args.push(
+                        self.execute_expr(arg.clone())
+                            .context("failed to evaluate argument in extern")?
+                            .unwrap_or(lit!(Token::Undefined))
+                            .to_owned(),
+                    );
+                }
+
+                match variable {
+                    // this branch should trigger on external functions
+                    Variable::Extern(closure) => {
+                        // call closure with i/o handles
+                        return closure(self.output.clone(), self.input.clone(), &resolved_args);
                     }
 
-                    match variable {
-                        // this branch should trigger on external functions
-                        Variable::Extern(closure) => {
-                            // call closure with i/o handles
-                            return closure(
-                                self.output.clone(),
-                                self.input.clone(),
-                                &resolved_args,
-                            );
+                    // this branch should trigger on raw, local functions
+                    Variable::Function(function) => {
+                        if let ASTNode::Function {
+                            id: _,
+                            arguments: _,
+                            body: _,
+                        } = &*function
+                        {
+                            return self.execute_function(&resolved_args, function);
+                        } else {
+                            bail!("attempted to call non-function");
                         }
+                    }
 
-                        // this branch should trigger on raw, local functions
-                        Variable::Function(function) => {
-                            if let ASTNode::Function {
-                                id: _,
-                                arguments: _,
-                                body: _,
-                            } = &*function
-                            {
-                                return self.execute_function(&resolved_args, function);
-                            } else {
-                                bail!("attempted to call non-function");
-                            }
+                    // this branch should trigger when constructors are called
+                    Variable::Type(ref structure) => match structure.constructor() {
+                        Some(v) => {
+                            // get template
+                            let svt = structure
+                                .create_struct_template()
+                                .context("failed to create structure template")?;
+
+                            // use the new structure svt as module for this constructor
+                            let svt = Rc::new(RefCell::new(svt));
+                            let temp = self.mod_id.clone();
+                            self.mod_id = Some(svt.clone());
+
+                            // execute function
+                            self.execute_function(&resolved_args, v)?;
+
+                            // reset module ID
+                            self.mod_id = temp;
+
+                            // return newly made instance
+                            return Ok(Some(
+                                ASTNode::Instance {
+                                    kind: variable.into(),
+                                    id: id.clone(),
+                                    svt,
+                                }
+                                .into(),
+                            ));
                         }
+                        None => {
+                            // get template
+                            let svt = structure
+                                .create_struct_template()
+                                .context("failed to create structure template")?;
 
-                        // this branch should trigger when constructors are called
-                        Variable::Type(ref structure) => match structure.constructor() {
-                            Some(v) => {
-                                // get template
-                                let svt = structure
-                                    .create_struct_template()
-                                    .context("failed to create structure template")?;
-
-                                // use the new structure svt as module for this constructor
-                                let svt = Rc::new(RefCell::new(svt));
-                                let temp = self.mod_id.clone();
-                                self.mod_id = Some(svt.clone());
-
-                                // execute function
-                                self.execute_function(&resolved_args, v)?;
-
-                                // reset module ID
-                                self.mod_id = temp;
-
-                                // return newly made instance
-                                return Ok(Some(
-                                    ASTNode::Instance {
-                                        kind: variable.into(),
-                                        id: id.clone(),
-                                        svt,
-                                    }
-                                    .into(),
-                                ));
-                            }
-                            None => {
-                                // get template
-                                let svt = structure
-                                    .create_struct_template()
-                                    .context("failed to create structure template")?;
-
-                                // return newly made instance
-                                return Ok(Some(
-                                    ASTNode::Instance {
-                                        kind: variable.into(),
-                                        id: id.clone(),
-                                        svt: RefCell::new(svt).into(),
-                                    }
-                                    .into(),
-                                ));
-                            }
-                        },
-
-                        // catch others
-                        _ => {
-                            bail!("no function `{:?}` found", target);
+                            // return newly made instance
+                            return Ok(Some(
+                                ASTNode::Instance {
+                                    kind: variable.into(),
+                                    id: id.clone(),
+                                    svt: RefCell::new(svt).into(),
+                                }
+                                .into(),
+                            ));
                         }
-                    };
-                }
-                bail!("malformed function target")
+                    },
+
+                    // catch others
+                    _ => {
+                        bail!("no function `{:?}` found", target);
+                    }
+                };
             }
             ASTNode::Struct { id, body: _ } => {
                 self.declare(id, Variable::Type(statement.to_owned()))
@@ -400,6 +403,24 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     Ok(Some(statement.to_owned()))
                 }
             }
+            ASTNode::Deref { .. } => {
+                // resolve deref to ID and get the value
+                let deref_id = self
+                    .resolve_deref_to_id(&statement)
+                    .context("failed to resolve deref chain to ID")?;
+
+                let variable = self
+                    .get(&deref_id)
+                    .context("failed to get value from deref chain")?;
+
+                // convert variable back to AST node
+                match variable {
+                    Variable::Owned(node) => Ok(Some(Rc::new(node))),
+                    Variable::Function(func) => Ok(Some(func)),
+                    Variable::Type(type_node) => Ok(Some(type_node)),
+                    Variable::Extern(_) => Ok(Some(lit!(Token::Undefined))),
+                }
+            }
             ASTNode::Instance {
                 kind: _,
                 id: _,
@@ -424,8 +445,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // insert named modules using interned ID
                     let temp = self.mod_id.to_owned();
                     if let Some(mod_pointer) = temp.to_owned() {
-                        self.mod_id =
-                            Some(mod_pointer.borrow_mut().add_module(*mod_name));
+                        self.mod_id = Some(mod_pointer.borrow_mut().add_module(*mod_name));
                     } else {
                         self.mod_id = Some(self.memory.borrow_mut().add_module(*mod_name));
                     }
@@ -451,6 +471,37 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             _ => {
                 todo!()
             }
+        }
+    }
+
+    /// Resolves a deref chain into an ID that can be used with the memory system.
+    /// Only works for Module and Instance nodes.
+    fn resolve_deref_to_id(&self, node: &ASTNode) -> Result<ID> {
+        // TODO: This solution is only temporary. I plan on wrapping the usize identifiers in the
+        // ID struct or removing it entirely after these changes.
+        match node {
+            ASTNode::Deref { parent, child } => {
+                // recursively resolve the parent to get its ID
+                let parent_id = self.resolve_deref_to_id(parent)?;
+
+                // get the child identifier
+                if let ASTNode::Literal(Token::Identifier(child_id)) = &**child {
+                    // construct a member access ID
+                    let parent_kind = Rc::new(parent_id.get_kind());
+                    let child_kind = Rc::new(IDKind::Literal(*child_id));
+
+                    Ok(ID {
+                        id: IDKind::Member {
+                            parent: parent_kind,
+                            member: child_kind,
+                        },
+                    })
+                } else {
+                    bail!("deref child must be an identifier, found {:?}", child);
+                }
+            }
+            ASTNode::Literal(Token::Identifier(id)) => Ok(ID::from_interned(*id)),
+            _ => bail!("can only resolve deref chains starting with identifiers or other derefs"),
         }
     }
 }

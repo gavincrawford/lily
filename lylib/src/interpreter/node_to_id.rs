@@ -18,6 +18,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 }
                 panic!()
             }
+            ASTNode::Deref { .. } => {
+                // use the dedicated deref resolution method
+                self.resolve_deref_to_id(&node)
+            }
             _ => {
                 bail!("cannot convert '{:?}' to ID", node)
             }

@@ -98,10 +98,16 @@ macro_rules! node {
         }.into()
     };
 
-    // functions
-    ($($fn:tt).+($($arg:expr),*)) => {
+    // function calls
+    ($fn:tt($($arg:expr),*)) => {
         ASTNode::FunctionCall {
-            target: ident!(stringify!($($fn).+)),
+            target: ident!(stringify!($fn)),
+            arguments: vec![$($arg),*],
+        }.into()
+    };
+    ($first:tt $(. $rest:tt)+ ($($arg:expr),*)) => {
+        ASTNode::FunctionCall {
+            target: node!($first $(. $rest)+),
             arguments: vec![$($arg),*],
         }.into()
     };
@@ -171,4 +177,16 @@ macro_rules! node {
         }
         .into()
     };
+
+    // derefs (a.b.c.d)
+    ($first:tt $(. $rest:tt)+) => {{
+        let mut current = ident!(stringify!($first));
+        $(
+            current = ASTNode::Deref {
+                parent: current,
+                child: ident!(stringify!($rest)),
+            }.into();
+        )+
+        current
+    }};
 }

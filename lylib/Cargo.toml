@@ -1,6 +1,6 @@
 [package]
 name = "lylib"
-version = "0.17.15"
+version = "0.18.0"
 edition = "2021"
 
 [dependencies]

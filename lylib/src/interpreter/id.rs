@@ -18,7 +18,6 @@ pub enum IDKind {
 }
 
 impl ID {
-
     /// Creates a new ID from an already-interned identifier.
     pub fn from_interned(id: usize) -> Self {
         // NOTE: converting the id back into a string here has a fairly significant performance
