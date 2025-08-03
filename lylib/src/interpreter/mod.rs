@@ -412,8 +412,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 match variable {
                     Variable::Owned(node) => Ok(Some(Rc::new(node))),
                     Variable::Function(func) => Ok(Some(func)),
-                    Variable::Type(type_node) => Ok(Some(type_node)),
-                    Variable::Extern(_) => Ok(Some(lit!(Token::Undefined))),
+                    _ => bail!(format!("cannot convert {:?} to valid node", variable)),
                 }
             }
             ASTNode::Instance {
