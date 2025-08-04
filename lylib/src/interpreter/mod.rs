@@ -114,16 +114,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::FunctionCall { target, arguments } => {
                 // get target variable
-                let (variable, id) = match &**target {
-                    ASTNode::Literal(Token::Identifier(id)) => {
-                        let id = ID::from_interned(*id);
-                        let variable = self.get(&id)?;
-                        (variable, id)
-                    }
+                let variable = match &**target {
+                    ASTNode::Literal(Token::Identifier(id)) => self.get(&ID::from_interned(*id))?,
                     ASTNode::Deref { .. } => {
                         let id = self.node_to_id(target.clone())?;
-                        let variable = self.get(&id)?;
-                        (variable, id)
+                        self.get(&id)?
                     }
                     other => bail!("cannot call {:?}", other),
                 };
