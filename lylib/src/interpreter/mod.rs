@@ -184,7 +184,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             return Ok(Some(
                                 ASTNode::Instance {
                                     kind: variable.into(),
-                                    id: id.clone(),
                                     svt,
                                 }
                                 .into(),
@@ -200,7 +199,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             return Ok(Some(
                                 ASTNode::Instance {
                                     kind: variable.into(),
-                                    id: id.clone(),
                                     svt: RefCell::new(svt).into(),
                                 }
                                 .into(),
@@ -415,11 +413,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     _ => bail!(format!("cannot convert {:?} to valid node", variable)),
                 }
             }
-            ASTNode::Instance {
-                kind: _,
-                id: _,
-                svt: _,
-            } => Ok(Some(statement)),
+            ASTNode::Instance { .. } => Ok(Some(statement)),
             ASTNode::Return(ref expr) => {
                 // resolve expression
                 let expr = self

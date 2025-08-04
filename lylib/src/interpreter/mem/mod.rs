@@ -55,11 +55,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         };
 
                         match &*item_ref.borrow() {
-                            Variable::Owned(ASTNode::Instance {
-                                kind: _,
-                                id: _,
-                                svt,
-                            }) => module = svt.clone(),
+                            Variable::Owned(ASTNode::Instance { kind: _, svt }) => {
+                                module = svt.clone()
+                            }
                             Variable::Owned(node) if matches!(node, ASTNode::List(_)) => {
                                 module = item_ref.clone();
                             }

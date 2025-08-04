@@ -43,7 +43,6 @@ pub enum ASTNode {
     },
     Instance {
         kind: Rc<Variable>,
-        id: ID,
         svt: Rc<RefCell<SVTable>>,
     },
     Conditional {
