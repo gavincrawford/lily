@@ -1,5 +1,5 @@
 mod execute;
-pub use execute::execute;
+pub use execute::LyConfig;
 pub mod interner;
 pub mod interpreter;
 pub mod lexer;
