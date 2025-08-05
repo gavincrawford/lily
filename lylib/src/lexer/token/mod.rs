@@ -1,8 +1,9 @@
+mod debug;
 mod display;
 mod from;
 
 /// Represents all possible tokens.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum Token {
     // variables
     Equal,
