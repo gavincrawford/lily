@@ -280,25 +280,25 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 if_body,
                 else_body,
             } => {
-                if let Some(condition) = self
-                    .execute_expr(condition.clone())
-                    .context("failed to evaluate condition")?
-                {
-                    // increase scope level
-                    self.scope_id += 1;
+                // evaluate condition
+                let condition = self
+                    .execute_expr(condition.clone())?
+                    .context("failed to evaluate condition")?;
 
-                    // execute if-body if statement is true. otherwise, execute else body
-                    if let Some(result) = self.execute(match condition.is_truthy() {
-                        true => if_body.clone(),
-                        false => else_body.clone(),
-                    })? {
-                        self.drop_scope();
-                        return Ok(Some(result));
-                    }
+                // increase scope level
+                self.scope_id += 1;
 
-                    // after finishing, drop the scope
+                // execute if-body if statement is true. otherwise, execute else body
+                if let Some(result) = self.execute(match condition.is_truthy() {
+                    true => if_body.clone(),
+                    false => else_body.clone(),
+                })? {
                     self.drop_scope();
+                    return Ok(Some(result));
                 }
+
+                // after finishing, drop the scope
+                self.drop_scope();
                 Ok(None)
             }
             ASTNode::Loop { condition, body } => {
