@@ -139,7 +139,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // this branch should trigger on external functions
                     Variable::Extern(closure) => {
                         // call closure with i/o handles
-                        return closure(self.output.clone(), self.input.clone(), &resolved_args);
+                        closure(self.output.clone(), self.input.clone(), &resolved_args)
                     }
 
                     // this branch should trigger on raw, local functions
@@ -150,7 +150,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             body: _,
                         } = &*function
                         {
-                            return self.execute_function(&resolved_args, function);
+                            self.execute_function(&resolved_args, function)
                         } else {
                             bail!("attempted to call non-function");
                         }
@@ -176,13 +176,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             self.mod_id = temp;
 
                             // return newly made instance
-                            return Ok(Some(
+                            Ok(Some(
                                 ASTNode::Instance {
                                     kind: variable.into(),
                                     svt,
                                 }
                                 .into(),
-                            ));
+                            ))
                         }
                         None => {
                             // get template
@@ -191,13 +191,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .context("failed to create structure template")?;
 
                             // return newly made instance
-                            return Ok(Some(
+                            Ok(Some(
                                 ASTNode::Instance {
                                     kind: variable.into(),
                                     svt: RefCell::new(svt).into(),
                                 }
                                 .into(),
-                            ));
+                            ))
                         }
                     },
 
@@ -205,7 +205,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     _ => {
                         bail!("no function `{:?}` found", target);
                     }
-                };
+                }
             }
             ASTNode::Struct { id, body: _ } => {
                 self.declare(id, Variable::Type(statement.to_owned()))
