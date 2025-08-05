@@ -60,22 +60,11 @@ cargo run -- <file.ly> --debugast     # Debug mode - prints AST during execution
 - **lylib/src/interpreter/id.rs**: Identifier class declaration and associated functions
 - **lylib/src/interpreter/tests/**: Extensive test suite organized by feature/builtin/implementation categories
 - **lylib/src/interner.rs**: String interning system for memory optimization
+- **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens
+- **lylib/src/lexer/token/mod.rs**: Token definition
 - **lylib/src/parser/mod.rs**: Parser implementation, converts tokens into a syntax tree
 - **lylib/src/parser/astnode.rs**: AST node variant definitions
 - **ly/src/execute.rs**: Main execution logic for the CLI
-
-## Language Features (Lily)
-
-Based on test files, Lily supports:
-- Functions with parameters and return values
-- Control flow (if/else, loops)
-- Variables and scoping
-- Structs and constructors
-- String operations and indexing
-- Mathematical operations
-- Import system for modules
-- Built-in functions for common operations
-- External function support for accessible Rust integration
 
 ## Macros System
 
