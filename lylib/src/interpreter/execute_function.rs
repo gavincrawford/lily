@@ -19,14 +19,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             self.scope_id += 1;
             for (idx, arg) in fn_args.iter().enumerate() {
                 let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
-                let resolved_expr = self
-                    .execute_expr(arg_expr.clone())
-                    .context("failed to evaluate argument")?
-                    .unwrap()
-                    .to_owned();
                 self.declare(
                     &ID::from_interned(*arg),
-                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                    Variable::Owned(ASTNode::inner_to_owned(arg_expr)),
                 )?;
             }
 
