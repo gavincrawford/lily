@@ -284,18 +284,19 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .execute_expr(condition.clone())
                     .context("failed to evaluate condition")?
                 {
-                    // increase scope level and execute body statements
+                    // increase scope level
                     self.scope_id += 1;
-                    if condition.is_truthy() {
-                        if let Some(result) = self.execute(if_body.clone())? {
-                            self.drop_scope();
-                            return Ok(Some(result));
-                        }
-                    } else if let Some(result) = self.execute(else_body.clone())? {
+
+                    // execute if-body if statement is true. otherwise, execute else body
+                    if let Some(result) = self.execute(match condition.is_truthy() {
+                        true => if_body.clone(),
+                        false => else_body.clone(),
+                    })? {
                         self.drop_scope();
                         return Ok(Some(result));
                     }
-                    // after finishing, decrease scope level and drop locals
+
+                    // after finishing, drop the scope
                     self.drop_scope();
                 }
                 Ok(None)
