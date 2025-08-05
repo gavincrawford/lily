@@ -117,7 +117,7 @@ impl ASTNode {
                             if let ASTNode::Literal(Token::Identifier(variable)) = &**target {
                                 default_fields.push((
                                     ID::from_interned(*variable),
-                                    Variable::Owned(ASTNode::inner_to_owned(&value)),
+                                    Variable::Owned(ASTNode::inner_to_owned(value)),
                                 ));
                             } else {
                                 bail!("invalid default field '{:?}'", target);
@@ -140,7 +140,7 @@ impl ASTNode {
                     let id = *target.to_path().first().unwrap();
 
                     // add it to the table
-                    svt.declare(id, value.into(), 0)?;
+                    svt.declare(id, value, 0)?;
                 }
                 return Ok(svt);
             }

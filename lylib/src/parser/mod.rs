@@ -269,7 +269,7 @@ impl Parser {
                 // gather arguments
                 let mut arguments = vec![];
                 while let Some(Token::Identifier(arg)) = self.peek() {
-                    arguments.push(arg.clone());
+                    arguments.push(*arg);
                     self.next();
                 }
                 self.expect(Token::BlockStart)?;
