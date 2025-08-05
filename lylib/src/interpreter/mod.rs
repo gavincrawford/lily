@@ -143,18 +143,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
 
                     // this branch should trigger on raw, local functions
-                    Variable::Function(function) => {
-                        if let ASTNode::Function {
-                            id: _,
-                            arguments: _,
-                            body: _,
-                        } = &*function
-                        {
-                            self.execute_function(&resolved_args, function)
-                        } else {
-                            bail!("attempted to call non-function");
-                        }
-                    }
+                    Variable::Function(function) => self.execute_function(&resolved_args, function),
 
                     // this branch should trigger when constructors are called
                     Variable::Type(ref structure) => match structure.constructor() {
