@@ -18,12 +18,10 @@ pub struct SVTable {
 impl SVTable {
     /// Creates a new scoped-variable table with a default scope.
     pub fn new() -> Self {
-        let mut svt = Self {
-            table: vec![],
+        Self {
+            table: vec![FxHashMap::default()],
             modules: FxHashMap::default(),
-        };
-        svt.add_scope();
-        svt
+        }
     }
 
     /// Returns the iterator to the internal list of frames.
@@ -44,17 +42,17 @@ impl SVTable {
     /// Adds a new module. Returns a reference to the newly created module.
     pub fn add_module(&mut self, name: usize) -> Rc<RefCell<SVTable>> {
         self.modules
-            .insert(name, RefCell::new(SVTable::new()).into());
-        self.modules.get(&name).unwrap().to_owned()
+            .entry(name)
+            .or_insert_with(|| RefCell::new(SVTable::new()).into())
+            .clone()
     }
 
     /// Gets a module by name. Returns an immutable reference to the module if found.
     pub fn get_module(&self, name: usize) -> Result<Rc<RefCell<SVTable>>> {
-        if let Some(module) = self.modules.get(&name) {
-            Ok(module.clone())
-        } else {
-            bail!("failed to find module '{}'", resolve!(name));
-        }
+        self.modules
+            .get(&name)
+            .map(|module| module.clone())
+            .ok_or_else(|| anyhow::anyhow!("failed to find module '{}'", resolve!(name)))
     }
 
     /// Adds a new scope.
@@ -63,6 +61,7 @@ impl SVTable {
     }
 
     /// Gets a scope map. Mutable by default.
+    #[inline]
     pub fn get_scope(
         &mut self,
         index: usize,
@@ -71,17 +70,19 @@ impl SVTable {
     }
 
     /// Returns the number of scopes in this table.
+    #[inline]
     pub fn scopes(&self) -> usize {
         self.table.len()
     }
 }
 
 impl MemoryInterface for SVTable {
+    #[inline]
     fn get_owned(&self, id: usize) -> Result<Variable> {
         // find id in any scope and return owned
         for scope in self.iter().rev() {
             if let Some(variable) = scope.get(&id) {
-                return Ok((**variable).borrow().clone());
+                return Ok(variable.borrow().clone());
             }
         }
 
@@ -89,18 +90,20 @@ impl MemoryInterface for SVTable {
         bail!("failed to get owned value {:?}", resolve!(id))
     }
 
+    #[inline]
     fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>> {
         // find id in any scope and return reference
         for scope in self.iter().rev() {
             if let Some(variable) = scope.get(&id) {
-                return Ok((*variable).clone());
+                return Ok(variable.clone());
             }
         }
 
         // if no value is found, bail
-        bail!("failed to get owned value {:?}", resolve!(id))
+        bail!("failed to get ref value {:?}", resolve!(id))
     }
 
+    #[inline]
     fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>> {
         match self.modules.get(&id) {
             Some(module) => Ok(module.clone()),
@@ -110,6 +113,7 @@ impl MemoryInterface for SVTable {
         }
     }
 
+    #[inline]
     fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<()> {
         // add scopes if necessary
         while self.scopes() <= scope {
@@ -126,6 +130,7 @@ impl MemoryInterface for SVTable {
         Ok(())
     }
 
+    #[inline]
     fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<()> {
         // replace the value of the top-most variable if possible
         for scope in self.iter().rev() {
