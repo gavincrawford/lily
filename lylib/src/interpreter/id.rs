@@ -17,14 +17,23 @@ pub enum IDKind {
     },
 }
 
-impl ID {
-    /// Creates a new ID from an already-interned identifier.
-    pub fn from_interned(id: usize) -> Self {
-        Self {
-            id: IDKind::Literal(id),
+impl From<&usize> for ID {
+    fn from(value: &usize) -> ID {
+        ID {
+            id: IDKind::Literal(*value),
         }
     }
+}
 
+impl From<usize> for ID {
+    fn from(value: usize) -> ID {
+        ID {
+            id: IDKind::Literal(value),
+        }
+    }
+}
+
+impl ID {
     /// Creates a new ID from a string, interning it in the process.
     pub fn from_str(string: impl Into<String>) -> Self {
         let string = string.into();

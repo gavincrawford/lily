@@ -116,7 +116,7 @@ impl ASTNode {
                             // if this field is literal, add it, bail otherwise
                             if let ASTNode::Literal(Token::Identifier(variable)) = &**target {
                                 default_fields.push((
-                                    ID::from_interned(*variable),
+                                    variable.into(),
                                     Variable::Owned(ASTNode::inner_to_owned(value)),
                                 ));
                             } else {

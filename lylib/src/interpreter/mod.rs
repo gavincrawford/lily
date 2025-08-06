@@ -115,7 +115,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::FunctionCall { target, arguments } => {
                 // get target variable
                 let variable = match &**target {
-                    ASTNode::Literal(Token::Identifier(id)) => self.get(&ID::from_interned(*id))?,
+                    ASTNode::Literal(Token::Identifier(id)) => self.get(&id.into())?,
                     ASTNode::Deref { .. } => {
                         let id = self.node_to_id(target.clone())?;
                         self.get(&id)?
@@ -378,7 +378,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(identifier) = t {
                     // if this literal is an identifier, return the internal value
-                    if let Variable::Owned(var) = self.get(&ID::from_interned(*identifier))? {
+                    if let Variable::Owned(var) = self.get(&identifier.into())? {
                         return Ok(Some(var.into()));
                     }
                     Ok(None)

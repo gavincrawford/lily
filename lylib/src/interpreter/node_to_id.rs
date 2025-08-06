@@ -4,7 +4,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Converts a node to an ID, if applicable.
     pub(crate) fn node_to_id(&mut self, node: Rc<ASTNode>) -> Result<ID> {
         match &*node {
-            ASTNode::Literal(Token::Identifier(id)) => Ok(ID::from_interned(*id)),
+            ASTNode::Literal(Token::Identifier(id)) => Ok(id.into()),
             ASTNode::Index { target, index } => {
                 let parent = self.node_to_id(target.clone())?.get_kind().into();
                 if let ASTNode::Literal(Token::Number(index)) =

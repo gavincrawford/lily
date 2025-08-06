@@ -20,7 +20,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             for (idx, arg) in fn_args.iter().enumerate() {
                 let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
                 self.declare(
-                    &ID::from_interned(*arg),
+                    &arg.into(),
                     Variable::Owned(ASTNode::inner_to_owned(arg_expr)),
                 )?;
             }
