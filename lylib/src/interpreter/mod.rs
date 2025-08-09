@@ -79,7 +79,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     Ok(None)
                 } else {
                     // otherwise, return raw literal without destructuring
-                    Ok(Some(statement.to_owned()))
+                    Ok(Some(statement.clone()))
                 }
             }
             ASTNode::Assign { target, value } => {
@@ -184,7 +184,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 arguments: ref _arguments,
                 body: ref _body,
             } => {
-                self.declare(id, Variable::Function(statement.to_owned()))?;
+                self.declare(id, Variable::Function(statement.clone()))?;
                 Ok(None)
             }
             ASTNode::FunctionCall { target, arguments } => {
@@ -207,7 +207,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         self.execute_expr(arg.clone())
                             .context("failed to evaluate argument in extern")?
                             .unwrap_or(lit!(Token::Undefined))
-                            .to_owned(),
+                            .clone(),
                     );
                 }
 
@@ -273,7 +273,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 }
             }
             ASTNode::Struct { id, body: _ } => {
-                self.declare(id, Variable::Type(statement.to_owned()))
+                self.declare(id, Variable::Type(statement.clone()))
                     .context("failed to declare type for structure")?;
                 Ok(None)
             }
@@ -332,7 +332,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::List(_) => {
                 // return self
-                Ok(Some(statement.to_owned()))
+                Ok(Some(statement.clone()))
             }
             ASTNode::Index { target, index } => {
                 // get index as a usize
@@ -350,14 +350,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
 
                     // convert index to usize for later use
-                    usize_idx = n.to_owned() as usize;
+                    usize_idx = *n as usize;
                 } else {
                     panic!("index must be positive and a number");
                 }
 
                 // get the target of this index
                 let target = self
-                    .execute_expr(target.to_owned())
+                    .execute_expr(target.clone())
                     .context("failed to evaluate index target")?
                     .unwrap();
 
@@ -369,7 +369,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             .context("list item does not exist")?
                             .borrow()
                         {
-                            return Ok(Some(value.to_owned().into()));
+                            return Ok(Some(value.clone().into()));
                         }
                         bail!("expected list item to be an owned value");
                     }
@@ -417,8 +417,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Module { alias, body } => {
                 if let Some(mod_name) = alias {
                     // insert named modules using interned ID
-                    let temp = self.mod_id.to_owned();
-                    if let Some(mod_pointer) = temp.to_owned() {
+                    let temp = self.mod_id.clone();
+                    if let Some(mod_pointer) = temp.clone() {
                         self.mod_id = Some(mod_pointer.borrow_mut().add_module(*mod_name));
                     } else {
                         self.mod_id = Some(self.memory.borrow_mut().add_module(*mod_name));
@@ -432,7 +432,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     self.mod_id = temp;
                 } else {
                     // insert unnamed modules
-                    let temp = self.mod_id.to_owned();
+                    let temp = self.mod_id.clone();
                     self.mod_id = None;
 
                     // execute body
