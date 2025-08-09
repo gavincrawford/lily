@@ -16,8 +16,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 self.inject_extern(
                     stringify!($id),
                     Rc::new(|stdout, stdin, args| {
-                        let mut $out = stdout.borrow_mut();
-                        let mut $in = stdin.borrow_mut();
+                        let $out = stdout;
+                        let $in = stdin;
                         let [$($arg),*] = args.as_slice() else { bail!("invalid arguments provided to external function"); };
                         $body
                     })

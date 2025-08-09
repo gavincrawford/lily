@@ -22,10 +22,8 @@ macro_rules! interpret {
 
         // read output
         let mut buf = String::new();
-        let mut output = i.output.borrow_mut();
-        output.set_position(0);
-        output.read_to_string(&mut buf).unwrap();
-        drop(output);
+        i.output.set_position(0);
+        i.output.read_to_string(&mut buf).unwrap();
 
         (i, buf)
     }};

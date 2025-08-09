@@ -4,8 +4,8 @@ use std::{cmp::Ordering, fmt::Debug, mem::discriminant};
 /// External function signature.
 /// The first two arguments are the input and output handles. The third contains arguments.
 pub type ExFn = dyn for<'a> Fn(
-    Rc<RefCell<dyn Write + 'a>>,
-    Rc<RefCell<dyn Read + 'a>>,
+    &'a mut dyn Write,
+    &'a mut dyn Read,
     &Vec<Rc<ASTNode>>,
 ) -> Result<Option<Rc<ASTNode>>>;
 

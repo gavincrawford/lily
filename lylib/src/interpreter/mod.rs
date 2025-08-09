@@ -27,9 +27,9 @@ pub struct Interpreter<Out: Write, In: Read> {
     /// Scope level.
     scope_id: usize,
     /// Output buffer. Typically `stdout`.
-    output: Rc<RefCell<Out>>,
+    output: Out,
     /// Input buffer. Typically `stdin`.
-    input: Rc<RefCell<In>>,
+    input: In,
 }
 impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Creates a new interpreter with default builtins.
@@ -38,8 +38,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             memory: Rc::new(RefCell::new(SVTable::new())),
             mod_id: None,
             scope_id: 0,
-            output: Rc::new(RefCell::new(output)),
-            input: Rc::new(RefCell::new(input)),
+            output,
+            input,
         };
         i.inject_builtins()
             .context("failed to add builtins")
@@ -215,7 +215,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // this branch should trigger on external functions
                     Variable::Extern(closure) => {
                         // call closure with i/o handles
-                        closure(self.output.clone(), self.input.clone(), &resolved_args)
+                        closure(&mut self.output, &mut self.input, &resolved_args)
                     }
 
                     // this branch should trigger on raw, local functions
