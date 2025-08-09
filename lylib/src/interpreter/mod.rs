@@ -70,6 +70,18 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Executes an individual expression.
     fn execute_expr(&mut self, statement: Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
         match &*statement {
+            ASTNode::Literal(ref t) => {
+                if let Token::Identifier(identifier) = t {
+                    // if this literal is an identifier, return the internal value
+                    if let Variable::Owned(var) = self.get(&identifier.into())? {
+                        return Ok(Some(var.into()));
+                    }
+                    Ok(None)
+                } else {
+                    // otherwise, return raw literal without destructuring
+                    Ok(Some(statement.to_owned()))
+                }
+            }
             ASTNode::Assign { target, value } => {
                 // resolve target & expression
                 let resolved_target = &self
@@ -103,6 +115,69 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
                 )?;
                 Ok(None)
+            }
+            ASTNode::Op { lhs, op, rhs } => {
+                if let (Ok(Some(a)), Ok(Some(b))) = (
+                    self.execute_expr(lhs.clone()),
+                    self.execute_expr(rhs.clone()),
+                ) {
+                    use Token::*;
+
+                    macro_rules! opmatch {
+                        (match $op:expr, $lhs:expr, $rhs:expr => $locallhs:pat, $localrhs:pat if $($pat:pat => $res:expr),*) => {
+                            match ($op, $lhs, $rhs) {
+                                $(($pat, ASTNode::Literal($locallhs), ASTNode::Literal($localrhs)) => {
+                                    return Ok(Some(Rc::new(ASTNode::Literal($res))))
+                                })*
+                                _ => {},
+                            }
+                        };
+                    }
+
+                    // operators for numbers on both sides
+                    opmatch!(
+                        match op, &*a, &*b => Number(l), Number(r) if
+                        Add => Number(l + r),
+                        Sub => Number(l - r),
+                        Mul => Number(l * r),
+                        Div => Number(l / r),
+                        Floor => Number((l / r).floor()),
+                        Pow => Number(l.powf(*r)),
+                        LogicalG => Bool(l > r),
+                        LogicalGe => Bool(l >= r),
+                        LogicalL => Bool(l < r),
+                        LogicalLe => Bool(l <= r)
+                    );
+
+                    // operators for strings on both sides
+                    opmatch!(
+                        match op, &*a, &*b => Str(l), Str(r) if
+                        Add => Str(l.clone() + r)
+                    );
+
+                    // and & or
+                    opmatch!(
+                        match op, &*a, &*b => Bool(l), Bool(r) if
+                        LogicalAnd => Bool(*l && *r),
+                        LogicalOr => Bool(*l || *r)
+                    );
+
+                    // not
+                    opmatch!(
+                        match op, &*a, &*b => Bool(l), _ if
+                        LogicalNot => Bool(!l)
+                    );
+
+                    // equality
+                    opmatch!(
+                        match op, &*a, &*b => l, r if
+                        LogicalEq => Bool(l == r),
+                        LogicalNeq => Bool(l != r)
+                    );
+                    bail!("operator not implemented ({} {:?} {})", &*a, op, &*b)
+                } else {
+                    bail!("failed to evaluate operands")
+                }
             }
             ASTNode::Function {
                 ref id,
@@ -201,69 +276,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 self.declare(id, Variable::Type(statement.to_owned()))
                     .context("failed to declare type for structure")?;
                 Ok(None)
-            }
-            ASTNode::Op { lhs, op, rhs } => {
-                if let (Ok(Some(a)), Ok(Some(b))) = (
-                    self.execute_expr(lhs.clone()),
-                    self.execute_expr(rhs.clone()),
-                ) {
-                    use Token::*;
-
-                    macro_rules! opmatch {
-                        (match $op:expr, $lhs:expr, $rhs:expr => $locallhs:pat, $localrhs:pat if $($pat:pat => $res:expr),*) => {
-                            match ($op, $lhs, $rhs) {
-                                $(($pat, ASTNode::Literal($locallhs), ASTNode::Literal($localrhs)) => {
-                                    return Ok(Some(Rc::new(ASTNode::Literal($res))))
-                                })*
-                                _ => {},
-                            }
-                        };
-                    }
-
-                    // operators for numbers on both sides
-                    opmatch!(
-                        match op, &*a, &*b => Number(l), Number(r) if
-                        Add => Number(l + r),
-                        Sub => Number(l - r),
-                        Mul => Number(l * r),
-                        Div => Number(l / r),
-                        Floor => Number((l / r).floor()),
-                        Pow => Number(l.powf(*r)),
-                        LogicalG => Bool(l > r),
-                        LogicalGe => Bool(l >= r),
-                        LogicalL => Bool(l < r),
-                        LogicalLe => Bool(l <= r)
-                    );
-
-                    // operators for strings on both sides
-                    opmatch!(
-                        match op, &*a, &*b => Str(l), Str(r) if
-                        Add => Str(l.clone() + r)
-                    );
-
-                    // and & or
-                    opmatch!(
-                        match op, &*a, &*b => Bool(l), Bool(r) if
-                        LogicalAnd => Bool(*l && *r),
-                        LogicalOr => Bool(*l || *r)
-                    );
-
-                    // not
-                    opmatch!(
-                        match op, &*a, &*b => Bool(l), _ if
-                        LogicalNot => Bool(!l)
-                    );
-
-                    // equality
-                    opmatch!(
-                        match op, &*a, &*b => l, r if
-                        LogicalEq => Bool(l == r),
-                        LogicalNeq => Bool(l != r)
-                    );
-                    bail!("operator not implemented ({} {:?} {})", &*a, op, &*b)
-                } else {
-                    bail!("failed to evaluate operands")
-                }
             }
             ASTNode::Conditional {
                 condition,
@@ -373,18 +385,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     _ => {
                         bail!("expected list as index target");
                     }
-                }
-            }
-            ASTNode::Literal(ref t) => {
-                if let Token::Identifier(identifier) = t {
-                    // if this literal is an identifier, return the internal value
-                    if let Variable::Owned(var) = self.get(&identifier.into())? {
-                        return Ok(Some(var.into()));
-                    }
-                    Ok(None)
-                } else {
-                    // otherwise, return raw literal without destructuring
-                    Ok(Some(statement.to_owned()))
                 }
             }
             ASTNode::Deref { .. } => {
