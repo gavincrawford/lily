@@ -12,8 +12,13 @@ struct Calculator do
     last = res
     return res
   end
+
+  func get_last do
+    return last
+  end
 end
 
 let calculator = new Calculator()
 let add = calculator.add(5, 5)
 let sub = calculator.add(5, 5)
+let last = calculator.get_last()

@@ -188,12 +188,36 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(None)
             }
             ASTNode::FunctionCall { target, arguments } => {
-                // get target variable
-                let variable = match &**target {
-                    ASTNode::Literal(Token::Identifier(id)) => self.get(&id.into())?,
-                    ASTNode::Deref { .. } => {
+                // get target variable and check if we need to set instance context
+                let (variable, instance_context) = match &**target {
+                    ASTNode::Literal(Token::Identifier(id)) => (self.get(&id.into())?, None),
+                    ASTNode::Deref { parent, child: _ } => {
                         let id = self.node_to_id(target.clone())?;
-                        self.get(&id)?
+                        let variable = self.get(&id)?;
+
+                        // Check if this is an instance method call
+                        let instance_context = match &**parent {
+                            ASTNode::Literal(Token::Identifier(parent_id)) => {
+                                // Try to get the parent variable, but don't fail if it doesn't exist
+                                // We need to handle this case because imported modules don't add
+                                // context *here*, they allow access to it through recursive
+                                // resolution in `resolve_access_target`
+                                if let Ok(parent_var) = self.get(&parent_id.into()) {
+                                    match (&parent_var, &variable) {
+                                        (
+                                            Variable::Owned(ASTNode::Instance { .. }),
+                                            Variable::Function(_),
+                                        ) => Some(parent_var),
+                                        _ => None,
+                                    }
+                                } else {
+                                    None
+                                }
+                            }
+                            _ => None,
+                        };
+
+                        (variable, instance_context)
                     }
                     other => bail!("cannot call {:?}", other),
                 };
@@ -219,7 +243,28 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
 
                     // this branch should trigger on raw, local functions
-                    Variable::Function(function) => self.execute_function(&resolved_args, function),
+                    Variable::Function(function) => {
+                        // if we have an instance context, set it as the module
+                        let temp_mod_id =
+                            if let Some(Variable::Owned(ASTNode::Instance { svt, .. })) =
+                                instance_context
+                            {
+                                let temp = self.mod_id.clone();
+                                self.mod_id = Some(svt);
+                                Some(temp)
+                            } else {
+                                None
+                            };
+
+                        let result = self.execute_function(&resolved_args, function);
+
+                        // restore previous module context
+                        if let Some(temp) = temp_mod_id {
+                            self.mod_id = temp;
+                        }
+
+                        result
+                    }
 
                     // this branch should trigger when constructors are called
                     Variable::Type(ref structure) => match structure.constructor() {

@@ -104,5 +104,6 @@ test!(struct_constructors => (
 
 test!(struct_functions => (
     add := 10,
-    sub := 0
+    sub := 0,
+    last := 0
 ));
