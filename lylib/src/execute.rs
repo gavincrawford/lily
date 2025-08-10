@@ -1,7 +1,7 @@
 //! Implements the outward-facing functions for executing a file with a given set of configuration
 //! options. This allows the end user to customize the behavior of the interpreter.
 
-use crate::{interpreter::*, lexer::*, parser::*};
+use crate::{get_global_interner, intern, interpreter::*, lexer::*, parser::*};
 use anyhow::{Context, Result};
 use std::{
     io::{Read, Write},
@@ -11,7 +11,8 @@ use std::{
 /// Lily configuration.
 pub struct LyConfig {
     /// Files to include during parsing, if applicable.
-    include: Box<Option<Vec<String>>>,
+    /// Each value must be a tuple in which the values coorespond to `(module alias, module source)`.
+    include: Vec<(Option<usize>, String)>,
     /// If true, debug lexer output.
     dbg_tokens: bool,
     /// If true, debug parser output.
@@ -22,19 +23,23 @@ impl LyConfig {
     /// Creates a new default config.
     pub fn new() -> Self {
         Self {
-            include: None.into(),
+            include: vec![],
             dbg_ast: false,
             dbg_tokens: false,
         }
     }
 
     /// Adds a file to be included at base scope.
-    pub fn include(&mut self, buffer: String) -> &mut Self {
-        if let Some(incldues) = &mut *self.include {
-            incldues.push(buffer);
-        } else {
-            self.include = Some(vec![buffer]).into();
-        }
+    pub fn include(&mut self, buffer: impl Into<String>) -> &mut Self {
+        let buffer = buffer.into();
+        self.include.push((None, buffer));
+        self
+    }
+
+    /// Adds a file as a module under a provided alias.
+    pub fn include_as(&mut self, alias: impl Into<String>, buffer: impl Into<String>) -> &mut Self {
+        let (alias, buffer) = (alias.into(), buffer.into());
+        self.include.push((Some(intern!(alias)), buffer));
         self
     }
 
@@ -68,20 +73,16 @@ impl LyConfig {
         }
 
         // Parse includes before main file
-        // TODO: Ugh I don't want to clone here. Damn you borrow checker
-        let includes = (&*self.include.clone().unwrap_or(vec![]))
+        let includes = self
+            .include
             .iter()
-            .map(|include_buffer| {
+            .map(|(alias, source)| {
                 ASTNode::Module {
-                    alias: None,
-                    body: Parser::new(
-                        Lexer::new()
-                            .lex(include_buffer.to_owned().to_string())
-                            .unwrap(),
-                    )
-                    .parse()
-                    .unwrap()
-                    .into(),
+                    alias: alias.clone(),
+                    body: Parser::new(Lexer::new().lex(source.clone().to_string()).unwrap())
+                        .parse()
+                        .unwrap()
+                        .into(),
                 }
                 .into()
             })
