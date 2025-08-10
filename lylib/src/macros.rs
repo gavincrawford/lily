@@ -3,7 +3,6 @@
 //! `ASTNode` trees, or anywhere we need to instantiate nodes easily.
 
 /// Converts a string to an interned identifier.
-#[macro_export]
 macro_rules! intern {
     ($id:expr) => {{
         let mut i = get_global_interner().unwrap();
@@ -14,7 +13,6 @@ macro_rules! intern {
 }
 
 /// Resolves an interned identifier backwards to the original string.
-#[macro_export]
 macro_rules! resolve {
     ($id:expr) => {{
         let i = get_global_interner().unwrap();
@@ -25,7 +23,6 @@ macro_rules! resolve {
 }
 
 /// Shorthand for creating a literal.
-#[macro_export]
 macro_rules! lit {
     // numbers
     ($literal:literal) => {
@@ -38,16 +35,16 @@ macro_rules! lit {
     };
 }
 
-/// Shorthand for creating a literal identifier.
-#[macro_export]
+/// Shorthand for creating a literal identifier. Used for testing.
+#[cfg(test)]
 macro_rules! ident {
     ($id:expr) => {
         lit!(Token::Identifier(intern!($id)))
     };
 }
 
-/// Shorthand for creating node blocks.
-#[macro_export]
+/// Shorthand for creating node blocks. Used for testing.
+#[cfg(test)]
 macro_rules! block {
     ($($node:expr),*) => {{
         let block = vec![$($node),*];
@@ -55,8 +52,8 @@ macro_rules! block {
     }};
 }
 
-/// Shorthand for all AST nodes.
-#[macro_export]
+/// Shorthand for all AST nodes. Used for testing.
+#[cfg(test)]
 macro_rules! node {
     // ops, in two formats
     (op $lhs:expr, $op:expr, $rhs:expr) => {

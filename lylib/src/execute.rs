@@ -1,7 +1,7 @@
 //! Implements the outward-facing functions for executing a file with a given set of configuration
 //! options. This allows the end user to customize the behavior of the interpreter.
 
-use crate::{get_global_interner, intern, interpreter::*, lexer::*, parser::*};
+use crate::{get_global_interner, interpreter::*, lexer::*, parser::*};
 use anyhow::{Context, Result};
 use std::{
     io::{Read, Write},

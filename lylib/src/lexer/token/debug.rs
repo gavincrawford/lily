@@ -1,4 +1,4 @@
-use crate::{lexer::*, resolve};
+use crate::lexer::*;
 use std::fmt::Debug;
 
 impl Debug for Token {

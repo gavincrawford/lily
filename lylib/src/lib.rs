@@ -1,3 +1,6 @@
+#[macro_use]
+mod macros;
+
 mod execute;
 pub use execute::LyConfig;
 pub mod interner;
@@ -5,9 +8,6 @@ pub mod interpreter;
 pub mod lexer;
 pub mod parser;
 pub use anyhow;
-
-#[macro_use]
-mod macros;
 
 use crate::interner::StringInterner;
 use anyhow::Result;

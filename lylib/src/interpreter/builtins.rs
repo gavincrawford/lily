@@ -1,5 +1,4 @@
 use super::{mem::variable::ExFn, *};
-use crate::lit;
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Adds an arbitrary external function to this interpreter.

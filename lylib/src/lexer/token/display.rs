@@ -1,4 +1,4 @@
-use crate::{lexer::*, resolve};
+use crate::lexer::*;
 use std::fmt::Display;
 
 impl Display for Token {

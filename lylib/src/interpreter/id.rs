@@ -1,6 +1,6 @@
 //! ID structure that allows for many kinds of identifiers.
 
-use crate::{get_global_interner, intern};
+use crate::get_global_interner;
 use std::rc::Rc;
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
