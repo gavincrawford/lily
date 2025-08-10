@@ -1,4 +1,4 @@
-use clap::ArgMatches;
+use crate::Args;
 use lylib::{
     anyhow::{Context, Result},
     LyConfig,
@@ -9,26 +9,55 @@ use std::{
 };
 
 /// Executes a file.
-pub fn execute(args: ArgMatches) -> Result<()> {
+pub fn execute(args: Args) -> Result<()> {
     //read file to buffer
-    let file_path: &String = args.get_one("file").unwrap();
-    let buf = fs::read_to_string(file_path).context("failed to open file")?;
+    let buf = fs::read_to_string(args.buffer).context("failed to open file")?;
 
     // create lily config & execute file
     let mut cfg = LyConfig::new();
-    if !*args.get_one("nostd").unwrap_or(&false) {
-        // NOTE: All imports of this style are added to base scope, and don't require importing to
-        // be used. I want to figure out a solution where imports are only used when needed, and
-        // aren't automatically globbed into memory when they aren't needed.
-        cfg.include(include_str!("./std/math.ly").to_string());
+    if !args.no_std {
+        cfg.include_as("math", include_str!("./std/math.ly").to_string());
+        cfg.include_as("complex", include_str!("./std/complex.ly").to_string());
     }
     let interp = cfg
-        .debug_parser(*args.get_one("debugparser").unwrap_or(&false))
-        .debug_lexer(*args.get_one("debuglexer").unwrap_or(&false))
+        .debug_parser(args.debug_parser)
+        .debug_lexer(args.debug_lexer)
         .execute(buf, stdout(), stdin())?;
 
     // for debugging
     #[cfg(debug_assertions)]
     println!("{}", interp.memory.borrow());
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    // TODO: significantly improve test coverage. a panic builtin might be nice too, as it should
+    // trigger debug assertions, allowing us to test stuff with lily itself
+
+    use super::*;
+
+    #[test]
+    fn math() {
+        let res = execute(Args {
+            buffer: "./src/std/test/math.test.ly".into(),
+            no_std: false,
+            debug_parser: false,
+            debug_lexer: false,
+        });
+        dbg!(&res);
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn complex() {
+        let res = execute(Args {
+            buffer: "./src/std/test/complex.test.ly".into(),
+            no_std: false,
+            debug_parser: false,
+            debug_lexer: false,
+        });
+        dbg!(&res);
+        assert!(res.is_ok());
+    }
 }

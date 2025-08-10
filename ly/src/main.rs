@@ -1,17 +1,31 @@
 mod execute;
-use clap::{arg, Command};
+use clap::{arg, command, Parser};
 use execute::execute;
 
-fn main() {
-    // specify and parse arguments
-    let cmd = Command::new("ly")
-        .arg(arg!(<file>))
-        .arg(arg!(--nostd "run without standard library"))
-        .arg(arg!(--debugparser "(debug) prints the parser output during execution"))
-        .arg(arg!(--debuglexer "(debug) prints the lexer output during execution"))
-        .get_matches();
+#[derive(Parser, Debug)]
+#[command(version, about, long_about=None)]
+struct Args {
+    /// Target file.
+    buffer: String,
 
-    //execute file
+    /// Run without adding standard library modules.
+    #[arg(long)]
+    no_std: bool,
+
+    /// Debug parser output during execution.
+    #[arg(long)]
+    debug_parser: bool,
+
+    /// Debug lexer output during execution.
+    #[arg(long)]
+    debug_lexer: bool,
+}
+
+fn main() {
+    // parse arguments
+    let cmd = Args::parse();
+
+    // execute file
     match execute(cmd) {
         Err(e) => {
             eprintln!("{:?}", e);
