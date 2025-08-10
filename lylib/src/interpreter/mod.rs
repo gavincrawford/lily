@@ -47,6 +47,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         i
     }
 
+    /// Gets a reference to the internal input reader.
+    pub fn input(&mut self) -> &mut In {
+        &mut self.input
+    }
+
+    /// Gets a reference to the internal output writer.
+    pub fn output(&mut self) -> &mut Out {
+        &mut self.output
+    }
+
     /// Executes an AST segment, typically the head. Returns `Some` when a return block is reached.
     pub fn execute(&mut self, ast: Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
         if let ASTNode::Block(statements) = &*ast {

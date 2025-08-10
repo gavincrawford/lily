@@ -8,27 +8,6 @@ use crate::{
     *,
 };
 
-/// Shorthand for executing test code located at the provided path.
-#[macro_export]
-macro_rules! interpret {
-    ($path:expr) => {{
-        // interpret file
-        use std::io::Cursor;
-        let mut i = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
-        let mut p = Parser::new(Lexer::new().lex(include_str!($path).to_string()).unwrap());
-        p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
-        let ast = p.parse().unwrap();
-        i.execute(ast).unwrap();
-
-        // read output
-        let mut buf = String::new();
-        i.output.set_position(0);
-        i.output.read_to_string(&mut buf).unwrap();
-
-        (i, buf)
-    }};
-}
-
 /// Shorthand for comparing a variable with an owned literal.
 macro_rules! var_eq_literal {
     ($interpreter:expr, $id:tt, $token:expr) => {
@@ -65,11 +44,28 @@ macro_rules! test {
         var_eq_literal!($interpreter, $lhs, $rhs);
     };
 
+    (@interpret $path:expr) => {{
+        // interpret file
+        use std::io::Cursor;
+        let mut i = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
+        let mut p = Parser::new(Lexer::new().lex(include_str!($path).to_string()).unwrap());
+        p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
+        let ast = p.parse().unwrap();
+        i.execute(ast).unwrap();
+
+        // read output
+        let mut buf = String::new();
+        i.output().set_position(0);
+        i.output().read_to_string(&mut buf).unwrap();
+
+        (i, buf)
+    }};
+
     // equality tests
     ($file:tt => ($($rest:tt)*)) => {
         #[test]
         fn $file() {
-            let (i, _) = interpret!(concat!(stringify!($file), ".ly"));
+            let (i, _) = test!(@interpret concat!(stringify!($file), ".ly"));
             test!(@munch i; $($rest)*);
         }
     };
@@ -78,7 +74,7 @@ macro_rules! test {
     ($file:tt => $expected:expr) => {
         #[test]
         fn $file() {
-            let (_, out) = interpret!(concat!(stringify!($file), ".ly"));
+            let (_, out) = test!(@interpret concat!(stringify!($file), ".ly"));
             assert_eq!(out, $expected);
         }
     };
