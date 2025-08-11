@@ -1,14 +1,17 @@
 //! ID structure that allows for many kinds of identifiers.
 
+/// Debug implementations for `ID` & `IDKind`.
+mod debug;
+
 use crate::get_global_interner;
 use std::rc::Rc;
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct ID {
     pub(crate) id: IDKind,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub enum IDKind {
     Literal(usize),
     Member {
