@@ -39,32 +39,8 @@ impl From<usize> for ID {
 impl ID {
     /// Creates a new ID from a string, interning it in the process.
     pub fn from_str(string: impl Into<String>) -> Self {
-        let string = string.into();
-        if string.contains('.') {
-            // if the id has an access pattern, process it
-            let mut parts = string.split('.').map(|s| {
-                let interned_id = intern!(s.to_string());
-                Rc::new(IDKind::Literal(interned_id))
-            });
-            let mut parent = parts.next().expect("expected identifier");
-
-            // build the nested member structure
-            for member in parts {
-                parent = Rc::new(IDKind::Member {
-                    parent,
-                    member: member.clone(),
-                });
-            }
-
-            // return the constructed member access
-            Self {
-                id: (*parent).clone(),
-            }
-        } else {
-            // otherwise, this id is literal
-            Self {
-                id: IDKind::Literal(intern!(string)),
-            }
+        Self {
+            id: IDKind::Literal(intern!(string.into())),
         }
     }
 
