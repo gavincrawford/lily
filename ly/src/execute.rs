@@ -42,7 +42,6 @@ mod tests {
             debug_parser: false,
             debug_lexer: false,
         });
-        dbg!(&res);
         assert!(res.is_ok());
     }
 
@@ -54,7 +53,6 @@ mod tests {
             debug_parser: false,
             debug_lexer: false,
         });
-        dbg!(&res);
         assert!(res.is_ok());
     }
 }

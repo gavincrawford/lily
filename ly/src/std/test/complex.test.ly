@@ -20,6 +20,14 @@ cmplx = new complex.Complex(1, 1)
 cmplx.div(new complex.Complex(1, 2))
 assert(cmplx.re == 0.6 && cmplx.im == -0.2)
 
+# test magnitude
+cmplx = new complex.Complex(3, 4)
+assert(cmplx.mag() == 5)
+
+# test normalize
+cmplx = new complex.Complex(3, 4)
+assert(cmplx.norm() == new complex.Complex(0.6, 0.8))
+
 # test string conversion
 cmplx = new complex.Complex(3, 3)
 assert("3 + 3i" == cmplx.as_string())
