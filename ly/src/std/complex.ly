@@ -19,7 +19,7 @@ struct Complex do
 
   func mul other do
     let new_re = re * other.re - im * other.im
-    let new_im = re * other.im - im * other.re
+    let new_im = re * other.im + im * other.re
     re = new_re
     im = new_im
   end
