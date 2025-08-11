@@ -32,9 +32,6 @@ pub fn execute(args: Args) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    // TODO: significantly improve test coverage. a panic builtin might be nice too, as it should
-    // trigger debug assertions, allowing us to test stuff with lily itself
-
     use super::*;
 
     #[test]
