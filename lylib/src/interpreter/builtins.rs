@@ -1,4 +1,5 @@
 use super::{mem::variable::ExFn, *};
+use anyhow::anyhow;
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Adds an arbitrary external function to this interpreter.
@@ -76,6 +77,18 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 },
                 _ => bail!("cannot fetch characters of {:?}", &**string)
             }
+        });
+
+        // assert (returns err if condition != true)
+        exfn!(assert, |condition; _stdout, _stdin| {
+            // return err unless condition is true
+            match &**condition {
+                ASTNode::Literal(Token::Bool(true)) => {},
+                _ => {
+                    return Err(anyhow!("assertion failed"));
+                }
+            }
+            Ok(None)
         });
 
         Ok(())

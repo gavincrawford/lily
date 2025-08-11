@@ -1,5 +1,9 @@
 use super::*;
 
+test!(assert_fails => panic);
+
+test!(assert_passes => "");
+
 test!(chars => (
     letters == node!([
         lit!('a'),

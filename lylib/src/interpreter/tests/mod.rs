@@ -70,7 +70,16 @@ macro_rules! test {
         }
     };
 
-    // output tets
+    // fail tests
+    ($file:tt => panic) => {
+        #[test]
+        #[should_panic]
+        fn $file() {
+            let (_, _) = test!(@interpret concat!(stringify!($file), ".ly"));
+        }
+    };
+
+    // output tests
     ($file:tt => $expected:expr) => {
         #[test]
         fn $file() {
