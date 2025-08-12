@@ -3,7 +3,6 @@
 /// Debug implementations for `ID` & `IDKind`.
 mod debug;
 
-use crate::get_global_interner;
 use std::rc::Rc;
 
 #[derive(PartialEq, Eq, Hash, Clone)]

@@ -19,7 +19,7 @@ static GLOBAL_INTERNER: OnceLock<Mutex<StringInterner>> = OnceLock::new();
 
 /// Fetches a lock of the global interner. If a lock cannot be acquired, this function will return
 /// `Err`. Only one lock should be active at any given time.
-pub fn get_global_interner() -> Result<MutexGuard<'static, StringInterner>> {
+fn get_global_interner() -> Result<MutexGuard<'static, StringInterner>> {
     if let Ok(mutex_guard) = GLOBAL_INTERNER
         .get_or_init(|| Mutex::new(StringInterner::new()))
         .lock()

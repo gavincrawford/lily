@@ -5,7 +5,7 @@
 /// Converts a string to an interned identifier.
 macro_rules! intern {
     ($id:expr) => {{
-        let mut i = get_global_interner().unwrap();
+        let mut i = crate::get_global_interner().unwrap();
         let id = i.intern($id);
         drop(i);
         id
@@ -15,7 +15,7 @@ macro_rules! intern {
 /// Resolves an interned identifier backwards to the original string.
 macro_rules! resolve {
     ($id:expr) => {{
-        let i = get_global_interner().unwrap();
+        let i = crate::get_global_interner().unwrap();
         let id = i.resolve($id).to_owned();
         drop(i);
         id
