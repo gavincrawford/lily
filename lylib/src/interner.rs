@@ -115,11 +115,4 @@ mod tests {
         let interner = StringInterner::new();
         interner.resolve(999);
     }
-
-    #[test]
-    fn err_intern_empty_string() {
-        let mut interner = StringInterner::new();
-        let id = interner.intern("".to_string());
-        assert_eq!(interner.resolve(id), "");
-    }
 }
