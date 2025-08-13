@@ -28,8 +28,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             let result = self.execute(body.clone())?;
             self.drop_scope();
 
-            // return result if present. otherwise, undefined
-            return Ok(Some(result.unwrap_or(lit!(Token::Undefined))));
+            return Ok(result);
         }
         bail!("failed to execute non-function value")
     }

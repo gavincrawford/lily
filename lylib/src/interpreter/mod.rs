@@ -67,6 +67,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .execute_expr(statement.clone())
                     .context("failed to evaluate expression")?
                 {
+                    // TODO: This segment contributed to a big bug with function calls, and I
+                    // suspect it could run deeper than that. This seems like it might allow
+                    // the program to quietly exit even at base scope
                     return Ok(Some(ret_value));
                 }
             }
@@ -246,7 +249,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     );
                 }
 
-                match variable {
+                let result = match variable {
                     // this branch should trigger on external functions
                     Variable::Extern(closure) => {
                         // call closure with i/o handles
@@ -326,7 +329,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     _ => {
                         bail!("no function `{:?}` found", target);
                     }
-                }
+                };
+
+                result
             }
             ASTNode::Struct { id, body: _ } => {
                 self.declare(id, Variable::Type(statement.clone()))
