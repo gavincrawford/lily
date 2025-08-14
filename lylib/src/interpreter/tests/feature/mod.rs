@@ -77,6 +77,8 @@ test!(indices_nested => (
     nest_1 := 123
 ));
 
+test!(indices_out_of_range => panic);
+
 test!(imports => (
     get_res := 4,
     assign_res := "reassignment value",
