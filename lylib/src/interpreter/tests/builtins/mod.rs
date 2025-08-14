@@ -15,7 +15,10 @@ test!(chars => (
     ])
 ));
 
-test!(len => "0\n5\n");
+test!(len => (
+    a := 0,
+    b := 5
+));
 
 test!(print => "str\nc\n1\ntrue\n");
 
