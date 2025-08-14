@@ -8,42 +8,59 @@ use crate::{
     *,
 };
 
-/// Shorthand for comparing a variable with an owned literal.
-macro_rules! var_eq_literal {
-    ($interpreter:expr, $id:tt, $token:expr) => {
-        assert_eq!(
-            $interpreter.get(&ID::from_str(stringify!($id))).unwrap(),
-            Variable::Owned(ASTNode::inner_to_owned(&lit!($token))).into(),
-        );
-    };
-}
-
 /// Shorthand for comparing a variable with any owned value.
 macro_rules! var_eq {
     ($interpreter:expr, $id:tt, $node:expr) => {
-        assert_eq!(
+        let (got, expected) = (
+            // TODO: I think we should write an Into for strings, instead of this helper
             $interpreter.get(&ID::from_str(stringify!($id))).unwrap(),
             Variable::Owned($node).into(),
         );
+        if got != expected {
+            panic!(
+                "expected {} to be {expected:?}, found {got:?}.",
+                stringify!($id)
+            );
+        }
     };
 }
 
-/// Shorthand for entire test cases. The name of the function provided is expected to be the name
+/// Shorthand for comparing a variable with an owned literal.
+macro_rules! var_eq_literal {
+    ($interpreter:expr, $id:tt, $token:expr) => {
+        var_eq!($interpreter, $id, ASTNode::inner_to_owned(&lit!($token)));
+    };
+}
+
+/// Expands into entire test cases. The name of the function provided is expected to be the name
 /// of the test file, given the file extension is omitted.
+/// # Example
+/// ```ignore
+/// test!(file_name => ( // will read `file_name.ly`
+///     // use `:=` to implicitly create a literal
+///     literal_string := "expected value",
+///     // use `==` for custom nodes
+///     other_node == node!([lit!(1), lit!(2)]),
+/// ));
+/// ```
 macro_rules! test {
+    // Helpers for progressively munching equality test statements.
     (@munch $interpreter:ident; $lhs:tt == $rhs:expr, $($rest:tt)*) => {
         var_eq!($interpreter, $lhs, $rhs);
+        test!(@munch $interpreter; $($rest)*);
     };
     (@munch $interpreter:ident; $lhs:tt == $rhs:expr) => {
         var_eq!($interpreter, $lhs, $rhs);
     };
     (@munch $interpreter:ident; $lhs:tt := $rhs:expr, $($rest:tt)*) => {
         var_eq_literal!($interpreter, $lhs, $rhs);
+        test!(@munch $interpreter; $($rest)*);
     };
     (@munch $interpreter:ident; $lhs:tt := $rhs:expr) => {
         var_eq_literal!($interpreter, $lhs, $rhs);
     };
 
+    // Helper for running the file.
     (@interpret $path:expr) => {{
         // interpret file
         use std::io::Cursor;
@@ -61,7 +78,7 @@ macro_rules! test {
         (i, buf)
     }};
 
-    // equality tests
+    // Test for variable equality
     ($file:tt => ($($rest:tt)*)) => {
         #[test]
         fn $file() {
@@ -70,7 +87,7 @@ macro_rules! test {
         }
     };
 
-    // fail tests
+    // Test & assure panic
     ($file:tt => panic) => {
         #[test]
         #[should_panic]
@@ -79,7 +96,7 @@ macro_rules! test {
         }
     };
 
-    // output tests
+    // Test against `stdout`
     ($file:tt => $expected:expr) => {
         #[test]
         fn $file() {

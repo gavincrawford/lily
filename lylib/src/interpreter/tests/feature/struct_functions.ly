@@ -20,5 +20,5 @@ end
 
 let calculator = new Calculator()
 let add = calculator.add(5, 5)
-let sub = calculator.add(5, 5)
+let sub = calculator.sub(5, 5)
 let last = calculator.get_last()
