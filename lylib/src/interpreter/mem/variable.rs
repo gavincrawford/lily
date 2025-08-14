@@ -22,9 +22,9 @@ pub enum Variable {
     Type(Rc<ASTNode>),
 }
 
-impl Into<Rc<RefCell<Variable>>> for Variable {
-    fn into(self) -> Rc<RefCell<Variable>> {
-        Rc::new(RefCell::new(self))
+impl From<Variable> for Rc<RefCell<Variable>> {
+    fn from(val: Variable) -> Self {
+        Rc::new(RefCell::new(val))
     }
 }
 
@@ -62,9 +62,7 @@ impl PartialEq for Variable {
             (Variable::Owned(a), Variable::Owned(b)) => a == b,
             (Variable::Function(a), Variable::Function(b))
             | (Variable::Type(a), Variable::Type(b)) => a == b,
-            _ => panic!(
-                "cannot comapre external variables ({self:?}, {other:?})"
-            ),
+            _ => panic!("cannot comapre external variables ({self:?}, {other:?})"),
         }
     }
 }

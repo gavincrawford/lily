@@ -17,13 +17,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .execute_expr(value.clone().into())
                                 .context("could not flatten index inside list")?
                                 .unwrap();
-                            *handle =
-                                Variable::Owned(ASTNode::inner_to_owned(&resolved_item));
+                            *handle = Variable::Owned(ASTNode::inner_to_owned(&resolved_item));
                         }
                         ASTNode::List(_) => {
                             let resolved_refs = self.resolve_refs(value.to_owned())?;
-                            *handle =
-                                Variable::Owned(ASTNode::inner_to_owned(&resolved_refs));
+                            *handle = Variable::Owned(ASTNode::inner_to_owned(&resolved_refs));
                         }
                         _ => {}
                     }

@@ -63,7 +63,7 @@ impl Parser {
         }
     }
 
-    /// Parses all tokens into a program.
+    /// Parses until a block end is found. (EOF, return, etc.)
     pub fn parse(&mut self) -> Result<Rc<ASTNode>> {
         self.parse_with_imports(vec![])
     }
@@ -264,25 +264,25 @@ impl Parser {
     fn parse_decl_fn(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Function)?;
         let next = self.next();
-        match next {
-            Some(Token::Identifier(name)) => {
-                // gather arguments
-                let mut arguments = vec![];
-                while let Some(Token::Identifier(arg)) = self.peek() {
-                    arguments.push(*arg);
-                    self.next();
-                }
-                self.expect(Token::BlockStart)?;
-                Ok(ASTNode::Function {
-                    id: name.into(),
-                    body: self.parse().context("failed to parse function body")?,
-                    arguments,
-                }
-                .into())
+        if let Some(Token::Identifier(sym)) = next {
+            // gather arguments
+            let mut arguments = vec![];
+            while let Some(Token::Identifier(arg)) = self.peek() {
+                arguments.push(*arg);
+                self.next();
             }
-            _ => {
-                bail!("expected identifier, found {:?}", next);
+
+            // consume block start
+            self.expect(Token::BlockStart)?;
+
+            Ok(ASTNode::Function {
+                id: sym.into(),
+                body: self.parse().context("failed to parse function body")?,
+                arguments,
             }
+            .into())
+        } else {
+            bail!("expected identifier, found {next:?}");
         }
     }
 

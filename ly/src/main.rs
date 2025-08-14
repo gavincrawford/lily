@@ -26,10 +26,7 @@ fn main() {
     let cmd = Args::parse();
 
     // execute file
-    match execute(cmd) {
-        Err(e) => {
-            eprintln!("{:?}", e);
-        }
-        _ => {}
+    if let Err(e) = execute(cmd) {
+        eprintln!("{:?}", e);
     }
 }

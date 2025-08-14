@@ -488,7 +488,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // execute body
                     self.execute(body.clone()).context(format!(
                         "failed to evaluate module '{}'",
-                        alias.clone().unwrap() // safety: destructuring
+                        (*alias).unwrap() // safety: destructuring
                     ))?;
                     self.mod_id = temp;
                 } else {
