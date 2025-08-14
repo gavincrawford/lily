@@ -466,7 +466,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let expr = self
                     .execute_expr(expr.clone())
                     .context("failed to evaluate return expression")?
-                    .expect("expected return value");
+                    .context("expected return value")?;
 
                 // if there are indicies, flatten them
                 let expr = self
