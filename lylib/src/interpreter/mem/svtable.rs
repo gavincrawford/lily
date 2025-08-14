@@ -51,7 +51,7 @@ impl SVTable {
     pub fn get_module(&self, name: usize) -> Result<Rc<RefCell<SVTable>>> {
         self.modules
             .get(&name)
-            .map(|module| module.clone())
+            .cloned()
             .ok_or_else(|| anyhow::anyhow!("failed to find module '{}'", resolve!(name)))
     }
 

@@ -78,11 +78,10 @@ impl LyConfig {
             .iter()
             .map(|(alias, source)| {
                 ASTNode::Module {
-                    alias: alias.clone(),
+                    alias: *alias,
                     body: Parser::new(Lexer::new().lex(source.clone().to_string()).unwrap())
                         .parse()
-                        .unwrap()
-                        .into(),
+                        .unwrap(),
                 }
                 .into()
             })
