@@ -63,7 +63,7 @@ impl Parser {
         }
     }
 
-    /// Parses all tokens into a program.
+    /// Parses until a block end is found. (EOF, return, etc.)
     pub fn parse(&mut self) -> Result<Rc<ASTNode>> {
         self.parse_with_imports(vec![])
     }
