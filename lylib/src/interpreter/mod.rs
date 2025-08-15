@@ -67,9 +67,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .execute_expr(statement.clone())
                     .context("failed to evaluate expression")?
                 {
-                    // TODO: This segment contributed to a big bug with function calls, and I
-                    // suspect it could run deeper than that. This seems like it might allow
-                    // the program to quietly exit even at base scope
+                    if self.scope_id == 0 {
+                        bail!("cannot return as base scope");
+                    }
                     return Ok(Some(ret_value));
                 }
             }

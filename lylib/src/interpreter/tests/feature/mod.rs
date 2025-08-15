@@ -29,6 +29,8 @@ test!(operators => (
     c_neq := true
 ));
 
+test!(return_base_scope => panic);
+
 test!(ifelse => (
     a := 0
 ));
