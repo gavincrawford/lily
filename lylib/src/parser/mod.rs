@@ -21,7 +21,7 @@ impl Parser {
         Self {
             tokens,
             position: 0,
-            path: env::current_dir().unwrap(),
+            path: env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
         }
     }
 
@@ -104,7 +104,7 @@ impl Parser {
             Some(Token::Identifier(_)) => self.parse_expr(None),
             Some(Token::Return) => self.parse_return(),
             _ => {
-                bail!("expected statement, found {:?}", self.peek().unwrap());
+                bail!("expected statement, found {:?}", self.peek());
             }
         };
 
@@ -371,14 +371,14 @@ impl Parser {
         loop {
             // if we hit the expected token, break
             if let Some(ref token) = expect {
-                if self.peek().unwrap() == token {
+                if self.peek() == Some(token) {
                     self.expect(expect.unwrap())?;
                     break;
                 }
             }
 
             // match operator
-            let result = match self.peek() {
+            primary = match self.peek() {
                 // math and logical operators
                 Some(Token::Add)
                 | Some(Token::Sub)
@@ -393,26 +393,26 @@ impl Parser {
                 | Some(Token::LogicalEq)
                 | Some(Token::LogicalNeq)
                 | Some(Token::LogicalAnd)
-                | Some(Token::LogicalOr) => Ok(ASTNode::Op {
-                    lhs: primary.clone(),
+                | Some(Token::LogicalOr) => ASTNode::Op {
+                    lhs: primary,
                     op: self.next().unwrap(), // safety: peek
                     rhs: self
                         .parse_expr(None)
                         .context("failed to parse member of op")?,
                 }
-                .into()),
+                .into(),
 
                 // function calls
-                Some(Token::ParenOpen) => self.parse_call_fn(primary.clone()),
+                Some(Token::ParenOpen) => self.parse_call_fn(primary)?,
 
                 // indexes
-                Some(Token::BracketOpen) => self.parse_index(primary.clone()),
+                Some(Token::BracketOpen) => self.parse_index(primary)?,
 
                 // deref operations
-                Some(Token::Dot) => self.parse_deref(primary.clone()),
+                Some(Token::Dot) => self.parse_deref(primary)?,
 
                 // assignments
-                Some(Token::Equal) => self.parse_assignment(primary.clone()),
+                Some(Token::Equal) => self.parse_assignment(primary)?,
 
                 // break for all others
                 Some(Token::Endl) | Some(Token::BlockStart) | None => {
@@ -423,8 +423,6 @@ impl Parser {
                     break;
                 }
             };
-
-            primary = result?;
         }
 
         Ok(primary)
@@ -435,16 +433,19 @@ impl Parser {
         match self.peek() {
             // process negative numbers
             Some(Token::Sub) => {
-                let next = self.peek_n(1).unwrap().to_owned();
-                if let Token::Number(value) = next {
-                    // consume both values
-                    self.next();
-                    self.next();
+                if let Some(next) = self.peek_n(1) {
+                    if let Token::Number(value) = *next {
+                        // consume both values
+                        self.next();
+                        self.next();
 
-                    // negate literal and return
-                    Ok(ASTNode::Literal(Token::Number(-(value.to_owned()))).into())
+                        // negate literal and return
+                        Ok(ASTNode::Literal(Token::Number(-value)).into())
+                    } else {
+                        bail!("expected number after '-', found {:?}", next);
+                    }
                 } else {
-                    bail!("expected number after '-', found {:?}", self.peek());
+                    bail!("expected number after '-', found EOF");
                 }
             }
 
@@ -466,7 +467,7 @@ impl Parser {
                 // consumes the `!` and creates a one-sided operator
                 self.next();
                 Ok(ASTNode::Op {
-                    lhs: self.parse_expr(None).unwrap(),
+                    lhs: self.parse_expr(None).context("failed to parse logical not expression")?,
                     op: Token::LogicalNot,
                     rhs: ASTNode::Literal(Token::Undefined).into(),
                 }
@@ -485,7 +486,7 @@ impl Parser {
                 bail!("invalid primary: EOF");
             }
             _ => {
-                bail!("invalid primary '{:?}'", self.peek().unwrap());
+                bail!("invalid primary '{:?}'", self.peek());
             }
         }
     }
