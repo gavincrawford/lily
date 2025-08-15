@@ -163,10 +163,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         LogicalLe => Bool(l <= r)
                     );
 
-                    // string concatenation
+                    // bi-directional string concatenation
                     opmatch!(
                         match op, &*a, &*b => Str(l), r if
                         Add => Str(l.clone() + &*format!("{r}"))
+                    );
+                    opmatch!(
+                        match op, &*a, &*b => l, Str(r) if
+                        Add => Str(format!("{l}") + &*r.clone())
                     );
 
                     // and & or

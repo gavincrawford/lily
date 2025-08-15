@@ -93,7 +93,9 @@ test!(string_index => (
 test!(string_concat => (
     str_concat := "abcd",
     num_concat := "123",
-    char_concat := "xyz"
+    num_concat_reverse := "123",
+    char_concat := "xyz",
+    char_concat_reverse := "xyz"
 ));
 
 test!(nested_imports => (
