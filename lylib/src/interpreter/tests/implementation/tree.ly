@@ -1,4 +1,4 @@
-struct Node do
+struct Node
   let l = -1
   let r = -1
   let v = 0

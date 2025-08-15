@@ -1,4 +1,4 @@
-struct Calculator do
+struct Calculator
   let last = -1
 
   func add l r do

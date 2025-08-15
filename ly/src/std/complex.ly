@@ -1,4 +1,4 @@
-struct Complex do
+struct Complex
   let re = 0
   let im = 0
 

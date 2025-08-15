@@ -1,4 +1,4 @@
-struct DefinedConstructor do
+struct DefinedConstructor
   func DefinedConstructor x y do
     a = x
     b = y
@@ -7,7 +7,7 @@ struct DefinedConstructor do
   let b = 0
 end
 
-struct DefaultConstructor do
+struct DefaultConstructor
   let value = 0
 end
 

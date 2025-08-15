@@ -140,7 +140,7 @@ fn import() {
 #[test]
 fn structs() {
     parse_eq!(
-        "struct Number do; let value = 0; end; let instance = new Number();";
+        "struct Number; let value = 0; end; let instance = new Number();";
         node!(struct Number => block!(
             node!(declare value => lit!(0))
         )),

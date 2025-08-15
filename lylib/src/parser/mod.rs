@@ -247,7 +247,7 @@ impl Parser {
         self.expect(Token::Struct)?;
         match self.next() {
             Some(Token::Identifier(name)) => {
-                self.expect(Token::BlockStart)?;
+                self.expect(Token::Endl)?;
                 Ok(ASTNode::Struct {
                     id: name.into(),
                     body: self.parse()?,
