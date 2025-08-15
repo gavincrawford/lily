@@ -19,18 +19,23 @@ pub enum IDKind {
     },
 }
 
-impl From<&usize> for ID {
-    fn from(value: &usize) -> ID {
+pub(crate) trait AsID {
+    /// Converts into an `ID` type.
+    fn as_id(self) -> ID;
+}
+
+impl AsID for usize {
+    fn as_id(self) -> ID {
         ID {
-            id: IDKind::Literal(*value),
+            id: IDKind::Literal(self),
         }
     }
 }
 
-impl From<usize> for ID {
-    fn from(value: usize) -> ID {
+impl AsID for &usize {
+    fn as_id(self) -> ID {
         ID {
-            id: IDKind::Literal(value),
+            id: IDKind::Literal(*self),
         }
     }
 }

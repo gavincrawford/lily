@@ -1,6 +1,6 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
-use crate::interpreter::Variable;
+use crate::interpreter::{AsID, Variable};
 use crate::lexer::{Lexer, Token};
 use anyhow::{bail, Context, Result};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
@@ -246,10 +246,10 @@ impl Parser {
     fn parse_decl_struct(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Struct)?;
         match self.next() {
-            Some(Token::Identifier(name)) => {
+            Some(Token::Identifier(sym)) => {
                 self.expect(Token::Endl)?;
                 Ok(ASTNode::Struct {
-                    id: name.into(),
+                    id: sym.as_id(),
                     body: self.parse()?,
                 }
                 .into())
@@ -276,7 +276,7 @@ impl Parser {
             self.expect(Token::BlockStart)?;
 
             Ok(ASTNode::Function {
-                id: sym.into(),
+                id: sym.as_id(),
                 body: self.parse().context("failed to parse function body")?,
                 arguments,
             }
@@ -467,7 +467,9 @@ impl Parser {
                 // consumes the `!` and creates a one-sided operator
                 self.next();
                 Ok(ASTNode::Op {
-                    lhs: self.parse_expr(None).context("failed to parse logical not expression")?,
+                    lhs: self
+                        .parse_expr(None)
+                        .context("failed to parse logical not expression")?,
                     op: Token::LogicalNot,
                     rhs: ASTNode::Literal(Token::Undefined).into(),
                 }

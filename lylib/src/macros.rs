@@ -110,7 +110,7 @@ macro_rules! node {
     };
     (func $fn:tt($($arg:tt),*) => $body:expr) => {
         ASTNode::Function {
-            id: intern!(stringify!($fn)).into(),
+            id: intern!(stringify!($fn)).as_id(),
             arguments: vec![$(intern!(stringify!($arg))),*],
             body: $body,
         }.into()
@@ -130,7 +130,7 @@ macro_rules! node {
     // structures
     (struct $id:tt => $body:expr) => {
         ASTNode::Struct {
-            id: intern!(stringify!($id)).into(),
+            id: intern!(stringify!($id)).as_id(),
             body: $body,
         }.into()
     };

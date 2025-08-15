@@ -85,9 +85,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     fn execute_expr(&mut self, statement: Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
         match &*statement {
             ASTNode::Literal(ref t) => {
-                if let Token::Identifier(identifier) = t {
+                if let Token::Identifier(sym) = t {
                     // if this literal is an identifier, return the internal value
-                    if let Variable::Owned(var) = self.get(&identifier.into())? {
+                    if let Variable::Owned(var) = self.get(&sym.as_id())? {
                         return Ok(Some(var.into()));
                     }
                     Ok(None)
@@ -208,19 +208,19 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::FunctionCall { target, arguments } => {
                 // get target variable and check if we need to set instance context
                 let (variable, instance_context) = match &**target {
-                    ASTNode::Literal(Token::Identifier(id)) => (self.get(&id.into())?, None),
+                    ASTNode::Literal(Token::Identifier(sym)) => (self.get(&sym.as_id())?, None),
                     ASTNode::Deref { parent, child: _ } => {
                         let id = self.node_to_id(target.clone())?;
                         let variable = self.get(&id)?;
 
                         // Check if this is an instance method call
                         let instance_context = match &**parent {
-                            ASTNode::Literal(Token::Identifier(parent_id)) => {
+                            ASTNode::Literal(Token::Identifier(parent_sym)) => {
                                 // Try to get the parent variable, but don't fail if it doesn't exist
                                 // We need to handle this case because imported modules don't add
                                 // context *here*, they allow access to it through recursive
                                 // resolution in `resolve_access_target`
-                                if let Ok(parent_var) = self.get(&parent_id.into()) {
+                                if let Ok(parent_var) = self.get(&parent_sym.as_id()) {
                                     match (&parent_var, &variable) {
                                         (
                                             Variable::Owned(ASTNode::Instance { .. }),

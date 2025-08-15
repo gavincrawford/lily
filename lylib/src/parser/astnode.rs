@@ -1,5 +1,5 @@
 use super::*;
-use crate::interpreter::{IDKind, MemoryInterface, SVTable, Variable, ID};
+use crate::interpreter::{AsID, IDKind, MemoryInterface, SVTable, Variable, ID};
 use std::{cell::RefCell, fmt::Display};
 
 #[derive(Debug, PartialEq, Clone)]
@@ -116,7 +116,7 @@ impl ASTNode {
                             // if this field is literal, add it, bail otherwise
                             if let ASTNode::Literal(Token::Identifier(variable)) = &**target {
                                 default_fields.push((
-                                    variable.into(),
+                                    variable.as_id(),
                                     Variable::Owned(ASTNode::inner_to_owned(value)),
                                 ));
                             } else {

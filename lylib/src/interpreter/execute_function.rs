@@ -16,10 +16,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             // push arguments
             assert_eq!(call_args.len(), fn_args.len());
             self.scope_id += 1;
-            for (idx, arg) in fn_args.iter().enumerate() {
+            for (idx, arg_sym) in fn_args.iter().enumerate() {
                 let arg_expr = call_args.get(idx).unwrap(); // safety: assertion
                 self.declare(
-                    &arg.into(),
+                    &arg_sym.as_id(),
                     Variable::Owned(ASTNode::inner_to_owned(arg_expr)),
                 )?;
             }
