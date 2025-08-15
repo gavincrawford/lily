@@ -28,10 +28,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         // print
         exfn!(print, |value; stdout, _stdin| {
             match &**value {
-                ASTNode::Literal(Token::Str(s)) => writeln!(stdout, "{s}"),
-                ASTNode::Literal(Token::Number(n)) => writeln!(stdout, "{n}"),
-                ASTNode::Literal(Token::Char(c)) => writeln!(stdout, "{c}"),
-                ASTNode::Literal(Token::Bool(b)) => writeln!(stdout, "{b}"),
+                ASTNode::Literal(token) => writeln!(stdout, "{token}"),
                 other => writeln!(stdout, "{other:?}"),
             }?;
             Ok(None)
