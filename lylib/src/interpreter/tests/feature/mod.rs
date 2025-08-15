@@ -91,7 +91,9 @@ test!(string_index => (
 ));
 
 test!(string_concat => (
-    concatenated := "abcd"
+    str_concat := "abcd",
+    num_concat := "123",
+    char_concat := "xyz"
 ));
 
 test!(nested_imports => (

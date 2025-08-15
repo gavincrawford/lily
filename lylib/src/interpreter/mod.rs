@@ -148,7 +148,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         };
                     }
 
-                    // operators for numbers on both sides
+                    // math & numeric equality
                     opmatch!(
                         match op, &*a, &*b => Number(l), Number(r) if
                         Add => Number(l + r),
@@ -163,10 +163,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         LogicalLe => Bool(l <= r)
                     );
 
-                    // operators for strings on both sides
+                    // string concatenation
                     opmatch!(
-                        match op, &*a, &*b => Str(l), Str(r) if
-                        Add => Str(l.clone() + r)
+                        match op, &*a, &*b => Str(l), r if
+                        Add => Str(l.clone() + &*format!("{r}"))
                     );
 
                     // and & or
