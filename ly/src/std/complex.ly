@@ -25,9 +25,9 @@ struct Complex
   end
 
   func div other do
-    let denom = (other.re ^ 2) + (other.im ^ 2)
-    let new_re = ((re * other.re) + (im * other.im)) / denom
-    let new_im = ((im * other.re) - (re * other.im)) / denom
+    let denom = other.re ^ 2 + other.im ^ 2
+    let new_re = (re * other.re + im * other.im) / denom
+    let new_im = (im * other.re - re * other.im) / denom
     re = new_re
     im = new_im
   end
