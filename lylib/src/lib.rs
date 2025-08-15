@@ -1,13 +1,31 @@
+//!  # Lily
+//!  ## Running a Buffer
+//!  To run a buffer, use the configuration struct:
+/// ```
+/// use lylib::LyConfig;
+/// use std::io::{stdin, stdout};
+/// # fn main() {
+/// let cfg = LyConfig::new()
+///     .execute("print(\"hello world!\")", stdout(), stdin());
+/// # }
+/// ```
+
+// Export macros crate-wide
 #[macro_use]
 mod macros;
 
+// Re-export anyhow
+pub use anyhow;
+
+// Expose config factory
 mod execute;
 pub use execute::LyConfig;
+
+// Internals
 pub mod interner;
 pub mod interpreter;
 pub mod lexer;
 pub mod parser;
-pub use anyhow;
 
 use crate::interner::StringInterner;
 use anyhow::Result;
