@@ -61,14 +61,20 @@ fn math() {
     parse_eq!(
         "let a = (1 + 1) + (1 + 1); let b = 1 + 2 - 3 * 4 / 5;";
         node!(declare a => node!(op node!(op lit!(1), Add, lit!(1)), Add, node!(op lit!(1), Add, lit!(1)))),
-        node!(declare b => node!(op lit!(1), Add, node!(op lit!(2), Sub, node!(op lit!(3), Mul, node!(op lit!(4), Div, lit!(5))))))
+        node!(declare b => node!(op lit!(1), Add, node!(op lit!(2), Sub, node!(op node!(op lit!(3), Mul, lit!(4)), Div, lit!(5)))))
     );
 }
 
 #[test]
 fn comparisons() {
     parse_eq!(
-        "let a = 100 < 200; let b = 100 <= 200; let c = 200 > 100; let d = 200 >= 100; let e = !true; let f = true && false; let g = true || false;";
+        "let a = 100 < 200;
+        let b = 100 <= 200;
+        let c = 200 > 100;
+        let d = 200 >= 100;
+        let e = !true;
+        let f = true && false;
+        let g = true || false;";
         node!(declare a => node!(op lit!(100), LogicalL, lit!(200))),
         node!(declare b => node!(op lit!(100), LogicalLe, lit!(200))),
         node!(declare c => node!(op lit!(200), LogicalG, lit!(100))),
@@ -76,6 +82,38 @@ fn comparisons() {
         node!(declare e => node!(op lit!(true), LogicalNot, lit!(Token::Undefined))),
         node!(declare f => node!(op lit!(true), LogicalAnd, lit!(false))),
         node!(declare g => node!(op lit!(true), LogicalOr, lit!(false)))
+    );
+}
+
+#[test]
+fn precedence() {
+    parse_eq!(
+        "let a = 1 + 1 == 4 / 2;
+        let b = 2 * 3 + 4 * 5;
+        let c = 2 + 3 * 4 + 5;
+        let d = true && false || true;
+        let e = 1 < 2 && 3 > 2;
+        let f = 2 ^ 3 * 4;
+        let g = a.x + b.y;";
+
+        // Test that comparison has lower precedence than arithmetic
+        node!(declare a => node!(op node!(op lit!(1), Add, lit!(1)), LogicalEq, node!(op lit!(4), Div, lit!(2)))),
+
+        // Test that multiplication has higher precedence than addition
+        node!(declare b => node!(op node!(op lit!(2), Mul, lit!(3)), Add, node!(op lit!(4), Mul, lit!(5)))),
+
+        // Test mixed precedence
+        node!(declare c => node!(op lit!(2), Add, node!(op node!(op lit!(3), Mul, lit!(4)), Add, lit!(5)))),
+
+        // Logical AND has higher precedence than OR
+        node!(declare d => node!(op node!(op lit!(true), LogicalAnd, lit!(false)), LogicalOr, lit!(true))),
+
+        // Comparisons have higher precedence than logical AND
+        node!(declare e => node!(op node!(op lit!(1), LogicalL, lit!(2)), LogicalAnd, node!(op lit!(3), LogicalG, lit!(2)))),
+
+        // Power & deref have highest precedence
+        node!(declare f => node!(op node!(op lit!(2), Pow, lit!(3)), Mul, lit!(4))),
+        node!(declare g => node!(op node!(a.x), Add, node!(b.y)))
     );
 }
 

@@ -55,7 +55,7 @@ macro_rules! block {
 /// Shorthand for all AST nodes. Used for testing.
 #[cfg(test)]
 macro_rules! node {
-    // ops, in two formats
+    // operators
     (op $lhs:expr, $op:expr, $rhs:expr) => {
         Rc::new(ASTNode::Op {
             lhs: $lhs,

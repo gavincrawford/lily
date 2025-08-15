@@ -63,6 +63,20 @@ impl Parser {
         }
     }
 
+    /// Returns the precedence level of an operator (higher number = higher precedence)
+    fn get_precedence(op: &Token) -> u8 {
+        match op {
+            Token::LogicalOr => 1,
+            Token::LogicalAnd => 2,
+            Token::LogicalEq | Token::LogicalNeq => 3,
+            Token::LogicalL | Token::LogicalLe | Token::LogicalG | Token::LogicalGe => 4,
+            Token::Add | Token::Sub => 5,
+            Token::Mul | Token::Div | Token::Floor => 6,
+            Token::Pow => 7,
+            _ => 0,
+        }
+    }
+
     /// Parses until a block end is found. (EOF, return, etc.)
     pub fn parse(&mut self) -> Result<Rc<ASTNode>> {
         self.parse_with_imports(vec![])
@@ -377,7 +391,7 @@ impl Parser {
                 }
             }
 
-            // match operator
+            // match operator with precedence handling
             primary = match self.peek() {
                 // math and logical operators
                 Some(Token::Add)
@@ -393,14 +407,18 @@ impl Parser {
                 | Some(Token::LogicalEq)
                 | Some(Token::LogicalNeq)
                 | Some(Token::LogicalAnd)
-                | Some(Token::LogicalOr) => ASTNode::Op {
-                    lhs: primary,
-                    op: self.next().unwrap(), // safety: peek
-                    rhs: self
-                        .parse_expr(None)
-                        .context("failed to parse member of op")?,
+                | Some(Token::LogicalOr) => {
+                    let op = self.next().unwrap(); // safety: peek
+                    let rhs = self
+                        .parse_operator(Self::get_precedence(&op))
+                        .context("failed to parse high precedence operand")?;
+                    ASTNode::Op {
+                        lhs: primary,
+                        op,
+                        rhs,
+                    }
+                    .into()
                 }
-                .into(),
 
                 // function calls
                 Some(Token::ParenOpen) => self.parse_call_fn(primary)?,
@@ -426,6 +444,69 @@ impl Parser {
         }
 
         Ok(primary)
+    }
+
+    /// Parses operators with precedence climbing
+    fn parse_operator(&mut self, min_precedence: u8) -> Result<Rc<ASTNode>> {
+        // Expand left-hand side first
+        let mut left = match self.peek() {
+            Some(Token::ParenOpen) => {
+                self.next();
+                let expr = self
+                    .parse_expr(Some(Token::ParenClose))
+                    .context("failed to parse parenthesised expression")?;
+                expr
+            }
+            _ => self
+                .parse_primary()
+                .context("failed to parse primary in precedence expr")?,
+        };
+
+        // Handle high precedence operations like deref, function calls, and indexing
+        loop {
+            match self.peek() {
+                Some(Token::Dot) => {
+                    left = self.parse_deref(left)?;
+                }
+                Some(Token::ParenOpen) => {
+                    left = self.parse_call_fn(left)?;
+                }
+                Some(Token::BracketOpen) => {
+                    left = self.parse_index(left)?;
+                }
+                _ => break,
+            }
+        }
+
+        while let Some(next) = self.peek() {
+            // If the precedence of the `peek`ed token is lower than the minimum, break
+            // This means we've gotten to a point where the next token does *not* take precedence
+            if Self::get_precedence(next) < min_precedence {
+                break;
+            }
+
+            // Check for non-operator tokens that should break the precedence parsing
+            match next {
+                Token::Equal | Token::Endl | Token::BlockStart => break,
+                _ => {}
+            }
+
+            // Evaluate right side recursively, iterating precedence each time. This effectively
+            // groups higher precedence operations that are *after* this one.
+            let op = self.next().unwrap();
+            let right = self
+                .parse_operator(Self::get_precedence(&op) + 1)
+                .context("failed to parse right operand")?;
+
+            left = ASTNode::Op {
+                lhs: left,
+                op,
+                rhs: right,
+            }
+            .into();
+        }
+
+        Ok(left)
     }
 
     /// Parses literal primaries.

@@ -29,6 +29,13 @@ test!(operators => (
     c_neq := true
 ));
 
+test!(operators_precedence => (
+    a := 8,
+    b := true,
+    c := true,
+    d := true
+));
+
 test!(return_base_scope => panic);
 
 test!(ifelse => (
