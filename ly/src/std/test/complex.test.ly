@@ -24,11 +24,6 @@ assert((cmplx.re == 0.6) && (cmplx.im == -0.2))
 cmplx = new complex.Complex(3, 4)
 assert(cmplx.mag() == 5)
 
-# TODO: fix
-# # test normalize
-# cmplx = new complex.Complex(3, 4)
-# assert(cmplx.norm() == new complex.Complex(0.6, 0.8))
-#
-# # test string conversion
-# cmplx = new complex.Complex(3, 3)
-# assert("3 + 3i" == cmplx.as_string())
+# test string conversion
+cmplx = new complex.Complex(3, 3)
+assert("3 + 3i" == cmplx.as_string())

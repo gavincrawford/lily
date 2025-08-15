@@ -39,13 +39,4 @@ struct Complex do
   func mag do
     return ((re ^ 2) + (im ^ 2)) ^ 0.5
   end
-
-  func norm do
-    let magnitude = mag()
-    if magnitude == 0 do
-      return new Complex(0, 0)
-    else
-      return new Complex(re / magnitude, im / magnitude)
-    end
-  end
 end
