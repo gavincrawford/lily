@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
 use lylib::{
     interpreter::Interpreter,
     lexer::Lexer,
@@ -27,17 +27,25 @@ fn interpret(ast: Rc<ASTNode>) {
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("fibonacci", |b| {
-        b.iter(|| interpret(ast!("../src/interpreter/tests/implementation/fibonacci.ly")))
+        b.iter_batched(
+            || ast!("../src/interpreter/tests/implementation/fibonacci.ly"),
+            |ast| interpret(ast),
+            BatchSize::SmallInput,
+        )
     });
     c.bench_function("matrix rotation", |b| {
-        b.iter(|| {
-            interpret(ast!(
-                "../src/interpreter/tests/implementation/matrix_rotation.ly"
-            ))
-        })
+        b.iter_batched(
+            || ast!("../src/interpreter/tests/implementation/matrix_rotation.ly"),
+            |ast| interpret(ast),
+            BatchSize::SmallInput,
+        )
     });
     c.bench_function("tree", |b| {
-        b.iter(|| interpret(ast!("../src/interpreter/tests/implementation/tree.ly")))
+        b.iter_batched(
+            || ast!("../src/interpreter/tests/implementation/tree.ly"),
+            |ast| interpret(ast),
+            BatchSize::SmallInput,
+        )
     });
 }
 
