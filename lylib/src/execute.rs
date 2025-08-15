@@ -9,6 +9,21 @@ use std::{
 };
 
 /// Lily configuration.
+/// Use this struct to configure & run the interpreter.
+/// # Example
+/// ```
+/// use lylib::LyConfig;
+/// use std::io::{stdin, stdout};
+/// # fn main() {
+/// let cfg = LyConfig::new()
+///     .debug_parser(false) // disable/enable AST debugger
+///     .debug_lexer(false) // disable/enable lexer debugger
+///     .include_as("math", "func add a b do return a + b end;") // add imported code
+///     .execute("let result = math.add(1, 2);", stdout(), stdin()); // run buffer with stdin/out
+/// # }
+/// ```
+/// This example adds an included file under module name "math", which you can see is available
+/// when the provided buffer runs. This is useful for integrating Lily into existing applications.
 pub struct LyConfig {
     /// Files to include during parsing, if applicable.
     /// Each value must be a tuple in which the values coorespond to `(module alias, module source)`.
