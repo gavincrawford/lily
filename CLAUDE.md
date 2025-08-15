@@ -20,7 +20,7 @@ cargo build -p ly              # Build CLI only
 
 ### Testing
 ```bash
-cargo test --verbose           # Run all tests
+cargo test --verbose           # Run all tests (verbose)
 cargo test -p lylib            # Run library tests only
 cargo test [TESTNAME]          # Run specific test containing TESTNAME
 ```
@@ -32,9 +32,10 @@ cargo bench                    # Run all benchmarks (criterion-based)
 
 ### Running Lily Programs
 ```bash
-cargo run -- <file.ly>                # Run a Lily program
-cargo run -- <file.ly> --nostd        # Run without standard library
-cargo run -- <file.ly> --debugast     # Debug mode - prints AST during execution
+cargo run -- <file.ly>                 # Run a Lily program
+cargo run -- <file.ly> --no-std        # Run without standard library
+cargo run -- <file.ly> --debug-parser  # Debug mode - prints AST during execution
+cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execution
 ```
 
 ## Architecture
@@ -92,11 +93,6 @@ The project uses an extensive macro system (`lylib/src/macros.rs`) to simplify A
 - **`test!()`** - Comprehensive test macro with two modes:
   - Variable equality: `test!(filename => (var := expected_value))`
   - Output testing: `test!(filename => "expected output")`
-
-### Test Assertion Macros
-
-- **`var_eq_literal!()`** - Compares interpreter variables with literal tokens
-- **`var_eq!()`** - Compares interpreter variables with AST nodes
 
 ### Built-in Function Macro
 
