@@ -393,21 +393,8 @@ impl Parser {
 
             // match operator with precedence handling
             primary = match self.peek() {
-                // math and logical operators
-                Some(Token::Add)
-                | Some(Token::Sub)
-                | Some(Token::Mul)
-                | Some(Token::Div)
-                | Some(Token::Floor)
-                | Some(Token::Pow)
-                | Some(Token::LogicalL)
-                | Some(Token::LogicalLe)
-                | Some(Token::LogicalG)
-                | Some(Token::LogicalGe)
-                | Some(Token::LogicalEq)
-                | Some(Token::LogicalNeq)
-                | Some(Token::LogicalAnd)
-                | Some(Token::LogicalOr) => {
+                // operators
+                Some(token) if token.is_operator() => {
                     let op = self.next().unwrap(); // safety: peek
                     let rhs = self
                         .parse_operator(Self::get_precedence(&op))
@@ -531,10 +518,7 @@ impl Parser {
             }
 
             // literals
-            Some(Token::Number(_))
-            | Some(Token::Str(_))
-            | Some(Token::Bool(_))
-            | Some(Token::Char(_)) => {
+            Some(t) if t.is_literal() => {
                 Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
             }
 
