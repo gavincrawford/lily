@@ -40,14 +40,23 @@ impl AsID for &usize {
     }
 }
 
-impl ID {
-    /// Creates a new ID from a string, interning it in the process.
-    pub fn from_str(string: impl Into<String>) -> Self {
-        Self {
-            id: IDKind::Literal(intern!(string.into())),
+impl AsID for String {
+    fn as_id(self) -> ID {
+        ID {
+            id: IDKind::Literal(intern!(self)),
         }
     }
+}
 
+impl AsID for &'static str {
+    fn as_id(self) -> ID {
+        ID {
+            id: IDKind::Literal(intern!(self)),
+        }
+    }
+}
+
+impl ID {
     /// Gets the inner `IDKind` of this identifier.
     pub fn get_kind(&self) -> IDKind {
         self.id.to_owned()

@@ -12,8 +12,7 @@ use crate::{
 macro_rules! var_eq {
     ($interpreter:expr, $id:tt, $node:expr) => {
         let (got, expected) = (
-            // TODO: I think we should write an Into for strings, instead of this helper
-            $interpreter.get(&ID::from_str(stringify!($id))).unwrap(),
+            $interpreter.get(&stringify!($id).as_id()).unwrap(),
             Variable::Owned($node).into(),
         );
         if got != expected {
