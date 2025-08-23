@@ -17,6 +17,7 @@ pub struct SVTable {
 
 impl SVTable {
     /// Creates a new scoped-variable table with a default scope.
+    #[inline]
     pub fn new() -> Self {
         Self {
             table: vec![FxHashMap::default()],
@@ -25,21 +26,25 @@ impl SVTable {
     }
 
     /// Returns the iterator to the internal list of frames.
+    #[inline]
     pub fn iter(&self) -> Iter<'_, FxHashMap<usize, Rc<RefCell<Variable>>>> {
         self.table.iter()
     }
 
     /// Returns the inner list of frames.
+    #[inline]
     pub fn inner(&self) -> &Vec<FxHashMap<usize, Rc<RefCell<Variable>>>> {
         &self.table
     }
 
     /// Returns the inner list of frames, mutable.
+    #[inline]
     pub fn inner_mut(&mut self) -> &mut Vec<FxHashMap<usize, Rc<RefCell<Variable>>>> {
         &mut self.table
     }
 
     /// Adds a new module. Returns a reference to the newly created module.
+    #[inline]
     pub fn add_module(&mut self, name: usize) -> Rc<RefCell<SVTable>> {
         self.modules
             .entry(name)
@@ -48,6 +53,7 @@ impl SVTable {
     }
 
     /// Gets a module by name. Returns an immutable reference to the module if found.
+    #[inline]
     pub fn get_module(&self, name: usize) -> Result<Rc<RefCell<SVTable>>> {
         self.modules
             .get(&name)
@@ -56,6 +62,7 @@ impl SVTable {
     }
 
     /// Adds a new scope.
+    #[inline]
     pub fn add_scope(&mut self) {
         self.table.push(FxHashMap::default());
     }
