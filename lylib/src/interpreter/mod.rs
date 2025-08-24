@@ -264,14 +264,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                     // this branch should trigger on raw, local functions
                     Variable::Function(function) => {
-                        // if we have an instance context, set it as the module
-                        let temp_mod_id =
+                        // if we have an instance context, temporarily switch to its memory
+                        let previous_context =
                             if let Some(Variable::Owned(ASTNode::Instance { svt, .. })) =
                                 instance_context
                             {
-                                let temp = self.context.clone();
+                                let previous = self.context.clone();
                                 self.context = Some(svt);
-                                Some(temp)
+                                Some(previous)
                             } else {
                                 None
                             };
@@ -279,8 +279,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         let result = self.execute_function(&resolved_args, function);
 
                         // restore previous context
-                        if let Some(temp) = temp_mod_id {
-                            self.context = temp;
+                        if let Some(previous) = previous_context {
+                            self.context = previous;
                         }
 
                         result
@@ -294,16 +294,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .create_struct_template()
                                 .context("failed to create structure template")?;
 
-                            // use the new SVT as context for this constructor
+                            // use the new structure's memory as context for constructor
                             let svt = Rc::new(RefCell::new(svt));
-                            let temp = self.context.clone();
+                            let previous_context = self.context.clone();
                             self.context = Some(svt.clone());
 
                             // execute function
                             self.execute_function(&resolved_args, v)?;
 
-                            // reset context to local
-                            self.context = temp;
+                            // restore previous context
+                            self.context = previous_context;
 
                             // return newly made instance
                             Ok(Some(
@@ -474,7 +474,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .context("failed to evaluate return expression")?
                     .context("expected return value")?;
 
-                // if there are indicies, flatten them
+                // if there are references, flatten them
                 let expr = self
                     .resolve_refs(ASTNode::inner_to_owned(&expr))
                     .context("could not flatten references")?;
@@ -483,29 +483,29 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::Module { alias, body } => {
                 if let Some(mod_name) = alias {
-                    // insert named modules using interned ID
-                    let temp = self.context.clone();
-                    if let Some(mod_pointer) = temp.clone() {
-                        self.context = Some(mod_pointer.borrow_mut().add_module(*mod_name));
+                    // create named module and switch context
+                    let previous_context = self.context.clone();
+                    if let Some(current_context) = previous_context.clone() {
+                        self.context = Some(current_context.borrow_mut().add_module(*mod_name));
                     } else {
                         self.context = Some(self.memory.borrow_mut().add_module(*mod_name));
                     }
 
-                    // execute body
+                    // execute module body
                     self.execute(body.clone()).context(format!(
                         "failed to evaluate module '{}'",
                         (*alias).unwrap() // safety: destructuring
                     ))?;
-                    self.context = temp;
+                    self.context = previous_context;
                 } else {
-                    // insert unnamed modules
-                    let temp = self.context.clone();
+                    // execute unnamed module in base scope
+                    let previous_context = self.context.clone();
                     self.context = None;
 
-                    // execute body
+                    // execute module body
                     self.execute(body.clone())
                         .context("failed to evaluate module body")?;
-                    self.context = temp;
+                    self.context = previous_context;
                 }
                 Ok(None)
             }
