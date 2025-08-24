@@ -8,9 +8,31 @@ test!(global_variables => (
 ));
 
 test!(math => (
-    a := 1,
-    b := 2.5,
-    c := 6
+    complex_a := 1,
+    complex_b := 2.5,
+    complex_c := 6,
+    floor_basic := 3,
+    floor_exact := 3,
+    floor_negative := -4,
+    power_basic := 8,
+    power_zero := 1,
+    power_one := 5,
+    power_fraction := 2,
+    zero_addition := 5,
+    zero_subtraction := 10,
+    zero_multiplication := 0,
+    one_multiplication := 8,
+    negative_addition := -2,
+    negative_subtraction := -6,
+    negative_multiplication := -12,
+    negative_division := -4,
+    large_number := 1000000,
+    decimal_precision := 0.30000001192092896,
+    mixed_operations := 9.5,
+    nested_power := 16,
+    floor_with_decimals := 3,
+    power_negative_base := 4,
+    multiple_negatives := 6
 ));
 
 test!(operators => (
