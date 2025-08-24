@@ -81,6 +81,8 @@ test!(indices_assignment => (
     ])
 ));
 
+test!(indices_negative => panic);
+
 test!(indices_nested => (
     nest_0 == node!([lit!(123)]),
     nest_1 := 123
