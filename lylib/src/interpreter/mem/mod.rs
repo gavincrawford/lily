@@ -25,7 +25,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     fn resolve_access_target(&self, id: &ID) -> Result<(Rc<RefCell<dyn MemoryInterface>>, usize)> {
         // get current context (module)
         let mut module: Rc<RefCell<dyn MemoryInterface>> = match &self.context {
-            Some(mod_id) => mod_id.clone(),
+            Some(context) => context.clone(),
             None => self.memory.clone(),
         };
 

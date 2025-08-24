@@ -60,6 +60,20 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         &mut self.output
     }
 
+    /// Executes a closure with a temporary memory context, restoring the previous context after
+    /// execution has completed. Propogates all errors.
+    #[inline]
+    fn with_context<T, F>(&mut self, temp_context: Option<Rc<RefCell<SVTable>>>, f: F) -> T
+    where
+        F: FnOnce(&mut Self) -> T,
+    {
+        let previous_context = self.context.clone();
+        self.context = temp_context;
+        let result = f(self);
+        self.context = previous_context;
+        result
+    }
+
     /// Executes an AST segment, typically the head. Returns `Some` when a return block is reached.
     pub fn execute(&mut self, ast: Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
         if let ASTNode::Block(statements) = &*ast {
@@ -264,26 +278,17 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                     // this branch should trigger on raw, local functions
                     Variable::Function(function) => {
-                        // if we have an instance context, temporarily switch to its memory
-                        let previous_context =
-                            if let Some(Variable::Owned(ASTNode::Instance { svt, .. })) =
-                                instance_context
-                            {
-                                let previous = self.context.clone();
-                                self.context = Some(svt);
-                                Some(previous)
-                            } else {
-                                None
-                            };
-
-                        let result = self.execute_function(&resolved_args, function);
-
-                        // restore previous context
-                        if let Some(previous) = previous_context {
-                            self.context = previous;
+                        if let Some(Variable::Owned(ASTNode::Instance { svt, .. })) =
+                            instance_context
+                        {
+                            // if we found a valid instance context, use it as memory space
+                            self.with_context(Some(svt), |interpreter| {
+                                interpreter.execute_function(&resolved_args, function)
+                            })
+                        } else {
+                            // otherwise, use previously set memory space
+                            self.execute_function(&resolved_args, function)
                         }
-
-                        result
                     }
 
                     // this branch should trigger when constructors are called
@@ -296,14 +301,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                             // use the new structure's memory as context for constructor
                             let svt = Rc::new(RefCell::new(svt));
-                            let previous_context = self.context.clone();
-                            self.context = Some(svt.clone());
 
-                            // execute function
-                            self.execute_function(&resolved_args, v)?;
-
-                            // restore previous context
-                            self.context = previous_context;
+                            self.with_context(Some(svt.clone()), |interpreter| {
+                                interpreter.execute_function(&resolved_args, v)
+                            })?;
 
                             // return newly made instance
                             Ok(Some(
@@ -483,29 +484,26 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::Module { alias, body } => {
                 if let Some(mod_name) = alias {
-                    // create named module and switch context
-                    let previous_context = self.context.clone();
-                    if let Some(current_context) = previous_context.clone() {
-                        self.context = Some(current_context.borrow_mut().add_module(*mod_name));
+                    // create named module and execute in its context
+                    let module_context = if let Some(current_context) = self.context.clone() {
+                        Some(current_context.borrow_mut().add_module(*mod_name))
                     } else {
-                        self.context = Some(self.memory.borrow_mut().add_module(*mod_name));
-                    }
+                        Some(self.memory.borrow_mut().add_module(*mod_name))
+                    };
 
-                    // execute module body
-                    self.execute(body.clone()).context(format!(
-                        "failed to evaluate module '{}'",
-                        (*alias).unwrap() // safety: destructuring
-                    ))?;
-                    self.context = previous_context;
+                    self.with_context(module_context, |interpreter| {
+                        interpreter.execute(body.clone()).context(format!(
+                            "failed to evaluate module '{}'",
+                            (*alias).unwrap() // safety: destructuring
+                        ))
+                    })?;
                 } else {
                     // execute unnamed module in base scope
-                    let previous_context = self.context.clone();
-                    self.context = None;
-
-                    // execute module body
-                    self.execute(body.clone())
-                        .context("failed to evaluate module body")?;
-                    self.context = previous_context;
+                    self.with_context(None, |interpreter| {
+                        interpreter
+                            .execute(body.clone())
+                            .context("failed to evaluate module body")
+                    })?;
                 }
                 Ok(None)
             }
