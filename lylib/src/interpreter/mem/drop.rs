@@ -9,7 +9,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         self.scope_id -= 1;
 
         // remove out of scope variables
-        if let Some(mod_pointer) = &self.mod_id {
+        if let Some(mod_pointer) = &self.context {
             let mut module = mod_pointer.borrow_mut();
             let mut scope_n = 0;
             module.inner_mut().retain(|_| {
@@ -29,7 +29,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
     /// Drops all variables in the current scope.
     pub(crate) fn drop_here(&mut self) {
-        if let Some(mod_pointer) = &self.mod_id {
+        if let Some(mod_pointer) = &self.context {
             let mut module = mod_pointer.borrow_mut();
             if let Some(this_scope) = module.get_scope(self.scope_id) {
                 this_scope.clear();

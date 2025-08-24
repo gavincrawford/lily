@@ -23,8 +23,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Some identifiers reference variables within stacks of modules, and this function resolves
     /// these long chains of reference into the relevant target and variable name.
     fn resolve_access_target(&self, id: &ID) -> Result<(Rc<RefCell<dyn MemoryInterface>>, usize)> {
-        // get relevant module pointer
-        let mut module: Rc<RefCell<dyn MemoryInterface>> = match &self.mod_id {
+        // get current context (module)
+        let mut module: Rc<RefCell<dyn MemoryInterface>> = match &self.context {
             Some(mod_id) => mod_id.clone(),
             None => self.memory.clone(),
         };

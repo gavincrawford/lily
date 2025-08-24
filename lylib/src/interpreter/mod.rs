@@ -21,10 +21,12 @@ pub(crate) use mem::{svtable::SVTable, variable::*, MemoryInterface};
 
 #[derive(Debug)]
 pub struct Interpreter<Out: Write, In: Read> {
-    /// Memory structure. Tracks variables and modules.
+    /// Base-scope memory table. Tracks all locals.
     pub memory: Rc<RefCell<SVTable>>,
-    /// Current module.
-    mod_id: Option<Rc<RefCell<SVTable>>>,
+    /// Current memory context.
+    /// `Some` when interpreter is working with another module's local memory.
+    /// `None` when interpreter is working in base-scope memory.
+    context: Option<Rc<RefCell<SVTable>>>,
     /// Scope level.
     scope_id: usize,
     /// Output buffer. Typically `stdout`.
@@ -37,7 +39,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     pub fn new(input: In, output: Out) -> Self {
         let mut i = Self {
             memory: Rc::new(RefCell::new(SVTable::new())),
-            mod_id: None,
+            context: None,
             scope_id: 0,
             output,
             input,
@@ -267,8 +269,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             if let Some(Variable::Owned(ASTNode::Instance { svt, .. })) =
                                 instance_context
                             {
-                                let temp = self.mod_id.clone();
-                                self.mod_id = Some(svt);
+                                let temp = self.context.clone();
+                                self.context = Some(svt);
                                 Some(temp)
                             } else {
                                 None
@@ -276,9 +278,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                         let result = self.execute_function(&resolved_args, function);
 
-                        // restore previous module context
+                        // restore previous context
                         if let Some(temp) = temp_mod_id {
-                            self.mod_id = temp;
+                            self.context = temp;
                         }
 
                         result
@@ -292,16 +294,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .create_struct_template()
                                 .context("failed to create structure template")?;
 
-                            // use the new structure svt as module for this constructor
+                            // use the new SVT as context for this constructor
                             let svt = Rc::new(RefCell::new(svt));
-                            let temp = self.mod_id.clone();
-                            self.mod_id = Some(svt.clone());
+                            let temp = self.context.clone();
+                            self.context = Some(svt.clone());
 
                             // execute function
                             self.execute_function(&resolved_args, v)?;
 
-                            // reset module ID
-                            self.mod_id = temp;
+                            // reset context to local
+                            self.context = temp;
 
                             // return newly made instance
                             Ok(Some(
@@ -482,11 +484,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Module { alias, body } => {
                 if let Some(mod_name) = alias {
                     // insert named modules using interned ID
-                    let temp = self.mod_id.clone();
+                    let temp = self.context.clone();
                     if let Some(mod_pointer) = temp.clone() {
-                        self.mod_id = Some(mod_pointer.borrow_mut().add_module(*mod_name));
+                        self.context = Some(mod_pointer.borrow_mut().add_module(*mod_name));
                     } else {
-                        self.mod_id = Some(self.memory.borrow_mut().add_module(*mod_name));
+                        self.context = Some(self.memory.borrow_mut().add_module(*mod_name));
                     }
 
                     // execute body
@@ -494,16 +496,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         "failed to evaluate module '{}'",
                         (*alias).unwrap() // safety: destructuring
                     ))?;
-                    self.mod_id = temp;
+                    self.context = temp;
                 } else {
                     // insert unnamed modules
-                    let temp = self.mod_id.clone();
-                    self.mod_id = None;
+                    let temp = self.context.clone();
+                    self.context = None;
 
                     // execute body
                     self.execute(body.clone())
                         .context("failed to evaluate module body")?;
-                    self.mod_id = temp;
+                    self.context = temp;
                 }
                 Ok(None)
             }
