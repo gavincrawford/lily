@@ -94,7 +94,7 @@ impl MemoryInterface for SVTable {
         }
 
         // if no value is found, bail
-        bail!("failed to get owned value {:?}", resolve!(id))
+        bail!("failed to get owned value {:#?}", resolve!(id))
     }
 
     #[inline]
@@ -107,7 +107,7 @@ impl MemoryInterface for SVTable {
         }
 
         // if no value is found, bail
-        bail!("failed to get ref value {:?}", resolve!(id))
+        bail!("failed to get ref value {:#?}", resolve!(id))
     }
 
     #[inline]
@@ -115,7 +115,7 @@ impl MemoryInterface for SVTable {
         match self.modules.get(&id) {
             Some(module) => Ok(module.clone()),
             _ => {
-                bail!("could not find module '{:?}'", resolve!(id))
+                bail!("could not find module '{:#?}'", resolve!(id))
             }
         }
     }
@@ -161,9 +161,9 @@ impl Display for SVTable {
         fn prettify(node: Rc<ASTNode>) -> String {
             match &*node {
                 ASTNode::Literal(Token::Identifier(id)) => resolve!(*id),
-                ASTNode::Literal(token) => format!("{token:?}"),
+                ASTNode::Literal(token) => format!("{token:#?}"),
                 ASTNode::Op { lhs, op, rhs } => format!(
-                    "{} {:?} {}",
+                    "{} {:#?} {}",
                     prettify(lhs.clone()),
                     op,
                     prettify(rhs.clone())
@@ -193,7 +193,7 @@ impl Display for SVTable {
                         .join(", "),
                     prettify(body.clone())
                 ),
-                other => format!("{other:?}"),
+                other => format!("{other:#?}"),
             }
         }
 

@@ -43,8 +43,8 @@ impl From<Rc<ASTNode>> for Variable {
 impl Debug for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Variable::Owned(node) => write!(f, "{node:?}"),
-            Variable::Function(node) | Variable::Type(node) => write!(f, "&{node:?}"),
+            Variable::Owned(node) => write!(f, "{node:#?}"),
+            Variable::Function(node) | Variable::Type(node) => write!(f, "&{node:#?}"),
             Variable::Extern(_) => write!(f, "EXTERN"),
         }
     }
@@ -94,7 +94,7 @@ impl MemoryInterface for Variable {
             let inner = item.borrow().clone();
             Ok(inner)
         } else {
-            bail!("invalid access to variable '{:?}'", self);
+            bail!("invalid access to variable '{:#?}'", self);
         }
     }
 
@@ -103,7 +103,7 @@ impl MemoryInterface for Variable {
             let item = items.get(id).context("index out of bounds")?;
             Ok(item.clone())
         } else {
-            bail!("invalid access to variable '{:?}'", self);
+            bail!("invalid access to variable '{:#?}'", self);
         }
     }
 
@@ -116,7 +116,7 @@ impl MemoryInterface for Variable {
             items.insert(id, value.into());
             Ok(())
         } else {
-            bail!("invalid declaration to variable '{:?}'", self);
+            bail!("invalid declaration to variable '{:#?}'", self);
         }
     }
 
@@ -125,7 +125,7 @@ impl MemoryInterface for Variable {
             *items.get_mut(id).context("index out of bounds")? = value.into();
             Ok(())
         } else {
-            bail!("invalid assignment to variable '{:?}'", self);
+            bail!("invalid assignment to variable '{:#?}'", self);
         }
     }
 }

@@ -35,11 +35,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         },
                     })
                 } else {
-                    bail!("deref child must be an identifier, found {:?}", child);
+                    bail!("deref child must be an identifier, found {:#?}", child);
                 }
             }
             _ => {
-                bail!("cannot convert '{:?}' to ID", node)
+                bail!("cannot convert '{:#?}' to ID", node)
             }
         }
     }
