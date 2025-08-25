@@ -7,16 +7,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Literal(Token::Identifier(id)) => Ok(id.as_id()),
             ASTNode::Index { target, index } => {
                 let parent = self.node_to_id(target.clone())?.get_kind().into();
-                if let ASTNode::Literal(Token::Number(index)) =
-                    &*self.execute_expr(index.clone())?.unwrap()
-                {
-                    // convert numeric index to usize for array access
-                    let member = IDKind::Literal(*index as usize).into();
-                    return Ok(ID {
-                        id: IDKind::Member { parent, member },
-                    });
-                }
-                panic!()
+                let index = self
+                    .execute_expr(index.clone())?
+                    .context("index cannot be undefined")?
+                    .as_index()?;
+                return Ok(ID {
+                    id: IDKind::Member {
+                        parent,
+                        member: IDKind::Literal(index).into(),
+                    },
+                });
             }
             ASTNode::Deref { parent, child } => {
                 // recursively resolve the parent to get its ID

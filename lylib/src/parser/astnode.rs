@@ -104,6 +104,21 @@ impl ASTNode {
         }
     }
 
+    /// Returns `Err` if this index is out of bounds. Otherwise, returns `Ok(idx)`.
+    /// Technically applies to all literal numbers, but should be used to check if an index value
+    /// is within `0 < n < usize::MAX`.
+    pub(crate) fn as_index(&self) -> Result<usize> {
+        if let ASTNode::Literal(Token::Number(n)) = self {
+            if *n < 0. {
+                bail!("index values must be non-negative");
+            } else if *n > usize::MAX as f32 {
+                bail!("index value larger than {}", usize::MAX);
+            }
+            return Ok(*n as usize);
+        }
+        unreachable!("attempted to convert non-numeric type into index");
+    }
+
     /// Create the default SVT for this struct is applicable.
     pub(crate) fn create_struct_template(&self) -> Result<SVTable> {
         if let ASTNode::Struct { id: _, body } = self {

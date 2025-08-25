@@ -404,24 +404,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::Index { target, index } => {
                 // get index as a usize
-                let usize_idx;
-                if let ASTNode::Literal(Token::Number(n)) = &*self
+                let usize_idx = self
                     .execute_expr(index.clone())
                     .context(format!("failed to evaluate index value ({index})"))?
-                    .unwrap()
-                {
-                    // guard numbers outside of range
-                    if *n < 0. {
-                        bail!("index values must be non-negative");
-                    } else if *n > usize::MAX as f32 {
-                        bail!("index value larger than {}", usize::MAX);
-                    }
-
-                    // convert index to usize for later use
-                    usize_idx = *n as usize;
-                } else {
-                    panic!("index must be positive and a number");
-                }
+                    .context("index cannot be undefined")?
+                    .as_index()?;
 
                 // get the target of this index
                 let target = self

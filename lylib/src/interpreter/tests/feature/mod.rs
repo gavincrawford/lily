@@ -103,7 +103,9 @@ test!(indices_assignment => (
     ])
 ));
 
-test!(indices_negative => panic);
+test!(indices_negative_access => panic);
+
+test!(indices_negative_assign => panic);
 
 test!(indices_nested => (
     nest_0 == node!([lit!(123)]),
