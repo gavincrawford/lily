@@ -146,7 +146,9 @@ impl ASTNode {
                             body: _,
                         } => default_fields.push((id.clone(), Variable::Function(node.clone()))),
 
-                        _ => {}
+                        other => {
+                            bail!("unexpected structure field: {other:?}")
+                        }
                     }
                 }
                 let mut svt = SVTable::new();
