@@ -53,6 +53,46 @@ macro_rules! block {
 }
 
 /// Shorthand for all AST nodes. Used for testing.
+/// # Usage
+/// ```
+/// // declare/assign variables
+/// node!(declare var => lit!(1));
+/// node!(assign var => lit!(2));
+///
+/// // operators
+/// node!(op lit!(1), Token::Add, lit!(2));
+///
+/// // conditionals
+/// node!(if lit!(true) => block!(lit!(1)); else => block!(lit!(2)););
+///
+/// // function calls
+/// node!(print(lit!(42)));
+/// node!(math.pow(lit!(2), lit!(3))); // module function call
+///
+/// // function definitions
+/// node!(func add(a, b) => block!(node!(return node!(op ident!("a"), Token::Add, ident!("b")))));
+///
+/// // modules
+/// node!(mod math => block!(node!(func pow(base, exp) => block!())));
+///
+/// // structures
+/// node!(struct Point => block!(node!(declare x => lit!(0)), node!(declare y => lit!(0))));
+///
+/// // lists
+/// node!([lit!(1), lit!(2), lit!(3)]);
+///
+/// // indexing
+/// node!(list[0]); // literal index
+/// node!(list[ident!("i")]); // expression index
+/// node!(index ident!("list"), 0); // explicit index syntax
+///
+/// // dereferencing (accessing properties)
+/// node!(obj.field);
+/// node!(obj.nested.field);
+///
+/// // return statements
+/// node!(return lit!(42));
+/// ```
 #[cfg(test)]
 macro_rules! node {
     // operators
