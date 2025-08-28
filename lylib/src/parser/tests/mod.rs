@@ -57,10 +57,7 @@ fn indices() {
         "let a = list[1][2][3]; let b = (list[1])[2]; let c = list[(1 + 1)];";
         node!(declare a => node!(index node!(index node!(index ident!("list"), 1), 2), 3)),
         node!(declare b => node!(index node!(index ident!("list"), 1), 2)),
-        node!(declare c => ASTNode::Index {
-            target: ident!("list"),
-            index: node!(op lit!(1), Add, lit!(1)),
-        }.into())
+        node!(declare c => node!(list[node!(op lit!(1), Add, lit!(1))]))
     );
 }
 
