@@ -9,7 +9,11 @@ macro_rules! parse_eq {
         (|| {
             let result = Parser::new(Lexer::new().lex($code.into()).unwrap()).parse();
             assert!(result.is_ok(), "Parser failed: {:?}", result);
-            assert_eq!(result.unwrap(), block!($($block),*));
+            let result = result.unwrap(); // saftey ^^^
+            let block = block!($($block),*);
+            if result != block {
+                panic!("expected: {:#?}\ngot: {:#?}", block, result);
+            }
         })()
     };
     ($code:expr, $path:expr; $($block:expr),*) => {
@@ -18,7 +22,11 @@ macro_rules! parse_eq {
             parser.set_pwd($path.into());
             let result = parser.parse();
             assert!(result.is_ok(), "Parser failed: {:?}", result);
-            assert_eq!(result.unwrap(), block!($($block),*));
+            let result = result.unwrap(); // saftey ^^^
+            let block = block!($($block),*);
+            if result != block {
+                panic!("expected: {:#?}\ngot: {:#?}", block, result);
+            }
         })()
     };
 }
