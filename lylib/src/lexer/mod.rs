@@ -16,6 +16,10 @@ enum CaptureMode {
     Comment,
 }
 
+/// The lexer transforms source code text into a sequence of tokens.
+///
+/// The lexer operates in different capture modes to handle various language constructs
+/// such as numbers, strings, comments, and operators.
 pub struct Lexer {
     number_register: String,
     keyword_register: String,

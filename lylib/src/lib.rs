@@ -35,8 +35,15 @@ use std::sync::{Mutex, MutexGuard, OnceLock};
 /// string counterparts.
 static GLOBAL_INTERNER: OnceLock<Mutex<StringInterner>> = OnceLock::new();
 
-/// Fetches a lock of the global interner. If a lock cannot be acquired, this function will return
-/// `Err`. Only one lock should be active at any given time.
+/// Fetches a lock of the global string interner.
+///
+/// The global interner is used throughout the library to deduplicate strings
+/// and provide fast identifier lookups using integer indices.
+///
+/// # Errors
+///
+/// Returns an error if the mutex lock cannot be acquired due to poisoning
+/// or other concurrency issues.
 fn get_global_interner() -> Result<MutexGuard<'static, StringInterner>> {
     if let Ok(mutex_guard) = GLOBAL_INTERNER
         .get_or_init(|| Mutex::new(StringInterner::new()))

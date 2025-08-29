@@ -19,6 +19,7 @@ use std::{
 pub(crate) use id::*;
 pub(crate) use mem::{svtable::SVTable, variable::*, MemoryInterface};
 
+/// The interpreter executes Abstract Syntax Trees (ASTs) and manages program state.
 #[derive(Debug)]
 pub struct Interpreter<Out: Write, In: Read> {
     /// Base-scope memory table. Tracks all locals.
@@ -61,7 +62,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     }
 
     /// Executes a closure with a temporary memory context, restoring the previous context after
-    /// execution has completed. Propogates all errors.
+    /// execution has completed. Propagates all errors.
     #[inline]
     fn with_context<T, F>(&mut self, temp_context: Option<Rc<RefCell<SVTable>>>, f: F) -> T
     where

@@ -9,6 +9,7 @@ pub mod astnode;
 pub use astnode::*;
 mod tests;
 
+/// The parser converts a sequence of tokens into an Abstract Syntax Tree (AST).
 pub struct Parser {
     tokens: Vec<Token>,
     position: usize,
