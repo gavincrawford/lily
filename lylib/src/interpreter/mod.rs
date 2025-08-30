@@ -197,12 +197,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         LogicalOr => Bool(*l || *r)
                     );
 
-                    // not
-                    opmatch!(
-                        match op, &*a, &*b => Bool(l), _ if
-                        LogicalNot => Bool(!l)
-                    );
-
                     // equality
                     opmatch!(
                         match op, &*a, &*b => l, r if
@@ -212,6 +206,32 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     bail!("operator not implemented ({} {:#?} {})", &*a, op, &*b)
                 } else {
                     bail!("failed to evaluate operands")
+                }
+            }
+            ASTNode::UnaryOp { target, op } => {
+                if let Ok(Some(target_result)) = self.execute_expr(target.clone()) {
+                    use Token::*;
+                    match (op, target_result.as_ref()) {
+                        // negative numbers
+                        (Sub, ASTNode::Literal(Number(n))) => {
+                            return Ok(Some(Rc::new(ASTNode::Literal(Number(-n)))));
+                        }
+                        // logical not
+                        (LogicalNot, ASTNode::Literal(Bool(b))) => {
+                            return Ok(Some(Rc::new(ASTNode::Literal(Bool(!b)))));
+                        }
+
+                        // bail for others
+                        _ => {
+                            bail!(
+                                "unsupported unary operation: {:?} on {:?}",
+                                op,
+                                target_result
+                            );
+                        }
+                    }
+                } else {
+                    bail!("failed to evaluate unary operand");
                 }
             }
             ASTNode::Function {

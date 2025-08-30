@@ -104,6 +104,14 @@ macro_rules! node {
         })
     };
 
+    // unary operators
+    (unary $op:expr, $target:expr) => {
+        Rc::new(ASTNode::UnaryOp {
+            target: $target,
+            op: $op,
+        })
+    };
+
     // declarations & assignments
     (declare $id:tt => $val:expr) => {
         node!(declare ident!(stringify!($id)) => $val)

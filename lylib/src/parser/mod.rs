@@ -500,21 +500,36 @@ impl Parser {
     /// Parses literal primaries.
     fn parse_primary(&mut self) -> Result<Rc<ASTNode>> {
         match self.peek() {
-            // process negative numbers
+            // process negative expressions
             Some(Token::Sub) => {
                 if let Some(next) = self.peek_n(1) {
-                    if let Token::Number(value) = *next {
-                        // consume both values
-                        self.next();
-                        self.next();
+                    match *next {
+                        // This is a literal negative
+                        Token::Number(value) => {
+                            // Consume both value and negative operator
+                            self.next();
+                            self.next();
 
-                        // negate literal and return
-                        Ok(ASTNode::Literal(Token::Number(-value)).into())
-                    } else {
-                        bail!("expected number after '-', found {:?}", next);
+                            Ok(ASTNode::Literal(Token::Number(-value)).into())
+                        }
+
+                        // This is a unary negative expression
+                        _ => {
+                            // Consume negative, evaluate target
+                            self.next();
+                            let target = self
+                                .parse_operator(0)
+                                .context("failed to parse unary operand")?;
+
+                            Ok(ASTNode::UnaryOp {
+                                target,
+                                op: Token::Sub,
+                            }
+                            .into())
+                        }
                     }
                 } else {
-                    bail!("expected number after '-', found EOF");
+                    bail!("expected expression after '-', found EOF");
                 }
             }
 
@@ -530,14 +545,13 @@ impl Parser {
 
             // logical not
             Some(Token::LogicalNot) => {
-                // consumes the `!` and creates a one-sided operator
+                // consumes the `!` and creates a unary operator
                 self.next();
-                Ok(ASTNode::Op {
-                    lhs: self
-                        .parse_expr(None)
+                Ok(ASTNode::UnaryOp {
+                    target: self
+                        .parse_operator(Self::get_precedence(&Token::LogicalNot))
                         .context("failed to parse logical not expression")?,
                     op: Token::LogicalNot,
-                    rhs: ASTNode::Literal(Token::Undefined).into(),
                 }
                 .into())
             }

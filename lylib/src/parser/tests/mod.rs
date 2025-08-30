@@ -84,7 +84,7 @@ fn comparisons() {
         node!(declare b => node!(op lit!(100), LogicalLe, lit!(200))),
         node!(declare c => node!(op lit!(200), LogicalG, lit!(100))),
         node!(declare d => node!(op lit!(200), LogicalGe, lit!(100))),
-        node!(declare e => node!(op lit!(true), LogicalNot, lit!(Token::Undefined))),
+        node!(declare e => node!(unary LogicalNot, lit!(true))),
         node!(declare f => node!(op lit!(true), LogicalAnd, lit!(false))),
         node!(declare g => node!(op lit!(true), LogicalOr, lit!(false)))
     );

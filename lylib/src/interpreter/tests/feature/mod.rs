@@ -42,6 +42,7 @@ test!(operators => (
     n_sub := 0,
     n_mul := 8,
     n_div := 8,
+    n_neg := -8,
     b_eq := true,
     b_neq := true,
     b_not := true,

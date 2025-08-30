@@ -59,6 +59,10 @@ pub enum ASTNode {
         op: Token,
         rhs: Rc<ASTNode>,
     },
+    UnaryOp {
+        target: Rc<ASTNode>,
+        op: Token,
+    },
     Return(Rc<ASTNode>),
     Literal(Token),
     List(Vec<Rc<RefCell<Variable>>>),
