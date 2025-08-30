@@ -154,7 +154,7 @@ impl Parser {
             // read the file to be imported to a buffer
             let mut buffer = String::new();
             File::open(&path)
-                .context("failed to created file buffer")?
+                .context("failed to create file buffer")?
                 .read_to_string(&mut buffer)
                 .context("failed to read file data")?;
 

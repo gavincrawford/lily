@@ -119,7 +119,7 @@ impl ASTNode {
         unreachable!("attempted to convert non-numeric type into index");
     }
 
-    /// Create the default SVT for this struct is applicable.
+    /// Create the default SVT for this struct if applicable.
     pub(crate) fn create_struct_template(&self) -> Result<SVTable> {
         if let ASTNode::Struct { id: _, body } = self {
             if let ASTNode::Block(nodes) = &**body {

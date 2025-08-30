@@ -62,7 +62,7 @@ impl PartialEq for Variable {
             (Variable::Owned(a), Variable::Owned(b)) => a == b,
             (Variable::Function(a), Variable::Function(b))
             | (Variable::Type(a), Variable::Type(b)) => a == b,
-            _ => panic!("cannot comapre external variables ({self:?}, {other:?})"),
+            _ => panic!("cannot compare external variables ({self:?}, {other:?})"),
         }
     }
 }
