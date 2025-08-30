@@ -4,7 +4,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Executes a given function with the given arguments.
     pub(crate) fn execute_function(
         &mut self,
-        call_args: &Vec<Rc<ASTNode>>,
+        call_args: &[Rc<ASTNode>],
         function: Rc<ASTNode>,
     ) -> Result<Option<Rc<ASTNode>>> {
         if let ASTNode::Function {

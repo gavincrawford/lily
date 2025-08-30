@@ -51,7 +51,7 @@ impl StringInterner {
         self.strings
             .get(id)
             .map(|s| s.as_str())
-            .unwrap_or_else(|| panic!("Invalid interned string ID: {}", id))
+            .unwrap_or_else(|| panic!("Invalid interned string ID: {id}"))
     }
 }
 

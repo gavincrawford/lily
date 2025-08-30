@@ -95,15 +95,21 @@ impl LyConfig {
             .include
             .iter()
             .map(|(alias, source)| {
-                ASTNode::Module {
-                    alias: *alias,
-                    body: Parser::new(Lexer::new().lex(source.clone().to_string()).unwrap())
-                        .parse()
-                        .unwrap(),
-                }
-                .into()
+                let tokens = Lexer::new()
+                    .lex(source.clone().to_string())
+                    .context("failed to lex included module")?;
+                let body = Parser::new(tokens)
+                    .parse()
+                    .context("failed to parse included module")?;
+                Ok::<Rc<ASTNode>, anyhow::Error>(
+                    ASTNode::Module {
+                        alias: *alias,
+                        body,
+                    }
+                    .into(),
+                )
             })
-            .collect::<Vec<Rc<ASTNode>>>();
+            .collect::<Result<Vec<Rc<ASTNode>>>>()?;
 
         // Parse file
         let mut parser = Parser::new(tokens);

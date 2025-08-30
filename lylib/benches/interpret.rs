@@ -30,21 +30,21 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("fibonacci", |b| {
         b.iter_batched(
             || ast!("../src/interpreter/tests/implementation/fibonacci.ly"),
-            |ast| interpret(ast),
+            interpret,
             BatchSize::LargeInput,
         )
     });
     c.bench_function("matrix rotation", |b| {
         b.iter_batched(
             || ast!("../src/interpreter/tests/implementation/matrix_rotation.ly"),
-            |ast| interpret(ast),
+            interpret,
             BatchSize::LargeInput,
         )
     });
     c.bench_function("tree", |b| {
         b.iter_batched(
             || ast!("../src/interpreter/tests/implementation/tree.ly"),
-            |ast| interpret(ast),
+            interpret,
             BatchSize::LargeInput,
         )
     });

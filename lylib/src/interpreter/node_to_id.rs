@@ -11,12 +11,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .execute_expr(index.clone())?
                     .context("index cannot be undefined")?
                     .as_index()?;
-                return Ok(ID {
+                Ok(ID {
                     id: IDKind::Member {
                         parent,
                         member: IDKind::Literal(index).into(),
                     },
-                });
+                })
             }
             ASTNode::Deref { parent, child } => {
                 // recursively resolve the parent to get its ID

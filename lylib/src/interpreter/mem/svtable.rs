@@ -131,7 +131,7 @@ impl MemoryInterface for SVTable {
         let var_map = self
             .get_scope(scope)
             .context(format!("cannot delcare at scope {scope}",))?;
-        if let Some(_) = var_map.insert(id, Rc::new(RefCell::new(value))) {
+        if var_map.insert(id, Rc::new(RefCell::new(value))).is_some() {
             bail!("variable '{}' already exists", resolve!(id));
         }
         Ok(())

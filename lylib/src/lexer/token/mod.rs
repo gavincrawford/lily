@@ -89,9 +89,6 @@ impl Token {
     /// Returns true if `self` is a literal.
     /// Numbers, strings, chars, and booleans are all literal.
     pub(crate) fn is_literal(&self) -> bool {
-        match self {
-            Token::Number(_) | Token::Str(_) | Token::Char(_) | Token::Bool(_) => true,
-            _ => false,
-        }
+        matches!(self, Token::Number(_) | Token::Str(_) | Token::Char(_) | Token::Bool(_))
     }
 }
