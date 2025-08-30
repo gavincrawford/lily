@@ -1,2 +1,3 @@
 [workspace]
 members = ["lylib", "ly"]
+resolver = "2"
