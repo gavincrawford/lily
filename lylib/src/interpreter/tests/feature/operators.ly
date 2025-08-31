@@ -5,6 +5,10 @@ let n_sub = 1 - 1
 let n_mul = 4 * 2
 let n_div = 16 / 2
 let n_neg = -n_div
+let n_inc = 0
+n_inc++
+let n_dec = 0
+n_dec--
 
 let b_eq = false == false
 let b_neq = false != true

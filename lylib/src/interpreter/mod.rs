@@ -209,29 +209,57 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 }
             }
             ASTNode::UnaryOp { target, op } => {
-                if let Ok(Some(target_result)) = self.execute_expr(target.clone()) {
-                    use Token::*;
-                    match (op, target_result.as_ref()) {
-                        // negative numbers
-                        (Sub, ASTNode::Literal(Number(n))) => {
-                            return Ok(Some(Rc::new(ASTNode::Literal(Number(-n)))));
+                use Token::*;
+                match op {
+                    // increment/decrement operations need special handling
+                    Increment | Decrement => {
+                        // TODO: i'm pretty sure this doesn't work with dot notation or anything
+                        // like that. that's a later fix, though
+                        if let ASTNode::Literal(Token::Identifier(sym)) = &**target {
+                            // get variable
+                            let id = sym.as_id();
+                            if let Variable::Owned(current_value) = self.get(&id)? {
+                                if let ASTNode::Literal(Token::Number(n)) = current_value {
+                                    // get new assignment value
+                                    let new_value = match op {
+                                        Increment => Token::Number(n + 1.0),
+                                        Decrement => Token::Number(n - 1.0),
+                                        _ => unreachable!(),
+                                    };
+                                    self.assign(&id, Variable::Owned(ASTNode::Literal(new_value)))?;
+                                }
+                            }
+                        } else {
+                            bail!("invalid increment/decrement target: {target:?}");
                         }
-                        // logical not
-                        (LogicalNot, ASTNode::Literal(Bool(b))) => {
-                            return Ok(Some(Rc::new(ASTNode::Literal(Bool(!b)))));
-                        }
+                        Ok(None)
+                    }
 
-                        // bail for others
-                        _ => {
-                            bail!(
-                                "unsupported unary operation: {:?} on {:?}",
-                                op,
-                                target_result
-                            );
+                    // other unary operations need the target to be evaluated first
+                    _ => {
+                        if let Ok(Some(target_result)) = self.execute_expr(target.clone()) {
+                            match (op, target_result.as_ref()) {
+                                // negative numbers
+                                (Sub, ASTNode::Literal(Number(n))) => {
+                                    return Ok(Some(Rc::new(ASTNode::Literal(Number(-n)))));
+                                }
+                                // logical not
+                                (LogicalNot, ASTNode::Literal(Bool(b))) => {
+                                    return Ok(Some(Rc::new(ASTNode::Literal(Bool(!b)))));
+                                }
+                                // bail for others
+                                _ => {
+                                    bail!(
+                                        "unsupported unary operation: {:?} on {:?}",
+                                        op,
+                                        target_result
+                                    );
+                                }
+                            }
+                        } else {
+                            bail!("failed to evaluate unary operand");
                         }
                     }
-                } else {
-                    bail!("failed to evaluate unary operand");
                 }
             }
             ASTNode::Function {

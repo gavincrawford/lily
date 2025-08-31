@@ -94,6 +94,22 @@ fn math() {
 }
 
 #[test]
+fn unary() {
+    // TODO: replace other interns with macro, as it wasn't in place when they were written
+    lex_eq!("var++; var--; !var;" =>
+        Increment,
+        Identifier(intern!("var")),
+        Endl,
+        Decrement,
+        Identifier(intern!("var")),
+        Endl,
+        LogicalNot,
+        Identifier(intern!("var")),
+        Endl
+    );
+}
+
+#[test]
 fn logic() {
     lex_eq!("1 == 2; 1 != 2;" =>
         Number(1.),

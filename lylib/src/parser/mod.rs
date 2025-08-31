@@ -74,6 +74,7 @@ impl Parser {
             Token::Add | Token::Sub => 5,
             Token::Mul | Token::Div | Token::Floor => 6,
             Token::Pow => 7,
+            Token::Increment | Token::Decrement => 8,
             _ => 0,
         }
     }
@@ -118,6 +119,10 @@ impl Parser {
             Some(Token::While) => self.parse_while(),
             Some(Token::Identifier(_)) => self.parse_expr(None),
             Some(Token::Return) => self.parse_return(),
+            Some(Token::Increment) | Some(Token::Decrement) => {
+                // safety: destructuring
+                self.parse_operator(Self::get_precedence(self.peek().unwrap()))
+            }
             _ => {
                 bail!("expected statement, found {:?}", self.peek());
             }
@@ -533,17 +538,17 @@ impl Parser {
                 }
             }
 
-            // literals
+            // Literals
             Some(t) if t.is_literal() => {
                 Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
             }
 
-            // identifiers
+            // Identifiers
             Some(Token::Identifier(_)) => {
                 Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
             }
 
-            // logical not
+            // Unaries (!, ++, --)
             Some(Token::LogicalNot) => {
                 // consumes the `!` and creates a unary operator
                 self.next();
@@ -555,11 +560,31 @@ impl Parser {
                 }
                 .into())
             }
+            Some(Token::Increment) => {
+                self.next();
+                Ok(ASTNode::UnaryOp {
+                    target: self
+                        .parse_operator(Self::get_precedence(&Token::Increment))
+                        .context("failed to parse increment expression")?,
+                    op: Token::Increment,
+                }
+                .into())
+            }
+            Some(Token::Decrement) => {
+                self.next();
+                Ok(ASTNode::UnaryOp {
+                    target: self
+                        .parse_operator(Self::get_precedence(&Token::Decrement))
+                        .context("failed to parse decrement expression")?,
+                    op: Token::Decrement,
+                }
+                .into())
+            }
 
-            // lists
+            // Lists
             Some(Token::BracketOpen) => self.parse_list().context("failed to parse list"),
 
-            // structure instances
+            // Structure instances
             Some(Token::New) => self
                 .parse_struct_instance()
                 .context("failed to parse new structure instance"),

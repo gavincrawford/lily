@@ -51,6 +51,8 @@ pub enum Token {
     Div,
     Pow,
     Floor,
+    Increment,
+    Decrement,
 
     // modules
     Import,
@@ -89,6 +91,9 @@ impl Token {
     /// Returns true if `self` is a literal.
     /// Numbers, strings, chars, and booleans are all literal.
     pub(crate) fn is_literal(&self) -> bool {
-        matches!(self, Token::Number(_) | Token::Str(_) | Token::Char(_) | Token::Bool(_))
+        matches!(
+            self,
+            Token::Number(_) | Token::Str(_) | Token::Char(_) | Token::Bool(_)
+        )
     }
 }

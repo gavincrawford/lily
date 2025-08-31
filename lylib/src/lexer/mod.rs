@@ -50,12 +50,24 @@ impl Lexer {
             match mode {
                 CaptureMode::General => {
                     match c {
+                        // TODO this should just get moved out to it's own mode vvv
+
                         // operators
                         '+' => {
-                            tokens.push(Add);
+                            if let Some('+') = chars.peek() {
+                                chars.next();
+                                tokens.push(Increment);
+                            } else {
+                                tokens.push(Add);
+                            }
                         }
                         '-' => {
-                            tokens.push(Sub);
+                            if let Some('-') = chars.peek() {
+                                chars.next();
+                                tokens.push(Decrement);
+                            } else {
+                                tokens.push(Sub);
+                            }
                         }
                         '*' => {
                             tokens.push(Mul);

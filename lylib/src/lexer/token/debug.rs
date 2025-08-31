@@ -38,6 +38,8 @@ impl Debug for Token {
             Token::Mul => write!(f, "Mul"),
             Token::Div => write!(f, "Div"),
             Token::Pow => write!(f, "Pow"),
+            Token::Increment => write!(f, "Increment"),
+            Token::Decrement => write!(f, "Decrement"),
             Token::Floor => write!(f, "Floor"),
             Token::Import => write!(f, "Import"),
             Token::As => write!(f, "As"),
