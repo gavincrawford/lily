@@ -71,6 +71,14 @@ fn math() {
 }
 
 #[test]
+fn math_complex() {
+    parse_eq!(
+        "let a = (1 + (2 / 4)) + (((1))+((1)));";
+        node!(declare a => node!(op node!(op lit!(1), Add, node!(op lit!(2), Div, lit!(4))), Add, node!(op lit!(1), Add, lit!(1))))
+    );
+}
+
+#[test]
 fn comparisons() {
     parse_eq!(
         "let a = 100 < 200;
@@ -129,10 +137,36 @@ fn precedence() {
 #[test]
 fn conditionals() {
     parse_eq!(
-        "if 2 > 1 do; a = b; end;";
+        "if 2 > 1 do; a = b; end;
+        if 1 do; end;
+        if 1 + 1 > 2 do; end;
+        if true do; if true do; end; end;";
         node!(
             if node!(op lit!(2), LogicalG, lit!(1)) =>
                 block!(node!(assign a => ident!("b")));
+            else =>
+                block!();
+        ),
+        node!(
+            if lit!(1) =>
+                block!();
+            else =>
+                block!();
+        ),
+        node!(
+            if node!(op node!(op lit!(1), Add, lit!(1)), LogicalG, lit!(2)) =>
+                block!();
+            else =>
+                block!();
+        ),
+        node!(
+            if lit!(true) =>
+                block!(node!(
+                    if lit!(true) =>
+                        block!();
+                    else =>
+                        block!();
+                ));
             else =>
                 block!();
         )
