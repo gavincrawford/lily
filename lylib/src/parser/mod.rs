@@ -168,13 +168,20 @@ impl Parser {
                 .lex(buffer)
                 .context("failed to lex imported file")?;
 
-            // create a parser and point it to the file's parent directory
+            // create a parser and point it to the file's parent directory temporarily
             let mut parser = Self::new(tokens);
             path.pop();
+            let temp = parser.path.clone();
             parser.set_pwd(path);
 
             // parse the module
             let body = parser.parse().context("failed to parse module body")?;
+
+            // reset old parser working directory
+            parser.set_pwd(temp);
+
+            // TODO: more extensive import tests. will require *lots* of files, though
+
             Ok(ASTNode::Module { alias, body }.into())
         } else {
             bail!("expected path after import");
