@@ -7,8 +7,8 @@ test!(binary_search => (
 
 test!(tree => (
     head := 1,
-    lhs := 2,
-    rhs := -1
+    l_value := 2,
+    r_does_not_exist := -1
 ));
 
 test!(fibonacci => (

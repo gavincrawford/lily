@@ -491,10 +491,30 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
                 }
             }
-            ASTNode::Deref { .. } => {
-                // resolve deref to ID and get the value
-                let deref_id = self.node_to_id(statement)?;
-                let variable = self.get(&deref_id)?;
+            ASTNode::Deref { parent, child } => {
+                // NOTE: we should really just figure out how to `self.get` values with IDs that
+                // represent a function call, but that might get a bit messy
+
+                // get applicable memory entry
+                let variable = if let Ok(deref_id) = self.node_to_id(statement.clone()) {
+                    // for simple derefs, convert directly
+                    self.get(&deref_id)?
+                } else {
+                    // for complex derefs (like `parent().child`), evaluate parts
+                    let parent = self
+                        .execute_expr(parent.clone())?
+                        .context("deref parent cannot be undefined")?;
+
+                    // now handle member access on the result
+                    if let ASTNode::Literal(Token::Identifier(member_id)) = &**child {
+                        match &*parent {
+                            ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_id)?,
+                            _ => bail!("cannot dereference member of {:#?}", parent),
+                        }
+                    } else {
+                        bail!("deref child must be an identifier")
+                    }
+                };
 
                 // convert variable back to AST node
                 match variable {
