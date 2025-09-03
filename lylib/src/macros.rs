@@ -144,18 +144,26 @@ macro_rules! node {
     };
 
     // function calls
-    ($fn:tt($($arg:expr),*)) => {
+    (call $fn:expr) => { // literal calls (`call node!(..)`) *no args*
+        ASTNode::FunctionCall {
+            target: $fn,
+            arguments: vec![],
+        }.into()
+    };
+    ($fn:tt($($arg:expr),*)) => { // implied calls (`a()`)
         ASTNode::FunctionCall {
             target: ident!(stringify!($fn)),
             arguments: vec![$($arg),*],
         }.into()
     };
-    ($first:tt $(. $rest:tt)+ ($($arg:expr),*)) => {
+    ($first:tt $(. $rest:tt)+ ($($arg:expr),*)) => { // deref-fn calls (`a.b.c()`)
         ASTNode::FunctionCall {
             target: node!($first $(. $rest)+),
             arguments: vec![$($arg),*],
         }.into()
     };
+
+    // function declarations
     (func $fn:tt($($arg:tt),*) => $body:expr) => {
         ASTNode::Function {
             id: intern!(stringify!($fn)).as_id(),
@@ -223,8 +231,14 @@ macro_rules! node {
         .into()
     };
 
-    // derefs (a.b.c.d)
-    ($first:tt $(. $rest:tt)+) => {{
+    // derefs
+    (deref $parent:expr, $child:expr) => {{ // literal derefs
+        ASTNode::Deref {
+            parent: $parent,
+            child: $child,
+        }.into()
+    }};
+    ($first:tt $(. $rest:tt)+) => {{ // implied derefs
         let mut current = ident!(stringify!($first));
         $(
             current = ASTNode::Deref {

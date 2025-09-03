@@ -41,6 +41,16 @@ fn decl() {
 }
 
 #[test]
+fn derefs() {
+    parse_eq!(
+        "a.b; a().b; a().b().c;";
+        node!(a.b),
+        node!(deref node!(a()), ident!("b")),
+        node!(deref node!(call node!(deref node!(a()), ident!("b"))), ident!("c"))
+    );
+}
+
+#[test]
 fn lists() {
     parse_eq!(
         "let list = [0, false, 'a']; let value = list[0]; list[0] = 0; list.obj = 0;";
@@ -196,6 +206,22 @@ fn functions() {
             node!(declare y => node!(op ident!("a"), Sub, ident!("b"))),
             node!(return node!(op ident!("x"), Mul, ident!("y")))
         ))
+    );
+}
+
+#[test]
+fn function_calls() {
+    parse_eq!(
+        "a();";
+        node!(a())
+    );
+    parse_eq!(
+        "a().b();";
+        node!(call node!(deref node!(a()), ident!("b")))
+    );
+    parse_eq!(
+        "a().b().c();";
+        node!(call node!(deref node!(call node!(deref node!(a()), ident!("b"))), ident!("c")))
     );
 }
 
