@@ -95,8 +95,15 @@ macro_rules! block {
 /// ```
 #[cfg(test)]
 macro_rules! node {
-    // operators (`op lit!(1), Add, lit!(1)`)
-    (op $lhs:expr, $op:expr, $rhs:expr) => {
+    // operators
+    (op $lhs:literal, $op:expr, $rhs:literal) => { // implied (`op 1, Add, 1`)
+        Rc::new(ASTNode::Op {
+            lhs: lit!($lhs),
+            op: $op,
+            rhs: lit!($rhs),
+        })
+    };
+    (op $lhs:expr, $op:expr, $rhs:expr) => { // literal (`op lit!(1), Add, lit!(1)`)
         Rc::new(ASTNode::Op {
             lhs: $lhs,
             op: $op,

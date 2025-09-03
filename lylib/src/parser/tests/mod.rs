@@ -67,7 +67,7 @@ fn indices() {
         "let a = list[1][2][3]; let b = (list[1])[2]; let c = list[(1 + 1)];";
         node!(declare a => node!(index node!(index node!(index ident!("list"), 1), 2), 3)),
         node!(declare b => node!(index node!(index ident!("list"), 1), 2)),
-        node!(declare c => node!(list[node!(op lit!(1), Add, lit!(1))]))
+        node!(declare c => node!(list[node!(op 1, Add, 1)]))
     );
 }
 
@@ -75,8 +75,8 @@ fn indices() {
 fn math() {
     parse_eq!(
         "let a = (1 + 1) + (1 + 1); let b = 1 + 2 - 3 * 4 / 5;";
-        node!(declare a => node!(op node!(op lit!(1), Add, lit!(1)), Add, node!(op lit!(1), Add, lit!(1)))),
-        node!(declare b => node!(op lit!(1), Add, node!(op lit!(2), Sub, node!(op node!(op lit!(3), Mul, lit!(4)), Div, lit!(5)))))
+        node!(declare a => node!(op node!(op 1, Add, 1), Add, node!(op 1, Add, 1))),
+        node!(declare b => node!(op lit!(1), Add, node!(op lit!(2), Sub, node!(op node!(op 3, Mul, 4), Div, lit!(5)))))
     );
 }
 
@@ -84,7 +84,7 @@ fn math() {
 fn math_complex() {
     parse_eq!(
         "let a = (1 + (2 / 4)) + (((1))+((1)));";
-        node!(declare a => node!(op node!(op lit!(1), Add, node!(op lit!(2), Div, lit!(4))), Add, node!(op lit!(1), Add, lit!(1))))
+        node!(declare a => node!(op node!(op lit!(1), Add, node!(op 2, Div, 4)), Add, node!(op 1, Add, 1)))
     );
 }
 
@@ -100,13 +100,13 @@ fn comparisons() {
         let g = true || false;
         a++;
         a--;";
-        node!(declare a => node!(op lit!(100), LogicalL, lit!(200))),
-        node!(declare b => node!(op lit!(100), LogicalLe, lit!(200))),
-        node!(declare c => node!(op lit!(200), LogicalG, lit!(100))),
-        node!(declare d => node!(op lit!(200), LogicalGe, lit!(100))),
+        node!(declare a => node!(op 100, LogicalL, 200)),
+        node!(declare b => node!(op 100, LogicalLe, 200)),
+        node!(declare c => node!(op 200, LogicalG, 100)),
+        node!(declare d => node!(op 200, LogicalGe, 100)),
         node!(declare e => node!(unary LogicalNot, lit!(true))),
-        node!(declare f => node!(op lit!(true), LogicalAnd, lit!(false))),
-        node!(declare g => node!(op lit!(true), LogicalOr, lit!(false))),
+        node!(declare f => node!(op true, LogicalAnd, false)),
+        node!(declare g => node!(op true, LogicalOr, false)),
         node!(unary Increment, ident!("a")),
         node!(unary Decrement, ident!("a"))
     );
@@ -124,22 +124,22 @@ fn precedence() {
         let g = a.x + b.y;";
 
         // Test that comparison has lower precedence than arithmetic
-        node!(declare a => node!(op node!(op lit!(1), Add, lit!(1)), LogicalEq, node!(op lit!(4), Div, lit!(2)))),
+        node!(declare a => node!(op node!(op 1, Add, 1), LogicalEq, node!(op 4, Div, 2))),
 
         // Test that multiplication has higher precedence than addition
-        node!(declare b => node!(op node!(op lit!(2), Mul, lit!(3)), Add, node!(op lit!(4), Mul, lit!(5)))),
+        node!(declare b => node!(op node!(op 2, Mul, 3), Add, node!(op 4, Mul, 5))),
 
         // Test mixed precedence
-        node!(declare c => node!(op lit!(2), Add, node!(op node!(op lit!(3), Mul, lit!(4)), Add, lit!(5)))),
+        node!(declare c => node!(op lit!(2), Add, node!(op node!(op 3, Mul, 4), Add, lit!(5)))),
 
         // Logical AND has higher precedence than OR
-        node!(declare d => node!(op node!(op lit!(true), LogicalAnd, lit!(false)), LogicalOr, lit!(true))),
+        node!(declare d => node!(op node!(op true, LogicalAnd, false), LogicalOr, lit!(true))),
 
         // Comparisons have higher precedence than logical AND
-        node!(declare e => node!(op node!(op lit!(1), LogicalL, lit!(2)), LogicalAnd, node!(op lit!(3), LogicalG, lit!(2)))),
+        node!(declare e => node!(op node!(op 1, LogicalL, 2), LogicalAnd, node!(op 3, LogicalG, 2))),
 
         // Power & deref have highest precedence
-        node!(declare f => node!(op node!(op lit!(2), Pow, lit!(3)), Mul, lit!(4))),
+        node!(declare f => node!(op node!(op 2, Pow, 3), Mul, lit!(4))),
         node!(declare g => node!(op node!(a.x), Add, node!(b.y)))
     );
 }
@@ -152,7 +152,7 @@ fn conditionals() {
         if 1 + 1 > 2 do; end;
         if true do; if true do; end; end;";
         node!(
-            if node!(op lit!(2), LogicalG, lit!(1)) =>
+            if node!(op 2, LogicalG, 1) =>
                 block!(node!(assign a => ident!("b")));
             else =>
                 block!();
@@ -164,7 +164,7 @@ fn conditionals() {
                 block!();
         ),
         node!(
-            if node!(op node!(op lit!(1), Add, lit!(1)), LogicalG, lit!(2)) =>
+            if node!(op node!(op 1, Add, 1), LogicalG, lit!(2)) =>
                 block!();
             else =>
                 block!();
@@ -188,7 +188,7 @@ fn arguments() {
     parse_eq!(
         "let a = function((1 + 1), false, \"string\", 'c', [1, 2, 3]);";
         node!(declare a => node!(function(
-            node!(op lit!(1), Add, lit!(1)),
+            node!(op 1, Add, 1),
             lit!(false),
             lit!("string"),
             lit!('c'),
