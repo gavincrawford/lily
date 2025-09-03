@@ -95,7 +95,7 @@ macro_rules! block {
 /// ```
 #[cfg(test)]
 macro_rules! node {
-    // operators
+    // operators (`op lit!(1), Add, lit!(1)`)
     (op $lhs:expr, $op:expr, $rhs:expr) => {
         Rc::new(ASTNode::Op {
             lhs: $lhs,
@@ -104,7 +104,7 @@ macro_rules! node {
         })
     };
 
-    // unary operators
+    // unary operators (`unary Decrement, ident!(..)`)
     (unary $op:expr, $target:expr) => {
         Rc::new(ASTNode::UnaryOp {
             target: $target,
@@ -113,20 +113,20 @@ macro_rules! node {
     };
 
     // declarations & assignments
-    (declare $id:tt => $val:expr) => {
+    (declare $id:tt => $val:expr) => { // implied (`declare x => lit!(..)`)
         node!(declare ident!(stringify!($id)) => $val)
     };
-    (declare $id:expr => $val:expr) => {
+    (declare $id:expr => $val:expr) => { // literal (`declare ident!("x") => lit!(..)`)
         ASTNode::Declare {
             target: $id,
             value: $val,
         }
         .into()
     };
-    (assign $id:tt => $val:expr) => {
+    (assign $id:tt => $val:expr) => { // implied (`assign x => lit!(..)`)
         node!(assign ident!(stringify!($id)) => $val)
     };
-    (assign $id:expr => $val:expr) => {
+    (assign $id:expr => $val:expr) => { // literal (`assign ident!("x") => lit!(..)`)
         ASTNode::Assign {
             target: $id,
             value: $val,
@@ -134,7 +134,7 @@ macro_rules! node {
         .into()
     };
 
-    // conditionals
+    // conditionals (`if node!(..) => block!(..); else => block!(..);`)
     (if $cond:expr => $ifbody:expr; else => $elsebody:expr;) => {
         ASTNode::Conditional {
             condition: $cond,
@@ -171,11 +171,13 @@ macro_rules! node {
             body: $body,
         }.into()
     };
+
+    // return statements (`return node!(..)`)
     (return $value:expr) => {
         ASTNode::Return($value).into()
     };
 
-    // modules
+    // modules (`mod xyz => block!(..)`)
     (mod $id:tt => $body:expr) => {
         ASTNode::Module {
             alias: Some(intern!(stringify!($id)).into()),
@@ -183,7 +185,7 @@ macro_rules! node {
         }.into()
     };
 
-    // structures
+    // structures (`struct XYZ => block!(..)`)
     (struct $id:tt => $body:expr) => {
         ASTNode::Struct {
             id: intern!(stringify!($id)).as_id(),
@@ -232,13 +234,13 @@ macro_rules! node {
     };
 
     // derefs
-    (deref $parent:expr, $child:expr) => {{ // literal derefs
+    (deref $parent:expr, $child:expr) => {{ // literal derefs (`deref node!(..), ident!(..)`)
         ASTNode::Deref {
             parent: $parent,
             child: $child,
         }.into()
     }};
-    ($first:tt $(. $rest:tt)+) => {{ // implied derefs
+    ($first:tt $(. $rest:tt)+) => {{ // implied derefs (`a.b.c`)
         let mut current = ident!(stringify!($first));
         $(
             current = ASTNode::Deref {
