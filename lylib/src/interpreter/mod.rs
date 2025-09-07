@@ -81,7 +81,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             // if this segment is a block, execute all of its statements
             for statement in statements {
                 if let Some(ret_value) = self
-                    .execute_expr(statement.clone())
+                    .execute_expr(statement)
                     .context("failed to evaluate expression")?
                 {
                     if self.scope_id == 0 {
@@ -92,14 +92,15 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
         } else {
             // otherwise, execute the segment by itself
-            self.execute_expr(ast)
+            self.execute_expr(&ast)
                 .context("failed to execute expression")?;
         }
         Ok(None)
     }
 
     /// Executes an individual expression.
-    fn execute_expr(&mut self, statement: Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
+    fn execute_expr(&mut self, statement: &Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
+        let statement = statement.clone();
         match &*statement {
             ASTNode::Literal(ref t) => {
                 if let Token::Identifier(sym) = t {
@@ -110,7 +111,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     Ok(None)
                 } else {
                     // otherwise, return raw literal without destructuring
-                    Ok(Some(statement.clone()))
+                    Ok(Some(statement))
                 }
             }
             ASTNode::Assign { target, value } => {
@@ -119,7 +120,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .node_to_id(target.clone())
                     .context("failed to evaluate assignment target")?;
                 let resolved_expr = self
-                    .execute_expr(value.clone())
+                    .execute_expr(value)
                     .context("failed to evaluate assignment value")?
                     .unwrap();
 
@@ -136,7 +137,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .node_to_id(target.clone())
                     .context("failed to evaluate declaration target")?;
                 let resolved_expr = self
-                    .execute_expr(value.clone())
+                    .execute_expr(value)
                     .context("failed to evaluate declaration value")?
                     .unwrap();
 
@@ -148,10 +149,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(None)
             }
             ASTNode::Op { lhs, op, rhs } => {
-                if let (Ok(Some(a)), Ok(Some(b))) = (
-                    self.execute_expr(lhs.clone()),
-                    self.execute_expr(rhs.clone()),
-                ) {
+                if let (Ok(Some(a)), Ok(Some(b))) = (self.execute_expr(lhs), self.execute_expr(rhs))
+                {
                     use Token::*;
 
                     macro_rules! opmatch {
@@ -187,7 +186,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     );
                     opmatch!(
                         match op, &*a, &*b => l, Str(r) if
-                        Add => Str(format!("{l}") + &*r.clone())
+                        Add => Str(format!("{l}") + &*r)
                     );
 
                     // and & or
@@ -237,7 +236,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                     // other unary operations need the target to be evaluated first
                     _ => {
-                        if let Ok(Some(target_result)) = self.execute_expr(target.clone()) {
+                        if let Ok(Some(target_result)) = self.execute_expr(target) {
                             match (op, target_result.as_ref()) {
                                 // negative numbers
                                 (Sub, ASTNode::Literal(Number(n))) => {
@@ -311,7 +310,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let mut resolved_args = vec![];
                 for arg in arguments {
                     resolved_args.push(
-                        self.execute_expr(arg.clone())
+                        self.execute_expr(arg)
                             .context("failed to evaluate argument in extern")?
                             .unwrap_or(lit!(Token::Undefined))
                             .clone(),
@@ -401,7 +400,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             } => {
                 // evaluate condition
                 let condition = self
-                    .execute_expr(condition.clone())?
+                    .execute_expr(condition)?
                     .context("failed to evaluate condition")?;
 
                 // increase scope level
@@ -426,7 +425,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 // increase scope level and execute body
                 self.scope_id += 1;
-                while let Some(condition) = self.execute_expr(condition.clone())? {
+                while let Some(condition) = self.execute_expr(condition)? {
                     // if condition is true, execute body
                     if condition.is_truthy() {
                         result = self.execute(body.clone())?;
@@ -449,19 +448,19 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::List(_) => {
                 // return self
-                Ok(Some(statement.clone()))
+                Ok(Some(statement))
             }
             ASTNode::Index { target, index } => {
                 // get index as a usize
                 let usize_idx = self
-                    .execute_expr(index.clone())
+                    .execute_expr(index)
                     .context(format!("failed to evaluate index value ({index})"))?
                     .context("index cannot be undefined")?
                     .as_index()?;
 
                 // get the target of this index
                 let target = self
-                    .execute_expr(target.clone())
+                    .execute_expr(target)
                     .context("failed to evaluate index target")?
                     .unwrap();
 
@@ -502,7 +501,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 } else {
                     // for complex derefs (like `parent().child`), evaluate parts
                     let parent = self
-                        .execute_expr(parent.clone())?
+                        .execute_expr(parent)?
                         .context("deref parent cannot be undefined")?;
 
                     // now handle member access on the result
@@ -527,7 +526,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Return(ref expr) => {
                 // resolve expression
                 let expr = self
-                    .execute_expr(expr.clone())
+                    .execute_expr(expr)
                     .context("failed to evaluate return expression")?
                     .context("expected return value")?;
 

@@ -14,7 +14,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             index: _,
                         } => {
                             let resolved_item = self
-                                .execute_expr(value.clone().into())
+                                .execute_expr(&value.clone().into())
                                 .context("could not flatten index inside list")?
                                 .unwrap();
                             *handle = Variable::Owned(ASTNode::inner_to_owned(&resolved_item));
