@@ -8,7 +8,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Index { target, index } => {
                 let parent = self.node_to_id(target.clone())?.get_kind().into();
                 let index = self
-                    .execute_expr(&index)?
+                    .execute_expr(index)?
                     .context("index cannot be undefined")?
                     .as_index()?;
                 Ok(ID {

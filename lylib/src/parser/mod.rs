@@ -452,10 +452,8 @@ impl Parser {
         let mut left = match self.peek() {
             Some(Token::ParenOpen) => {
                 self.next();
-                let expr = self
-                    .parse_expr(Some(Token::ParenClose))
-                    .context("failed to parse parenthesised expression")?;
-                expr
+                self.parse_expr(Some(Token::ParenClose))
+                    .context("failed to parse parenthesised expression")?
             }
             _ => self
                 .parse_primary()

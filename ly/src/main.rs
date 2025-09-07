@@ -27,6 +27,6 @@ fn main() {
 
     // execute file
     if let Err(e) = execute(cmd) {
-        eprintln!("{:?}", e);
+        eprintln!("{e:?}");
     }
 }

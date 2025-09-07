@@ -186,7 +186,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     );
                     opmatch!(
                         match op, &*a, &*b => l, Str(r) if
-                        Add => Str(format!("{l}") + &*r)
+                        Add => Str(format!("{l}") + r)
                     );
 
                     // and & or
@@ -240,11 +240,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             match (op, target_result.as_ref()) {
                                 // negative numbers
                                 (Sub, ASTNode::Literal(Number(n))) => {
-                                    return Ok(Some(Rc::new(ASTNode::Literal(Number(-n)))));
+                                    Ok(Some(Rc::new(ASTNode::Literal(Number(-n)))))
                                 }
                                 // logical not
                                 (LogicalNot, ASTNode::Literal(Bool(b))) => {
-                                    return Ok(Some(Rc::new(ASTNode::Literal(Bool(!b)))));
+                                    Ok(Some(Rc::new(ASTNode::Literal(Bool(!b)))))
                                 }
                                 // bail for others
                                 _ => {
