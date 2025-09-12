@@ -53,36 +53,11 @@ impl Lexer {
                         // TODO this should just get moved out to it's own mode vvv
 
                         // operators
-                        '+' => {
-                            if let Some('+') = chars.peek() {
-                                chars.next();
-                                tokens.push(Increment);
-                            } else {
-                                tokens.push(Add);
-                            }
-                        }
-                        '-' => {
-                            if let Some('-') = chars.peek() {
-                                chars.next();
-                                tokens.push(Decrement);
-                            } else {
-                                tokens.push(Sub);
-                            }
-                        }
-                        '*' => {
-                            tokens.push(Mul);
-                        }
-                        '/' => {
-                            if let Some('/') = chars.peek() {
-                                chars.next();
-                                tokens.push(Floor);
-                            } else {
-                                tokens.push(Div);
-                            }
-                        }
-                        '^' => {
-                            tokens.push(Pow);
-                        }
+                        '+' => self.long_op(&mut chars, &mut tokens, '+', Increment, Add),
+                        '-' => self.long_op(&mut chars, &mut tokens, '-', Decrement, Sub),
+                        '*' => tokens.push(Mul),
+                        '/' => self.long_op(&mut chars, &mut tokens, '/', Floor, Div),
+                        '^' => tokens.push(Pow),
 
                         // equalities
                         '=' => {
@@ -280,6 +255,27 @@ impl Lexer {
             "import" => Some(Import),
             "as" => Some(As),
             _ => None,
+        }
+    }
+
+    /// Handles double-character operators like ++, --, //.
+    fn long_op(
+        &self,
+        chars: &mut std::iter::Peekable<std::str::Chars>,
+        tokens: &mut Vec<Token>,
+        expected_char: char,
+        double_token: Token,
+        single_token: Token,
+    ) {
+        if let Some(peek_char) = chars.peek() {
+            if *peek_char == expected_char {
+                chars.next();
+                tokens.push(double_token);
+            } else {
+                tokens.push(single_token);
+            }
+        } else {
+            tokens.push(single_token);
         }
     }
 }
