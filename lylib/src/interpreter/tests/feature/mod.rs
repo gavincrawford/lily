@@ -63,6 +63,11 @@ test!(operators_precedence => (
 
 test!(return_base_scope => panic);
 
+test!(return_complex => (
+    nested_res := 1,
+    chained_res := 2
+));
+
 test!(ifelse => (
     a := 0
 ));
