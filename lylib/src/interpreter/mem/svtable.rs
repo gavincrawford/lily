@@ -83,31 +83,45 @@ impl SVTable {
     }
 }
 
+impl SVTable {
+    /// Helper method to find a variable in any scope, returns the found variable reference.
+    #[inline]
+    fn find_variable(&self, id: usize) -> Option<&Rc<RefCell<Variable>>> {
+        for scope in self.iter().rev() {
+            if let Some(variable) = scope.get(&id) {
+                return Some(variable);
+            }
+        }
+        None
+    }
+
+    /// Helper method to find a variable in any scope with mutable access, returns the found variable reference.
+    #[inline]
+    fn find_variable_mut(&mut self, id: usize) -> Option<&Rc<RefCell<Variable>>> {
+        for scope in self.inner_mut().iter_mut().rev() {
+            if let Some(variable) = scope.get(&id) {
+                return Some(variable);
+            }
+        }
+        None
+    }
+}
+
 impl MemoryInterface for SVTable {
     #[inline]
     fn get_owned(&self, id: usize) -> Result<Variable> {
-        // find id in any scope and return owned
-        for scope in self.iter().rev() {
-            if let Some(variable) = scope.get(&id) {
-                return Ok(variable.borrow().clone());
-            }
+        match self.find_variable(id) {
+            Some(variable) => Ok(variable.borrow().clone()),
+            None => bail!("failed to get owned value {:#?}", resolve!(id)),
         }
-
-        // if no value is found, bail
-        bail!("failed to get owned value {:#?}", resolve!(id))
     }
 
     #[inline]
     fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>> {
-        // find id in any scope and return reference
-        for scope in self.iter().rev() {
-            if let Some(variable) = scope.get(&id) {
-                return Ok(variable.clone());
-            }
+        match self.find_variable(id) {
+            Some(variable) => Ok(variable.clone()),
+            None => bail!("failed to get ref value {:#?}", resolve!(id)),
         }
-
-        // if no value is found, bail
-        bail!("failed to get ref value {:#?}", resolve!(id))
     }
 
     #[inline]
@@ -140,11 +154,9 @@ impl MemoryInterface for SVTable {
     #[inline]
     fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<()> {
         // replace the value of the top-most variable if possible
-        for scope in self.iter().rev() {
-            if let Some(variable) = scope.get(&id) {
-                *variable.borrow_mut() = value;
-                return Ok(());
-            }
+        if let Some(variable) = self.find_variable_mut(id) {
+            *variable.borrow_mut() = value;
+            return Ok(());
         }
 
         // otherwise, manual insert. this is used for structures & modules
