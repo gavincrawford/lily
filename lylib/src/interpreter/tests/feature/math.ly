@@ -27,3 +27,4 @@ let nested_power = 2 ^ 2 ^ 2
 let floor_with_decimals = 3.7 // 1.2
 let power_negative_base = -2 ^ 2
 let multiple_negatives = -3 * -2
+let large_overflow = 999999999999999999 * 999999999999999999

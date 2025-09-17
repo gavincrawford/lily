@@ -32,7 +32,8 @@ test!(math => (
     nested_power := 16,
     floor_with_decimals := 3,
     power_negative_base := 4,
-    multiple_negatives := 6
+    multiple_negatives := 6,
+    large_overflow := 1e36
 ));
 
 test!(operators => (
@@ -72,12 +73,22 @@ test!(ifelse => (
     a := 0
 ));
 
+test!(comments => (
+    x := 42,
+    y := 24,
+    z := 100
+));
+
 test!(comparison_numerical => (
     a := 8
 ));
 
 test!(comparison_boolean => (
     a := 6
+));
+
+test!(comparison_truthy => (
+    a := 8
 ));
 
 test!(functions => (
@@ -138,7 +149,9 @@ test!(string_concat => (
     num_concat := "123",
     num_concat_reverse := "123",
     char_concat := "xyz",
-    char_concat_reverse := "xyz"
+    char_concat_reverse := "xyz",
+    unicode_str := "🔥",
+    unicode_len := 4
 ));
 
 test!(nested_imports => (
