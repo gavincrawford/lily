@@ -102,17 +102,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     fn execute_expr(&mut self, statement: &Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
         let statement = statement.clone();
         match &*statement {
-            ASTNode::Literal(ref t) => {
-                if let Token::Identifier(sym) = t {
-                    // if this literal is an identifier, return the internal value
-                    if let Variable::Owned(var) = self.get(&sym.as_id())? {
-                        return Ok(Some(var.into()));
-                    }
-                    Ok(None)
-                } else {
-                    // otherwise, return raw literal without destructuring
-                    Ok(Some(statement))
+            ASTNode::Literal(Token::Identifier(sym)) => {
+                // resovle variable and return literal value
+                if let Variable::Owned(var) = self.get(&sym.as_id())? {
+                    return Ok(Some(var.into()));
                 }
+                Ok(None)
+            }
+            ASTNode::Literal(_) | ASTNode::List(_) | ASTNode::Instance { .. } => {
+                // return raw literal without resolving
+                Ok(Some(statement))
             }
             ASTNode::Assign { target, value } => {
                 // resolve target & expression
@@ -207,60 +206,57 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     bail!("failed to evaluate operands")
                 }
             }
-            ASTNode::UnaryOp { target, op } => {
-                use Token::*;
-                match op {
-                    // increment/decrement operations need special handling
-                    Increment | Decrement => {
-                        // TODO: i'm pretty sure this doesn't work with dot notation or anything
-                        // like that. that's a later fix, though
-                        if let ASTNode::Literal(Token::Identifier(sym)) = &**target {
-                            // get variable
-                            let id = sym.as_id();
-                            if let Variable::Owned(current_value) = self.get(&id)? {
-                                if let ASTNode::Literal(Token::Number(n)) = current_value {
-                                    // get new assignment value
-                                    let new_value = match op {
-                                        Increment => Token::Number(n + 1.0),
-                                        Decrement => Token::Number(n - 1.0),
-                                        _ => unreachable!(),
-                                    };
-                                    self.assign(&id, Variable::Owned(ASTNode::Literal(new_value)))?;
-                                }
+            ASTNode::UnaryOp { target, op } => match op {
+                // increment/decrement operations need special handling
+                Token::Increment | Token::Decrement => {
+                    // TODO: i'm pretty sure this doesn't work with dot notation or anything
+                    // like that. that's a later fix, though
+                    if let ASTNode::Literal(Token::Identifier(sym)) = &**target {
+                        // get variable
+                        let id = sym.as_id();
+                        if let Variable::Owned(current_value) = self.get(&id)? {
+                            if let ASTNode::Literal(Token::Number(n)) = current_value {
+                                // get new assignment value
+                                let new_value = match op {
+                                    Token::Increment => Token::Number(n + 1.0),
+                                    Token::Decrement => Token::Number(n - 1.0),
+                                    _ => unreachable!(),
+                                };
+                                self.assign(&id, Variable::Owned(ASTNode::Literal(new_value)))?;
                             }
-                        } else {
-                            bail!("invalid increment/decrement target: {target:?}");
                         }
-                        Ok(None)
+                    } else {
+                        bail!("invalid increment/decrement target: {target:?}");
                     }
+                    Ok(None)
+                }
 
-                    // other unary operations need the target to be evaluated first
-                    _ => {
-                        if let Ok(Some(target_result)) = self.execute_expr(target) {
-                            match (op, target_result.as_ref()) {
-                                // negative numbers
-                                (Sub, ASTNode::Literal(Number(n))) => {
-                                    Ok(Some(Rc::new(ASTNode::Literal(Number(-n)))))
-                                }
-                                // logical not
-                                (LogicalNot, ASTNode::Literal(Bool(b))) => {
-                                    Ok(Some(Rc::new(ASTNode::Literal(Bool(!b)))))
-                                }
-                                // bail for others
-                                _ => {
-                                    bail!(
-                                        "unsupported unary operation: {:?} on {:?}",
-                                        op,
-                                        target_result
-                                    );
-                                }
+                // other unary operations need the target to be evaluated first
+                _ => {
+                    if let Ok(Some(target_result)) = self.execute_expr(target) {
+                        match (op, target_result.as_ref()) {
+                            // negative numbers
+                            (Token::Sub, ASTNode::Literal(Token::Number(n))) => {
+                                Ok(Some(Rc::new(ASTNode::Literal(Token::Number(-n)))))
                             }
-                        } else {
-                            bail!("failed to evaluate unary operand");
+                            // logical not
+                            (Token::LogicalNot, ASTNode::Literal(Token::Bool(b))) => {
+                                Ok(Some(Rc::new(ASTNode::Literal(Token::Bool(!b)))))
+                            }
+                            // bail for others
+                            _ => {
+                                bail!(
+                                    "unsupported unary operation: {:?} on {:?}",
+                                    op,
+                                    target_result
+                                );
+                            }
                         }
+                    } else {
+                        bail!("failed to evaluate unary operand");
                     }
                 }
-            }
+            },
             ASTNode::Function {
                 ref id,
                 arguments: ref _arguments,
@@ -340,45 +336,29 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
 
                     // this branch should trigger when constructors are called
-                    Variable::Type(ref structure) => match structure.constructor() {
-                        Some(v) => {
-                            // get template
-                            let svt = structure
+                    Variable::Type(ref structure) => {
+                        // get template as refcell
+                        let svt = Rc::new(RefCell::new(
+                            structure
                                 .create_struct_template()
-                                .context("failed to create structure template")?;
+                                .context("failed to create structure template")?,
+                        ));
 
-                            // use the new structure's memory as context for constructor
-                            let svt = Rc::new(RefCell::new(svt));
-
+                        // if there is a defined constructor, run it
+                        if let Some(v) = structure.constructor() {
                             self.with_context(Some(svt.clone()), |interpreter| {
                                 interpreter.execute_function(&resolved_args, v)
                             })?;
-
-                            // return newly made instance
-                            Ok(Some(
-                                ASTNode::Instance {
-                                    kind: variable.into(),
-                                    svt,
-                                }
-                                .into(),
-                            ))
                         }
-                        None => {
-                            // get template
-                            let svt = structure
-                                .create_struct_template()
-                                .context("failed to create structure template")?;
 
-                            // return newly made instance
-                            Ok(Some(
-                                ASTNode::Instance {
-                                    kind: variable.into(),
-                                    svt: RefCell::new(svt).into(),
-                                }
-                                .into(),
-                            ))
-                        }
-                    },
+                        Ok(Some(
+                            ASTNode::Instance {
+                                kind: variable.into(),
+                                svt: svt,
+                            }
+                            .into(),
+                        ))
+                    }
 
                     // catch others
                     _ => {
@@ -445,10 +425,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // after finishing, decrease scope level and drop locals
                 self.drop_scope();
                 Ok(result)
-            }
-            ASTNode::List(_) => {
-                // return self
-                Ok(Some(statement))
             }
             ASTNode::Index { target, index } => {
                 // get index as a usize
@@ -522,7 +498,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     _ => bail!(format!("cannot convert {:#?} to valid node", variable)),
                 }
             }
-            ASTNode::Instance { .. } => Ok(Some(statement)),
             ASTNode::Return(ref expr) => {
                 // resolve expression
                 let expr = self
@@ -538,28 +513,29 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(Some(expr))
             }
             ASTNode::Module { alias, body } => {
-                if let Some(mod_name) = alias {
-                    // create named module and execute in its context
-                    let module_context = if let Some(current_context) = self.context.clone() {
-                        Some(current_context.borrow_mut().add_module(*mod_name))
-                    } else {
-                        Some(self.memory.borrow_mut().add_module(*mod_name))
-                    };
+                // TODO: it'd be nice to have the file path stuck in here somewhere for debugging
+                // information...
 
-                    self.with_context(module_context, |interpreter| {
-                        interpreter.execute(body.clone()).context(format!(
-                            "failed to evaluate module '{}'",
-                            (*alias).unwrap() // safety: destructuring
-                        ))
-                    })?;
-                } else {
-                    // execute unnamed module in base scope
-                    self.with_context(None, |interpreter| {
-                        interpreter
-                            .execute(body.clone())
-                            .context("failed to evaluate module body")
-                    })?;
-                }
+                let ctx = match alias {
+                    // if alias exists, create named module and execute in its context
+                    Some(sym) => {
+                        if let Some(current_context) = self.context.clone() {
+                            Some(current_context.borrow_mut().add_module(*sym))
+                        } else {
+                            Some(self.memory.borrow_mut().add_module(*sym))
+                        }
+                    }
+
+                    // otherwise, run in anonymous (current) context
+                    None => None,
+                };
+
+                self.with_context(ctx, |interpreter| {
+                    interpreter.execute(body.clone()).context(format!(
+                        "failed to evaluate module '{}'",
+                        (*alias).unwrap_or(intern!("anonymous"))
+                    ))
+                })?;
                 Ok(None)
             }
             _ => {
