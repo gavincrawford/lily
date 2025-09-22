@@ -121,7 +121,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let resolved_expr = self
                     .execute_expr(value)
                     .context("failed to evaluate assignment value")?
-                    .unwrap();
+                    .context("assignment value must be defined")?;
 
                 // assign variable
                 self.assign(
@@ -138,7 +138,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let resolved_expr = self
                     .execute_expr(value)
                     .context("failed to evaluate declaration value")?
-                    .unwrap();
+                    .context("declaration value must be defined")?;
 
                 // declare variable
                 self.declare(
