@@ -148,63 +148,63 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(None)
             }
             ASTNode::Op { lhs, op, rhs } => {
-                if let (Ok(Some(a)), Ok(Some(b))) = (self.execute_expr(lhs), self.execute_expr(rhs))
-                {
-                    use Token::*;
-
-                    macro_rules! opmatch {
-                        (match $op:expr, $lhs:expr, $rhs:expr => $locallhs:pat, $localrhs:pat if $($pat:pat => $res:expr),*) => {
-                            match ($op, $lhs, $rhs) {
-                                $(($pat, ASTNode::Literal($locallhs), ASTNode::Literal($localrhs)) => {
-                                    return Ok(Some(Rc::new(ASTNode::Literal($res))))
-                                })*
-                                _ => {},
-                            }
-                        };
-                    }
-
-                    // math & numeric equality
-                    opmatch!(
-                        match op, &*a, &*b => Number(l), Number(r) if
-                        Add => Number(l + r),
-                        Sub => Number(l - r),
-                        Mul => Number(l * r),
-                        Div => Number(l / r),
-                        Floor => Number((l / r).floor()),
-                        Pow => Number(l.powf(*r)),
-                        LogicalG => Bool(l > r),
-                        LogicalGe => Bool(l >= r),
-                        LogicalL => Bool(l < r),
-                        LogicalLe => Bool(l <= r)
-                    );
-
-                    // bi-directional string concatenation
-                    opmatch!(
-                        match op, &*a, &*b => Str(l), r if
-                        Add => Str(l.clone() + &*format!("{r}"))
-                    );
-                    opmatch!(
-                        match op, &*a, &*b => l, Str(r) if
-                        Add => Str(format!("{l}") + r)
-                    );
-
-                    // and & or
-                    opmatch!(
-                        match op, &*a, &*b => Bool(l), Bool(r) if
-                        LogicalAnd => Bool(*l && *r),
-                        LogicalOr => Bool(*l || *r)
-                    );
-
-                    // equality
-                    opmatch!(
-                        match op, &*a, &*b => l, r if
-                        LogicalEq => Bool(l == r),
-                        LogicalNeq => Bool(l != r)
-                    );
-                    bail!("operator not implemented ({} {:#?} {})", &*a, op, &*b)
-                } else {
-                    bail!("failed to evaluate operands")
+                use Token::*;
+                macro_rules! opmatch {
+                    (match $op:expr, $lhs:expr, $rhs:expr => $locallhs:pat, $localrhs:pat if $($pat:pat => $res:expr),*) => {
+                        match ($op, $lhs, $rhs) {
+                            $(($pat, ASTNode::Literal($locallhs), ASTNode::Literal($localrhs)) => {
+                                return Ok(Some(Rc::new(ASTNode::Literal($res))))
+                            })*
+                            _ => {},
+                        }
+                    };
                 }
+
+                // evaluate operands
+                let (Ok(Some(a)), Ok(Some(b))) = (self.execute_expr(lhs), self.execute_expr(rhs))
+                else {
+                    bail!("failed to evaluate operands");
+                };
+
+                // math & numeric equality
+                opmatch!(
+                    match op, &*a, &*b => Number(l), Number(r) if
+                    Add => Number(l + r),
+                    Sub => Number(l - r),
+                    Mul => Number(l * r),
+                    Div => Number(l / r),
+                    Floor => Number((l / r).floor()),
+                    Pow => Number(l.powf(*r)),
+                    LogicalG => Bool(l > r),
+                    LogicalGe => Bool(l >= r),
+                    LogicalL => Bool(l < r),
+                    LogicalLe => Bool(l <= r)
+                );
+
+                // bi-directional string concatenation
+                opmatch!(
+                    match op, &*a, &*b => Str(l), r if
+                    Add => Str(l.clone() + &*format!("{r}"))
+                );
+                opmatch!(
+                    match op, &*a, &*b => l, Str(r) if
+                    Add => Str(format!("{l}") + r)
+                );
+
+                // and & or
+                opmatch!(
+                    match op, &*a, &*b => Bool(l), Bool(r) if
+                    LogicalAnd => Bool(*l && *r),
+                    LogicalOr => Bool(*l || *r)
+                );
+
+                // equality
+                opmatch!(
+                    match op, &*a, &*b => l, r if
+                    LogicalEq => Bool(l == r),
+                    LogicalNeq => Bool(l != r)
+                );
+                bail!("operator not implemented ({} {:#?} {})", &*a, op, &*b)
             }
             ASTNode::UnaryOp { target, op } => match op {
                 // increment/decrement operations need special handling
@@ -233,27 +233,26 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 // other unary operations need the target to be evaluated first
                 _ => {
-                    if let Ok(Some(target_result)) = self.execute_expr(target) {
-                        match (op, target_result.as_ref()) {
-                            // negative numbers
-                            (Token::Sub, ASTNode::Literal(Token::Number(n))) => {
-                                Ok(Some(Rc::new(ASTNode::Literal(Token::Number(-n)))))
-                            }
-                            // logical not
-                            (Token::LogicalNot, ASTNode::Literal(Token::Bool(b))) => {
-                                Ok(Some(Rc::new(ASTNode::Literal(Token::Bool(!b)))))
-                            }
-                            // bail for others
-                            _ => {
-                                bail!(
-                                    "unsupported unary operation: {:?} on {:?}",
-                                    op,
-                                    target_result
-                                );
-                            }
-                        }
-                    } else {
+                    let Ok(Some(target_result)) = self.execute_expr(target) else {
                         bail!("failed to evaluate unary operand");
+                    };
+                    match (op, target_result.as_ref()) {
+                        // negative numbers
+                        (Token::Sub, ASTNode::Literal(Token::Number(n))) => {
+                            Ok(Some(Rc::new(ASTNode::Literal(Token::Number(-n)))))
+                        }
+                        // logical not
+                        (Token::LogicalNot, ASTNode::Literal(Token::Bool(b))) => {
+                            Ok(Some(Rc::new(ASTNode::Literal(Token::Bool(!b)))))
+                        }
+                        // bail for others
+                        _ => {
+                            bail!(
+                                "unsupported unary operation: {:?} on {:?}",
+                                op,
+                                target_result
+                            );
+                        }
                     }
                 }
             },
@@ -406,15 +405,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // increase scope level and execute body
                 self.scope_id += 1;
                 while let Some(condition) = self.execute_expr(condition)? {
-                    // if condition is true, execute body
-                    if condition.is_truthy() {
-                        result = self.execute(body.clone())?;
+                    // if the condition is not true, break
+                    if !condition.is_truthy() {
+                        break;
+                    }
 
-                        // if a value was returned, break
-                        if result.is_some() {
-                            break;
-                        }
-                    } else {
+                    // get cycle result. if return reached, stop loop
+                    result = self.execute(body.clone())?;
+                    if result.is_some() {
                         break;
                     }
 
@@ -480,14 +478,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         .execute_expr(parent)?
                         .context("deref parent cannot be undefined")?;
 
-                    // now handle member access on the result
-                    if let ASTNode::Literal(Token::Identifier(member_id)) = &**child {
-                        match &*parent {
-                            ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_id)?,
-                            _ => bail!("cannot dereference member of {:#?}", parent),
-                        }
-                    } else {
+                    // deref child & pull value from svt
+                    let ASTNode::Literal(Token::Identifier(member_id)) = &**child else {
                         bail!("deref child must be an identifier")
+                    };
+                    match &*parent {
+                        ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_id)?,
+                        _ => bail!("cannot dereference member of {:#?}", parent),
                     }
                 };
 
