@@ -77,12 +77,7 @@ impl ASTNode {
                 // get the struct name for comparison
                 if let IDKind::Literal(struct_name) = id.get_kind() {
                     for node in nodes {
-                        if let ASTNode::Function {
-                            id,
-                            arguments: _,
-                            body: _,
-                        } = &**node
-                        {
+                        if let ASTNode::Function { id, .. } = &**node {
                             if let IDKind::Literal(name) = id.get_kind() {
                                 // functions with an identical name to the structure are
                                 // constructors, and should be treated as such
@@ -127,7 +122,7 @@ impl ASTNode {
 
     /// Create the default SVT for this struct if applicable.
     pub(crate) fn create_struct_template(&self) -> Result<SVTable> {
-        if let ASTNode::Struct { id: _, body } = self {
+        if let ASTNode::Struct { body, .. } = self {
             if let ASTNode::Block(nodes) = &**body {
                 let mut default_fields = vec![];
                 for node in nodes {

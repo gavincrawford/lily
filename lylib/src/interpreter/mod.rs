@@ -269,7 +269,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // get target variable and check if we need to set instance context
                 let (variable, instance_context) = match &**target {
                     ASTNode::Literal(Token::Identifier(sym)) => (self.get(&sym.as_id())?, None),
-                    ASTNode::Deref { parent, child: _ } => {
+                    ASTNode::Deref { parent, .. } => {
                         let id = self.node_to_id(target.clone())?;
                         let variable = self.get(&id)?;
 
@@ -368,7 +368,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 result
             }
-            ASTNode::Struct { id, body: _ } => {
+            ASTNode::Struct { id, .. } => {
                 self.declare(id, Variable::Type(statement.clone()))
                     .context("failed to declare type for structure")?;
                 Ok(None)

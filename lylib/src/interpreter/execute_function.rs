@@ -8,15 +8,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         function: Rc<ASTNode>,
     ) -> Result<Option<Rc<ASTNode>>> {
         if let ASTNode::Function {
-            id: _id,
-            arguments: fn_args,
-            body,
+            arguments, body, ..
         } = &*function
         {
             // push arguments
-            assert_eq!(call_args.len(), fn_args.len());
+            assert_eq!(call_args.len(), arguments.len());
             self.scope_id += 1;
-            for (idx, arg_sym) in fn_args.iter().enumerate() {
+            for (idx, arg_sym) in arguments.iter().enumerate() {
                 self.declare(
                     &arg_sym.as_id(),
                     Variable::Owned(ASTNode::inner_to_owned(&call_args[idx])),

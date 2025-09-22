@@ -258,11 +258,7 @@ impl Parser {
 
         // parse as a function call. if none is found, bail
         let stmnt = self.parse_expr(None)?;
-        if let ASTNode::FunctionCall {
-            target: _,
-            arguments: _,
-        } = &*stmnt
-        {
+        if let ASTNode::FunctionCall { .. } = &*stmnt {
             Ok(stmnt)
         } else {
             bail!("failed to parse instantiation of structure")

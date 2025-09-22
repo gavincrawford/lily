@@ -9,10 +9,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let mut handle = variable.borrow_mut();
                 if let Variable::Owned(value) = &*handle {
                     match value {
-                        ASTNode::Index {
-                            target: _,
-                            index: _,
-                        } => {
+                        ASTNode::Index { .. } => {
                             let resolved_item = self
                                 .execute_expr(&value.clone().into())
                                 .context("could not flatten index inside list")?
