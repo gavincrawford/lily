@@ -50,7 +50,7 @@ impl Lexer {
             match mode {
                 CaptureMode::General => {
                     match c {
-                        // TODO this should just get moved out to it's own mode vvv
+                        // TODO this should just get moved out to its own mode vvv
 
                         // operators
                         '+' => self.long_op(&mut chars, &mut tokens, '+', Increment, Add),
