@@ -315,19 +315,23 @@ impl Parser {
         self.expect(Token::ParenOpen)?;
         let mut args = vec![];
         loop {
-            match self.peek() {
-                Some(Token::ParenClose) => {
+            // Get next arg, breaking on EOF
+            let Some(next) = self.peek() else {
+                break;
+            };
+
+            match next {
+                // If this is a close paren, arguments are over
+                Token::ParenClose => {
                     self.next();
                     break;
                 }
-                Some(_) => {
+                // Otherwise, evaluate this argument and add it to the list
+                _ => {
                     args.push(
                         self.parse_expr(Some(Token::Comma))
                             .context("failed to parse argument")?,
                     );
-                }
-                _ => {
-                    break;
                 }
             }
         }
