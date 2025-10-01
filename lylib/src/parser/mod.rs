@@ -31,14 +31,14 @@ impl Parser {
         self.path = path;
     }
 
-    /// Peek at the next token.
-    fn peek(&self) -> Option<&Token> {
-        self.tokens.get(self.position)
+    /// Peek at the next token. Returns `Err` on EOF.
+    fn peek(&self) -> Result<&Token> {
+        self.tokens.get(self.position).context("unexpected EOF")
     }
 
-    /// Peek `n` positions ahead.
-    fn peek_n(&self, n: usize) -> Option<&Token> {
-        self.tokens.get(self.position + n)
+    /// Peek `n` positions ahead. Returns `Err` on EOF.
+    fn peek_n(&self, n: usize) -> Result<&Token> {
+        self.tokens.get(self.position + n).context("unexpected EOF")
     }
 
     /// Get and return the next token.
@@ -87,7 +87,7 @@ impl Parser {
     /// Parses all tokens with hidden module imports.
     pub fn parse_with_imports(&mut self, imports: Vec<Rc<ASTNode>>) -> Result<Rc<ASTNode>> {
         let mut statements = vec![];
-        while let Some(token) = self.peek() {
+        while let Ok(token) = self.peek() {
             if *token == Token::BlockEnd {
                 // consume block ends and expect endline
                 self.next();
@@ -110,16 +110,16 @@ impl Parser {
     /// Parses a statement.
     fn parse_statement(&mut self) -> Result<Rc<ASTNode>> {
         // process all possible base statements
-        let result = match self.peek() {
-            Some(Token::Import) => self.parse_import(),
-            Some(Token::Let) => self.parse_decl_var(),
-            Some(Token::If) => self.parse_cond(),
-            Some(Token::Function) => self.parse_decl_fn(),
-            Some(Token::Struct) => self.parse_decl_struct(),
-            Some(Token::While) => self.parse_while(),
-            Some(Token::Identifier(_)) => self.parse_expr(None),
-            Some(Token::Return) => self.parse_return(),
-            Some(Token::Increment) | Some(Token::Decrement) => {
+        let result = match self.peek()? {
+            Token::Import => self.parse_import(),
+            Token::Let => self.parse_decl_var(),
+            Token::If => self.parse_cond(),
+            Token::Function => self.parse_decl_fn(),
+            Token::Struct => self.parse_decl_struct(),
+            Token::While => self.parse_while(),
+            Token::Identifier(_) => self.parse_expr(None),
+            Token::Return => self.parse_return(),
+            Token::Increment | Token::Decrement => {
                 // safety: destructuring
                 self.parse_operator(Self::get_precedence(self.peek().unwrap()))
             }
@@ -144,9 +144,9 @@ impl Parser {
 
             // check if alias is provided
             let mut alias = None;
-            if let Some(Token::As) = self.peek() {
+            if let Token::As = self.peek()? {
                 self.next();
-                if let Some(Token::Identifier(alias_str)) = self.peek() {
+                if let Token::Identifier(alias_str) = self.peek()? {
                     // if an identifier is found, it is our alias
                     alias = Some(alias_str.to_owned());
                     self.next();
@@ -199,7 +199,7 @@ impl Parser {
 
         // process else body block, if present
         let mut else_body = ASTNode::Block(vec![]).into();
-        if let Some(Token::Else) = self.peek() {
+        if let Ok(Token::Else) = self.peek() {
             self.next();
             else_body = self.parse().context("failed to parse else-body")?;
         }
@@ -290,7 +290,7 @@ impl Parser {
         if let Some(Token::Identifier(sym)) = next {
             // gather arguments
             let mut arguments = vec![];
-            while let Some(Token::Identifier(arg)) = self.peek() {
+            while let Token::Identifier(arg) = self.peek()? {
                 arguments.push(*arg);
                 self.next();
             }
@@ -315,12 +315,7 @@ impl Parser {
         self.expect(Token::ParenOpen)?;
         let mut args = vec![];
         loop {
-            // Get next arg, breaking on EOF
-            let Some(next) = self.peek() else {
-                break;
-            };
-
-            match next {
+            match self.peek()? {
                 // If this is a close paren, arguments are over
                 Token::ParenClose => {
                     self.next();
@@ -383,8 +378,8 @@ impl Parser {
     /// Parses expressions, such as operators, indices, function calls, etc.
     fn parse_expr(&mut self, expect: Option<Token>) -> Result<Rc<ASTNode>> {
         // evaluate primary value
-        let mut primary = match self.peek() {
-            Some(Token::ParenOpen) => {
+        let mut primary = match self.peek()? {
+            Token::ParenOpen => {
                 self.next();
                 self.parse_expr(Some(Token::ParenClose))
                     .context("failed to parse parenthesised expression")?
@@ -398,7 +393,7 @@ impl Parser {
         loop {
             // if we hit the expected token, break
             if let Some(ref token) = expect {
-                if self.peek() == Some(token) {
+                if self.peek()? == token {
                     self.expect(expect.unwrap())?;
                     break;
                 }
@@ -407,7 +402,7 @@ impl Parser {
             // match operator with precedence handling
             primary = match self.peek() {
                 // operators
-                Some(token) if token.is_operator() => {
+                Ok(token) if token.is_operator() => {
                     let op = self.next().unwrap(); // safety: peek
                     let rhs = self
                         .parse_operator(Self::get_precedence(&op))
@@ -421,19 +416,19 @@ impl Parser {
                 }
 
                 // function calls
-                Some(Token::ParenOpen) => self.parse_call_fn(primary)?,
+                Ok(Token::ParenOpen) => self.parse_call_fn(primary)?,
 
                 // indexes
-                Some(Token::BracketOpen) => self.parse_index(primary)?,
+                Ok(Token::BracketOpen) => self.parse_index(primary)?,
 
                 // deref operations
-                Some(Token::Dot) => self.parse_deref(primary)?,
+                Ok(Token::Dot) => self.parse_deref(primary)?,
 
                 // assignments
-                Some(Token::Equal) => self.parse_assignment(primary)?,
+                Ok(Token::Equal) => self.parse_assignment(primary)?,
 
                 // break for all others
-                Some(Token::Endl) | Some(Token::BlockStart) | None => {
+                Ok(Token::Endl) | Ok(Token::BlockStart) => {
                     self.next();
                     break;
                 }
@@ -449,8 +444,8 @@ impl Parser {
     /// Parses operators with precedence climbing
     fn parse_operator(&mut self, min_precedence: u8) -> Result<Rc<ASTNode>> {
         // Expand left-hand side first
-        let mut left = match self.peek() {
-            Some(Token::ParenOpen) => {
+        let mut left = match self.peek()? {
+            Token::ParenOpen => {
                 self.next();
                 self.parse_expr(Some(Token::ParenClose))
                     .context("failed to parse parenthesised expression")?
@@ -462,21 +457,21 @@ impl Parser {
 
         // Handle high precedence operations like deref, function calls, and indexing
         loop {
-            match self.peek() {
-                Some(Token::Dot) => {
+            match self.peek()? {
+                Token::Dot => {
                     left = self.parse_deref(left)?;
                 }
-                Some(Token::ParenOpen) => {
+                Token::ParenOpen => {
                     left = self.parse_call_fn(left)?;
                 }
-                Some(Token::BracketOpen) => {
+                Token::BracketOpen => {
                     left = self.parse_index(left)?;
                 }
                 _ => break,
             }
         }
 
-        while let Some(next) = self.peek() {
+        while let Ok(next) = self.peek() {
             // If the precedence of the `peek`ed token is lower than the minimum, break
             // This means we've gotten to a point where the next token does *not* take precedence
             if Self::get_precedence(next) < min_precedence {
@@ -509,52 +504,48 @@ impl Parser {
 
     /// Parses literal primaries.
     fn parse_primary(&mut self) -> Result<Rc<ASTNode>> {
-        match self.peek() {
+        match self.peek()? {
             // process negative expressions
-            Some(Token::Sub) => {
-                if let Some(next) = self.peek_n(1) {
-                    match *next {
-                        // This is a literal negative
-                        Token::Number(value) => {
-                            // Consume both value and negative operator
-                            self.next();
-                            self.next();
+            Token::Sub => {
+                match *self.peek_n(1)? {
+                    // This is a literal negative
+                    Token::Number(value) => {
+                        // Consume both value and negative operator
+                        self.next();
+                        self.next();
 
-                            Ok(ASTNode::Literal(Token::Number(-value)).into())
-                        }
-
-                        // This is a unary negative expression
-                        _ => {
-                            // Consume negative, evaluate target
-                            self.next();
-                            let target = self
-                                .parse_operator(0)
-                                .context("failed to parse unary operand")?;
-
-                            Ok(ASTNode::UnaryOp {
-                                target,
-                                op: Token::Sub,
-                            }
-                            .into())
-                        }
+                        Ok(ASTNode::Literal(Token::Number(-value)).into())
                     }
-                } else {
-                    bail!("expected expression after '-', found EOF");
+
+                    // This is a unary negative expression
+                    _ => {
+                        // Consume negative, evaluate target
+                        self.next();
+                        let target = self
+                            .parse_operator(0)
+                            .context("failed to parse unary operand")?;
+
+                        Ok(ASTNode::UnaryOp {
+                            target,
+                            op: Token::Sub,
+                        }
+                        .into())
+                    }
                 }
             }
 
             // Literals
-            Some(t) if t.is_literal() => {
+            t if t.is_literal() => {
                 Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
             }
 
             // Identifiers
-            Some(Token::Identifier(_)) => {
+            Token::Identifier(_) => {
                 Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
             }
 
             // Unaries (!, ++, --)
-            Some(Token::LogicalNot) => {
+            Token::LogicalNot => {
                 // consumes the `!` and creates a unary operator
                 self.next();
                 Ok(ASTNode::UnaryOp {
@@ -565,7 +556,7 @@ impl Parser {
                 }
                 .into())
             }
-            Some(Token::Increment) => {
+            Token::Increment => {
                 self.next();
                 Ok(ASTNode::UnaryOp {
                     target: self
@@ -575,7 +566,7 @@ impl Parser {
                 }
                 .into())
             }
-            Some(Token::Decrement) => {
+            Token::Decrement => {
                 self.next();
                 Ok(ASTNode::UnaryOp {
                     target: self
@@ -587,16 +578,13 @@ impl Parser {
             }
 
             // Lists
-            Some(Token::BracketOpen) => self.parse_list().context("failed to parse list"),
+            Token::BracketOpen => self.parse_list().context("failed to parse list"),
 
             // Structure instances
-            Some(Token::New) => self
+            Token::New => self
                 .parse_struct_instance()
                 .context("failed to parse new structure instance"),
 
-            None => {
-                bail!("invalid primary: EOF");
-            }
             _ => {
                 bail!("invalid primary '{:?}'", self.peek());
             }
@@ -612,13 +600,13 @@ impl Parser {
         let mut items = vec![];
         loop {
             // check for exceptions
-            match self.peek() {
-                Some(Token::BracketClose) => {
+            match self.peek()? {
+                Token::BracketClose => {
                     // break on bracket close, indicating list end
                     self.next();
                     break;
                 }
-                Some(Token::Endl) => {
+                Token::Endl => {
                     // continue if list is interrupted by endline
                     self.next();
                     continue;
