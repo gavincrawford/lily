@@ -88,7 +88,7 @@ test!(comparison_boolean => (
 ));
 
 test!(comparison_truthy => (
-    a := 8
+    a := 4
 ));
 
 test!(functions => (

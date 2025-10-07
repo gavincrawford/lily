@@ -94,10 +94,11 @@ impl ASTNode {
     }
 
     /// Returns the truthiness of this node.
-    /// True booleans, literals, lists, structure instances, and functions are truthy.
+    /// True booleans, non-zero numbers, lists, structure instances, and functions are truthy.
     pub(crate) fn is_truthy(&self) -> bool {
         match self {
             ASTNode::Literal(Token::Bool(v)) => *v,
+            ASTNode::Literal(Token::Number(n)) => !(*n == 0.),
             ASTNode::Literal(ref t) if *t != Token::Undefined => true,
             ASTNode::List(_) => true,
             ASTNode::Instance { .. } => true,
