@@ -104,10 +104,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         match &*statement {
             ASTNode::Literal(Token::Identifier(sym)) => {
                 // resovle variable and return literal value
-                if let Variable::Owned(var) = self.get(&sym.as_id())? {
-                    return Ok(Some(var.into()));
+                match self.get(&sym.as_id())? {
+                    Variable::Owned(var) => Ok(Some(var.into())),
+                    Variable::Function(func) => Ok(Some(func.clone())),
+                    _ => Ok(None),
                 }
-                Ok(None)
             }
             ASTNode::Literal(_) | ASTNode::List(_) | ASTNode::Instance { .. } => {
                 // return raw literal without resolving
@@ -320,7 +321,21 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
 
                     // this branch should trigger on raw, local functions
-                    Variable::Function(function) => {
+                    Variable::Function(_) | Variable::Owned(_) => {
+                        // get the function node
+                        let function = match variable {
+                            Variable::Function(function) => function,
+                            Variable::Owned(var) => {
+                                let id = self.node_to_id(var.into())?;
+                                let Variable::Function(function) = self.get(&id)? else {
+                                    bail!("cannot execute variable");
+                                };
+                                function
+                            }
+                            _ => unreachable!(),
+                        };
+
+                        // execute it in context
                         if let Some(Variable::Owned(ASTNode::Instance { svt, .. })) =
                             instance_context
                         {
@@ -357,11 +372,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             }
                             .into(),
                         ))
-                    }
-
-                    // catch others
-                    _ => {
-                        bail!("no function `{:#?}` found", target);
                     }
                 };
 

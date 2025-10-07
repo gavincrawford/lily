@@ -200,12 +200,13 @@ fn arguments() {
 #[test]
 fn functions() {
     parse_eq!(
-        "func math a b do; let x = a + b; let y = a - b; return x * y; end;";
+        "func math a b do; let x = a + b; let y = a - b; return x * y; end; let other = math;";
         node!(func math(a, b) => block!(
             node!(declare x => node!(op ident!("a"), Add, ident!("b"))),
             node!(declare y => node!(op ident!("a"), Sub, ident!("b"))),
             node!(return node!(op ident!("x"), Mul, ident!("y")))
-        ))
+        )),
+        node!(declare other => ident!("math"))
     );
 }
 

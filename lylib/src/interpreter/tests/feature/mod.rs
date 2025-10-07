@@ -133,6 +133,10 @@ test!(indices_nested => (
 
 test!(indices_out_of_range => panic);
 
+test!(lambdas => (
+    res := 2
+));
+
 test!(imports => (
     get_res := 4,
     assign_res := "reassignment value",
