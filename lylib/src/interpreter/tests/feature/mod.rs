@@ -97,6 +97,10 @@ test!(functions => (
     c := true
 ));
 
+test!(functions_truthy => (
+    is_truthy := true
+));
+
 test!(loops => (
     x := 25
 ));
