@@ -69,7 +69,7 @@ impl Token {
     /// Returns true if `self` is an operator.
     /// Returns true for both numeric and logical operators.
     pub(crate) fn is_operator(&self) -> bool {
-        match self {
+        matches!(self,
             Token::Add
             | Token::Sub
             | Token::Mul
@@ -83,9 +83,8 @@ impl Token {
             | Token::LogicalEq
             | Token::LogicalNeq
             | Token::LogicalAnd
-            | Token::LogicalOr => true,
-            _ => false,
-        }
+            | Token::LogicalOr
+        )
     }
 
     /// Returns true if `self` is a literal.
