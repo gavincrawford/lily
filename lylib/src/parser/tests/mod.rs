@@ -64,10 +64,19 @@ fn lists() {
 #[test]
 fn indices() {
     parse_eq!(
-        "let a = list[1][2][3]; let b = (list[1])[2]; let c = list[(1 + 1)];";
+        "let a = list[1][2][3]; let b = (list[1])[2];";
         node!(declare a => node!(index node!(index node!(index ident!("list"), 1), 2), 3)),
-        node!(declare b => node!(index node!(index ident!("list"), 1), 2)),
-        node!(declare c => node!(list[node!(op 1, Add, 1)]))
+        node!(declare b => node!(index node!(index ident!("list"), 1), 2))
+    );
+}
+
+#[test]
+fn indices_complex() {
+    parse_eq!(
+        "let a = x[(1 + 1)]; let b = x[y[0]]; let c = x[y[z][0]];";
+        node!(declare a => node!(x[node!(op 1, Add, 1)])),
+        node!(declare b => node!(x[node!(y[0])])),
+        node!(declare c => node!(x[node!(index node!(y[ident!("z")]), 0)]))
     );
 }
 
@@ -83,7 +92,7 @@ fn math() {
 #[test]
 fn math_complex() {
     parse_eq!(
-        "let a = (1 + (2 / 4)) + (((1))+((1)));";
+        "let a = (1 + (2 / 4)) + (((((1))+((1)))));";
         node!(declare a => node!(op node!(op lit!(1), Add, node!(op 2, Div, 4)), Add, node!(op 1, Add, 1)))
     );
 }
