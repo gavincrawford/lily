@@ -1,5 +1,3 @@
-# TODO these aren't true lambdas-- yet
-
 func add a b do
   return a + b
 end

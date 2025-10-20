@@ -97,6 +97,10 @@ test!(functions => (
     c := true
 ));
 
+test!(functions_by_ref => (
+    res := 2
+));
+
 test!(functions_truthy => (
     is_truthy := true
 ));
@@ -136,10 +140,6 @@ test!(indices_nested => (
 ));
 
 test!(indices_out_of_range => panic);
-
-test!(lambdas => (
-    res := 2
-));
 
 test!(imports => (
     get_res := 4,
