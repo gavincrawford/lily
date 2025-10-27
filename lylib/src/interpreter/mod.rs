@@ -14,6 +14,7 @@ use std::{
     cell::RefCell,
     io::{Read, Write},
     rc::Rc,
+    path::PathBuf,
 };
 
 pub(crate) use id::*;
@@ -519,10 +520,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 Ok(Some(expr))
             }
-            ASTNode::Module { alias, body } => {
-                // TODO: it'd be nice to have the file path stuck in here somewhere for debugging
-                // information...
-
+            ASTNode::Module { path, alias, body } => {
                 let ctx = match alias {
                     // if alias exists, create named module and execute in its context
                     Some(sym) => {
@@ -539,8 +537,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 self.with_context(ctx, |interpreter| {
                     interpreter.execute(body.clone()).context(format!(
-                        "failed to evaluate module '{}'",
-                        (*alias).unwrap_or(intern!("anonymous"))
+                        "failed to evaluate module '{}' ({:?})",
+                        (*alias).unwrap_or(intern!("anonymous")),
+                        path.clone().unwrap_or(PathBuf::default()),
                     ))
                 })?;
                 Ok(None)

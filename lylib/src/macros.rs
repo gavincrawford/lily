@@ -188,6 +188,7 @@ macro_rules! node {
     (mod $id:tt => $body:expr) => {
         ASTNode::Module {
             alias: Some(intern!(stringify!($id)).into()),
+            path: None,
             body: $body,
         }.into()
     };

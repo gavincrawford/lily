@@ -6,6 +6,7 @@ use anyhow::{Context, Result};
 use std::{
     io::{Read, Write},
     rc::Rc,
+    path::PathBuf,
 };
 
 /// Lily configuration.
@@ -104,6 +105,7 @@ impl LyConfig {
                 Ok::<Rc<ASTNode>, anyhow::Error>(
                     ASTNode::Module {
                         alias: *alias,
+                        path: Some(PathBuf::from(source)),
                         body,
                     }
                     .into(),

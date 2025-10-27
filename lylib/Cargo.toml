@@ -1,10 +1,11 @@
 [package]
 name = "lylib"
-version = "0.23.5"
+version = "0.23.6"
 edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+derivative = "2.2"
 rustc-hash = "2.1"
 
 [dev-dependencies]

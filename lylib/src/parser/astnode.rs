@@ -1,13 +1,17 @@
 use super::*;
 use crate::interpreter::{AsID, IDKind, MemoryInterface, SVTable, Variable, ID};
+use derivative::Derivative;
 use std::{cell::RefCell, fmt::Display};
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Derivative)]
+#[derivative(Debug, PartialEq, Clone)]
 pub enum ASTNode {
     /// Represents a block of statements, grouped in a scope.
     Block(Vec<Rc<ASTNode>>),
     /// Holds a block, but represents a separate module.
     Module {
+        #[derivative(PartialEq = "ignore")]
+        path: Option<PathBuf>,
         alias: Option<usize>,
         body: Rc<ASTNode>,
     },
