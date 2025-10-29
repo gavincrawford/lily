@@ -56,18 +56,39 @@ impl ID {
         &self.id
     }
 
+    /// Converts an `ID` into a vector of `IDKind` components, preserving type information.
+    pub fn to_path_kinds(&self) -> Vec<IDKind> {
+        let mut path = Vec::new();
+        self.collect_path_kinds(&self.id, &mut path);
+        path
+    }
+
     /// Converts an `ID` into a vector of interned identifiers (usize).
+    ///
+    /// Note: This method loses type information about whether components are symbols or literals.
+    /// Use `to_path_kinds()` when you need to distinguish between them.
     pub fn to_path(&self) -> Vec<usize> {
         let mut path = Vec::new();
         self.collect_path_interned(&self.id, &mut path);
         path
     }
 
+    /// Helper function to recursively collect path components with type information.
+    fn collect_path_kinds(&self, kind: &IDKind, path: &mut Vec<IDKind>) {
+        match kind {
+            IDKind::Symbol(sym) => path.push(IDKind::Symbol(*sym)),
+            IDKind::Literal(val) => path.push(IDKind::Literal(*val)),
+            IDKind::Member { parent, member } => {
+                self.collect_path_kinds(parent, path);
+                self.collect_path_kinds(member, path);
+            }
+        }
+    }
+
     /// Helper function to recursively collect interned path components.
     fn collect_path_interned(&self, kind: &IDKind, path: &mut Vec<usize>) {
         match kind {
             IDKind::Symbol(sym) => path.push(*sym),
-            // TODO: this isn't right...
             IDKind::Literal(val) => path.push(*val),
             IDKind::Member { parent, member } => {
                 self.collect_path_interned(parent, path);
