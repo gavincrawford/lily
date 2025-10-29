@@ -17,7 +17,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(ID {
                     id: IDKind::Member {
                         parent,
-                        member: IDKind::Symbol(index).into(),
+                        member: IDKind::Literal(index).into(),
                     },
                 })
             }

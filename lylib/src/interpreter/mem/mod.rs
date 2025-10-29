@@ -50,10 +50,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         let item_ref = module.borrow().get_ref(item)?;
 
                         match &*item_ref.borrow() {
+                            // expose inner scope for instances
                             Variable::Owned(ASTNode::Instance { kind: _, svt }) => {
                                 module = svt.clone()
                             }
-                            Variable::Owned(ASTNode::List(_)) => {
+
+                            // lists & strings return their parent variable
+                            Variable::Owned(ASTNode::List(_))
+                            | Variable::Owned(ASTNode::Literal(Token::Str(_))) => {
                                 module = item_ref.clone();
                             }
                             _ => {}
