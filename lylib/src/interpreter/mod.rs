@@ -13,8 +13,8 @@ use anyhow::{bail, Context, Result};
 use std::{
     cell::RefCell,
     io::{Read, Write},
-    rc::Rc,
     path::PathBuf,
+    rc::Rc,
 };
 
 pub(crate) use id::*;
@@ -273,38 +273,72 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::FunctionCall { target, arguments } => {
                 // get target variable and check if we need to set instance context
                 let (variable, instance_context) = match &**target {
-                    ASTNode::Literal(Token::Identifier(sym)) => (self.get(&ID {
-                        id: IDKind::Symbol(*sym),
-                    })?, None),
-                    ASTNode::Deref { parent, .. } => {
-                        let id = self.node_to_id(target.clone())?;
-                        let variable = self.get(&id)?;
+                    ASTNode::Literal(Token::Identifier(sym)) => (
+                        self.get(&ID {
+                            id: IDKind::Symbol(*sym),
+                        })?,
+                        None,
+                    ),
+                    ASTNode::Deref { parent, child } => {
+                        // try to convert to ID for simple derefs (`a.b`)
+                        if let Ok(id) = self.node_to_id(target.clone()) {
+                            let variable = self.get(&id)?;
 
-                        // Check if this is an instance method call
-                        let instance_context = match &**parent {
-                            ASTNode::Literal(Token::Identifier(parent_sym)) => {
-                                // Try to get the parent variable, but don't fail if it doesn't exist
-                                // We need to handle this case because imported modules don't add
-                                // context *here*, they allow access to it through recursive
-                                // resolution in `resolve_access_target`
-                                if let Ok(parent_var) = self.get(&ID {
-                                    id: IDKind::Symbol(*parent_sym),
-                                }) {
-                                    match (&parent_var, &variable) {
-                                        (
-                                            Variable::Owned(ASTNode::Instance { .. }),
-                                            Variable::Function(_),
-                                        ) => Some(parent_var),
-                                        _ => None,
+                            // check if this is an instance method call
+                            let instance_context = match &**parent {
+                                ASTNode::Literal(Token::Identifier(parent_sym)) => {
+                                    // try to get the parent variable, but don't fail if it doesn't exist
+                                    // this is because we only need to expose contexts for some
+                                    // nodes, others apply to global context
+                                    // TODO: ID wrapper? we should probably make a less verbose way
+                                    // to initialize symbolic/literal IDs
+                                    if let Ok(parent_var) = self.get(&ID {
+                                        id: IDKind::Symbol(*parent_sym),
+                                    }) {
+                                        match (&parent_var, &variable) {
+                                            (
+                                                Variable::Owned(ASTNode::Instance { .. }),
+                                                Variable::Function(_),
+                                            ) => Some(parent_var),
+                                            _ => None,
+                                        }
+                                    } else {
+                                        None
                                     }
-                                } else {
-                                    None
                                 }
-                            }
-                            _ => None,
-                        };
+                                _ => None,
+                            };
 
-                        (variable, instance_context)
+                            (variable, instance_context)
+                        } else {
+                            // for complex derefs (like `parent().child`), evaluate the parent in-place
+                            let parent_value = self
+                                .execute_expr(parent)?
+                                .context("deref parent cannot be undefined")?;
+
+                            // get the child identifier
+                            let ASTNode::Literal(Token::Identifier(member_id)) = &**child else {
+                                bail!("deref child must be an identifier")
+                            };
+
+                            // get the variable from the parent value
+                            let variable = match &*parent_value {
+                                ASTNode::Instance { svt, .. } => {
+                                    svt.borrow().get_owned(*member_id)?
+                                }
+                                _ => bail!("cannot dereference member of {:#?}", parent_value),
+                            };
+
+                            // set instance context to the parent value (the instance we're calling the method on)
+                            let instance_context = match &*parent_value {
+                                ASTNode::Instance { .. } => {
+                                    Some(Variable::Owned(ASTNode::inner_to_owned(&parent_value)))
+                                }
+                                _ => None,
+                            };
+
+                            (variable, instance_context)
+                        }
                     }
                     other => bail!("cannot call {:#?}", other),
                 };

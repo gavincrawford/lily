@@ -5,8 +5,8 @@ use crate::{interpreter::*, lexer::*, parser::*};
 use anyhow::{Context, Result};
 use std::{
     io::{Read, Write},
-    rc::Rc,
     path::PathBuf,
+    rc::Rc,
 };
 
 /// Lily configuration.

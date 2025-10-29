@@ -30,10 +30,10 @@ let tree = new Node(1, new Node(2, -1, new Node(3, -1, new Node(4, -1, -1))), -1
 # check tree head == 1
 let head = tree.v
 
-# check left hand side value == 2
+# check other nodes
 let l_value = tree.left().v
-
-# TODO: test access by function several levels deep
+let l_r_value = tree.left().right().v
+let l_r_r_value = tree.left().right().right().v
 
 # check right hand side value doesn't exist
 let r_does_not_exist = tree.right()
