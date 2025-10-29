@@ -141,6 +141,14 @@ test!(indices_nested => (
 
 test!(indices_out_of_range => panic);
 
+test!(lists => (
+    empty == node!([]),
+    nested_empty == node!([node!([node!([node!([])])])]),
+    spread == node!([lit!(1), lit!(2), lit!(3)]),
+    spread_empty == node!([node!([]), node!([]), node!([])]),
+    spread_nested == node!([node!([lit!(1), lit!(2), lit!(3)])])
+));
+
 test!(imports => (
     get_res := 4,
     assign_res := "reassignment value",
