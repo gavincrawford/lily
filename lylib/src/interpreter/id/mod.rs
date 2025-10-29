@@ -28,17 +28,13 @@ pub(crate) trait AsID {
 
 impl AsID for String {
     fn as_id(self) -> ID {
-        ID {
-            id: IDKind::Symbol(intern!(self)),
-        }
+        ID::new_sym(intern!(self))
     }
 }
 
 impl AsID for &'static str {
     fn as_id(self) -> ID {
-        ID {
-            id: IDKind::Symbol(intern!(self)),
-        }
+        ID::new_sym(intern!(self))
     }
 }
 
