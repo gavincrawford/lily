@@ -216,16 +216,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     if let ASTNode::Literal(Token::Identifier(sym)) = &**target {
                         // get variable
                         let id = sym.as_id();
-                        if let Variable::Owned(current_value) = self.get(&id)? {
-                            if let ASTNode::Literal(Token::Number(n)) = current_value {
-                                // get new assignment value
-                                let new_value = match op {
-                                    Token::Increment => Token::Number(n + 1.0),
-                                    Token::Decrement => Token::Number(n - 1.0),
-                                    _ => unreachable!(),
-                                };
-                                self.assign(&id, Variable::Owned(ASTNode::Literal(new_value)))?;
-                            }
+                        if let Variable::Owned(ASTNode::Literal(Token::Number(n))) =
+                            self.get(&id)?
+                        {
+                            // get new assignment value
+                            let new_value = match op {
+                                Token::Increment => Token::Number(n + 1.0),
+                                Token::Decrement => Token::Number(n - 1.0),
+                                _ => unreachable!(),
+                            };
+                            self.assign(&id, Variable::Owned(ASTNode::Literal(new_value)))?;
                         }
                     } else {
                         bail!("invalid increment/decrement target: {target:?}");
