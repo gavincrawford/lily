@@ -42,26 +42,25 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // try to get module first, then check if it's a struct/list access
                     let module_result = module.borrow().get_module(item);
 
+                    // if this is a simple module, use that and continue
                     if let Ok(v) = module_result {
-                        // if this is a simple module, use that and continue
                         module = v;
-                    } else {
-                        // otherwise, this is a structure or list deref, so we have to find its SVT
-                        let item_ref = module.borrow().get_ref(item)?;
+                        continue;
+                    }
 
-                        match &*item_ref.borrow() {
-                            // expose inner scope for instances
-                            Variable::Owned(ASTNode::Instance { kind: _, svt }) => {
-                                module = svt.clone()
-                            }
+                    // otherwise, this is a structure or list deref, so we have to find its SVT
+                    let item_ref = module.borrow().get_ref(item)?;
 
-                            // lists & strings return their parent variable
-                            Variable::Owned(ASTNode::List(_))
-                            | Variable::Owned(ASTNode::Literal(Token::Str(_))) => {
-                                module = item_ref.clone();
-                            }
-                            _ => {}
-                        };
+                    match &*item_ref.borrow() {
+                        // expose inner scope for instances
+                        Variable::Owned(ASTNode::Instance { kind: _, svt }) => module = svt.clone(),
+
+                        // all other literals return their parent variable
+                        Variable::Owned(_) => {
+                            module = item_ref.clone();
+                        }
+
+                        _ => {}
                     };
                 }
                 *path.last().unwrap()
