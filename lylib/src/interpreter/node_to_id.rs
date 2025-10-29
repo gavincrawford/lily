@@ -4,7 +4,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Converts a node to an ID, if applicable.
     pub(crate) fn node_to_id(&mut self, node: Rc<ASTNode>) -> Result<ID> {
         match &*node {
-            ASTNode::Literal(Token::Identifier(id)) => Ok(id.as_id()),
+            ASTNode::Literal(Token::Identifier(id)) => Ok(ID {
+                id: IDKind::Symbol(*id),
+            }),
             ASTNode::Function { id, .. } => Ok(id.clone()),
             ASTNode::Index { target, index } => {
                 let parent = self.node_to_id(target.clone())?.get_kind().into();
@@ -15,7 +17,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(ID {
                     id: IDKind::Member {
                         parent,
-                        member: IDKind::Literal(index).into(),
+                        member: IDKind::Symbol(index).into(),
                     },
                 })
             }
@@ -27,7 +29,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 if let ASTNode::Literal(Token::Identifier(child_id)) = &**child {
                     // construct a member access ID
                     let parent_kind = Rc::new(parent_id.get_kind());
-                    let child_kind = Rc::new(IDKind::Literal(*child_id));
+                    let child_kind = Rc::new(IDKind::Symbol(*child_id));
 
                     Ok(ID {
                         id: IDKind::Member {

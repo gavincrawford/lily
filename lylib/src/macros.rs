@@ -173,7 +173,9 @@ macro_rules! node {
     // function declarations
     (func $fn:tt($($arg:tt),*) => $body:expr) => {
         ASTNode::Function {
-            id: intern!(stringify!($fn)).as_id(),
+            id: crate::interpreter::ID {
+                id: crate::interpreter::IDKind::Symbol(intern!(stringify!($fn))),
+            },
             arguments: vec![$(intern!(stringify!($arg))),*],
             body: $body,
         }.into()
@@ -196,7 +198,9 @@ macro_rules! node {
     // structures (`struct XYZ => block!(..)`)
     (struct $id:tt => $body:expr) => {
         ASTNode::Struct {
-            id: intern!(stringify!($id)).as_id(),
+            id: crate::interpreter::ID {
+                id: crate::interpreter::IDKind::Symbol(intern!(stringify!($id))),
+            },
             body: $body,
         }.into()
     };

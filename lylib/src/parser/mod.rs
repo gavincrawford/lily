@@ -1,6 +1,6 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
-use crate::interpreter::{AsID, Variable};
+use crate::interpreter::{IDKind, Variable, ID};
 use crate::lexer::{Lexer, Token};
 use anyhow::{bail, Context, Result};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
@@ -274,7 +274,9 @@ impl Parser {
             Some(Token::Identifier(sym)) => {
                 self.expect(Token::Endl)?;
                 Ok(ASTNode::Struct {
-                    id: sym.as_id(),
+                    id: ID {
+                        id: IDKind::Symbol(sym),
+                    },
                     body: self.parse()?,
                 }
                 .into())
@@ -301,7 +303,9 @@ impl Parser {
             self.expect(Token::BlockStart)?;
 
             Ok(ASTNode::Function {
-                id: sym.as_id(),
+                id: ID {
+                    id: IDKind::Symbol(sym),
+                },
                 body: self.parse().context("failed to parse function body")?,
                 arguments,
             }

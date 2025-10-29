@@ -105,7 +105,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         match &*statement {
             ASTNode::Literal(Token::Identifier(sym)) => {
                 // resovle variable and return literal value
-                match self.get(&sym.as_id())? {
+                match self.get(&ID {
+                    id: IDKind::Symbol(*sym),
+                })? {
                     Variable::Owned(var) => Ok(Some(var.into())),
                     Variable::Function(func) => Ok(Some(func.clone())),
                     _ => Ok(None),
@@ -215,7 +217,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // like that. that's a later fix, though
                     if let ASTNode::Literal(Token::Identifier(sym)) = &**target {
                         // get variable
-                        let id = sym.as_id();
+                        let id = ID {
+                            id: IDKind::Symbol(*sym),
+                        };
                         if let Variable::Owned(ASTNode::Literal(Token::Number(n))) =
                             self.get(&id)?
                         {
@@ -269,7 +273,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::FunctionCall { target, arguments } => {
                 // get target variable and check if we need to set instance context
                 let (variable, instance_context) = match &**target {
-                    ASTNode::Literal(Token::Identifier(sym)) => (self.get(&sym.as_id())?, None),
+                    ASTNode::Literal(Token::Identifier(sym)) => (self.get(&ID {
+                        id: IDKind::Symbol(*sym),
+                    })?, None),
                     ASTNode::Deref { parent, .. } => {
                         let id = self.node_to_id(target.clone())?;
                         let variable = self.get(&id)?;
@@ -281,7 +287,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 // We need to handle this case because imported modules don't add
                                 // context *here*, they allow access to it through recursive
                                 // resolution in `resolve_access_target`
-                                if let Ok(parent_var) = self.get(&parent_sym.as_id()) {
+                                if let Ok(parent_var) = self.get(&ID {
+                                    id: IDKind::Symbol(*parent_sym),
+                                }) {
                                     match (&parent_var, &variable) {
                                         (
                                             Variable::Owned(ASTNode::Instance { .. }),

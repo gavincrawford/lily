@@ -16,7 +16,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             self.scope_id += 1;
             for (idx, arg_sym) in arguments.iter().enumerate() {
                 self.declare(
-                    &arg_sym.as_id(),
+                    &ID {
+                        id: IDKind::Symbol(*arg_sym),
+                    },
                     Variable::Owned(ASTNode::inner_to_owned(&call_args[idx])),
                 )?;
             }

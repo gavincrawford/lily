@@ -31,7 +31,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
         // get variable id, stepping down if required
         let id = match id.get_kind() {
-            IDKind::Literal(id) => id,
+            IDKind::Symbol(sym) => sym,
+            IDKind::Literal(val) => val,
             IDKind::Member {
                 parent: _,
                 member: _,

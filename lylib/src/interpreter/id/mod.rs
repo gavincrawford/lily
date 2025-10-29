@@ -12,6 +12,7 @@ pub struct ID {
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum IDKind {
+    Symbol(usize),
     Literal(usize),
     Member {
         parent: Rc<IDKind>,
@@ -19,31 +20,19 @@ pub enum IDKind {
     },
 }
 
+// NOTE: this is left over from when this trait was used. it still has one use, for which it
+// actually does a good job at reducing verbosity, but it doesn't quite make sense to create an
+// entire trait for it
+
 pub(crate) trait AsID {
     /// Converts into an `ID` type.
     fn as_id(self) -> ID;
 }
 
-impl AsID for usize {
-    fn as_id(self) -> ID {
-        ID {
-            id: IDKind::Literal(self),
-        }
-    }
-}
-
-impl AsID for &usize {
-    fn as_id(self) -> ID {
-        ID {
-            id: IDKind::Literal(*self),
-        }
-    }
-}
-
 impl AsID for String {
     fn as_id(self) -> ID {
         ID {
-            id: IDKind::Literal(intern!(self)),
+            id: IDKind::Symbol(intern!(self)),
         }
     }
 }
@@ -51,7 +40,7 @@ impl AsID for String {
 impl AsID for &'static str {
     fn as_id(self) -> ID {
         ID {
-            id: IDKind::Literal(intern!(self)),
+            id: IDKind::Symbol(intern!(self)),
         }
     }
 }
@@ -77,7 +66,9 @@ impl ID {
     /// Helper function to recursively collect interned path components.
     fn collect_path_interned(&self, kind: &IDKind, path: &mut Vec<usize>) {
         match kind {
-            IDKind::Literal(id) => path.push(*id),
+            IDKind::Symbol(sym) => path.push(*sym),
+            // TODO: this isn't right...
+            IDKind::Literal(val) => path.push(*val),
             IDKind::Member { parent, member } => {
                 self.collect_path_interned(parent, path);
                 self.collect_path_interned(member, path);

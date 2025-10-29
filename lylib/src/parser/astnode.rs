@@ -1,5 +1,5 @@
 use super::*;
-use crate::interpreter::{AsID, IDKind, MemoryInterface, SVTable, Variable, ID};
+use crate::interpreter::{IDKind, MemoryInterface, SVTable, Variable, ID};
 use derivative::Derivative;
 use std::{cell::RefCell, fmt::Display};
 
@@ -79,10 +79,10 @@ impl ASTNode {
         if let ASTNode::Struct { id, body } = self {
             if let ASTNode::Block(nodes) = &**body {
                 // get the struct name for comparison
-                if let IDKind::Literal(struct_name) = id.get_kind() {
+                if let IDKind::Symbol(struct_name) = id.get_kind() {
                     for node in nodes {
                         if let ASTNode::Function { id, .. } = &**node {
-                            if let IDKind::Literal(name) = id.get_kind() {
+                            if let IDKind::Symbol(name) = id.get_kind() {
                                 // functions with an identical name to the structure are
                                 // constructors, and should be treated as such
                                 if name == struct_name {
@@ -138,7 +138,9 @@ impl ASTNode {
                             // if this field is literal, add it, bail otherwise
                             if let ASTNode::Literal(Token::Identifier(variable)) = &**target {
                                 default_fields.push((
-                                    variable.as_id(),
+                                    ID {
+                                        id: IDKind::Symbol(*variable),
+                                    },
                                     Variable::Owned(ASTNode::inner_to_owned(value)),
                                 ));
                             } else {
