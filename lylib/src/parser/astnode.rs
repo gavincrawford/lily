@@ -138,9 +138,7 @@ impl ASTNode {
                             // if this field is literal, add it, bail otherwise
                             if let ASTNode::Literal(Token::Identifier(variable)) = &**target {
                                 default_fields.push((
-                                    ID {
-                                        id: IDKind::Symbol(*variable),
-                                    },
+                                    ID::new_sym(*variable),
                                     Variable::Owned(ASTNode::inner_to_owned(value)),
                                 ));
                             } else {

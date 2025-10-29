@@ -20,10 +20,7 @@ pub enum IDKind {
     },
 }
 
-// NOTE: this is left over from when this trait was used. it still has one use, for which it
-// actually does a good job at reducing verbosity, but it doesn't quite make sense to create an
-// entire trait for it
-
+/// This trait provides an easy way to convert strings to symbolic IDs.
 pub(crate) trait AsID {
     /// Converts into an `ID` type.
     fn as_id(self) -> ID;
@@ -46,6 +43,13 @@ impl AsID for &'static str {
 }
 
 impl ID {
+    /// Creates a new symbolic ID.
+    pub(crate) fn new_sym(sym: usize) -> ID {
+        ID {
+            id: IDKind::Symbol(sym)
+        }
+    }
+
     /// Gets the inner `IDKind` of this identifier.
     pub fn get_kind(&self) -> IDKind {
         self.id.to_owned()

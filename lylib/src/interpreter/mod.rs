@@ -105,9 +105,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         match &*statement {
             ASTNode::Literal(Token::Identifier(sym)) => {
                 // resovle variable and return literal value
-                match self.get(&ID {
-                    id: IDKind::Symbol(*sym),
-                })? {
+                match self.get(&ID::new_sym(*sym))? {
                     Variable::Owned(var) => Ok(Some(var.into())),
                     Variable::Function(func) => Ok(Some(func.clone())),
                     _ => Ok(None),
@@ -217,9 +215,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // like that. that's a later fix, though
                     if let ASTNode::Literal(Token::Identifier(sym)) = &**target {
                         // get variable
-                        let id = ID {
-                            id: IDKind::Symbol(*sym),
-                        };
+                        let id = ID::new_sym(*sym);
                         if let Variable::Owned(ASTNode::Literal(Token::Number(n))) =
                             self.get(&id)?
                         {
@@ -274,9 +270,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // get target variable and check if we need to set instance context
                 let (variable, instance_context) = match &**target {
                     ASTNode::Literal(Token::Identifier(sym)) => (
-                        self.get(&ID {
-                            id: IDKind::Symbol(*sym),
-                        })?,
+                        self.get(&ID::new_sym(*sym))?,
                         None,
                     ),
                     ASTNode::Deref { parent, child } => {
@@ -290,11 +284,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                     // try to get the parent variable, but don't fail if it doesn't exist
                                     // this is because we only need to expose contexts for some
                                     // nodes, others apply to global context
-                                    // TODO: ID wrapper? we should probably make a less verbose way
-                                    // to initialize symbolic/literal IDs
-                                    if let Ok(parent_var) = self.get(&ID {
-                                        id: IDKind::Symbol(*parent_sym),
-                                    }) {
+                                    if let Ok(parent_var) = self.get(&ID::new_sym(*parent_sym)) {
                                         match (&parent_var, &variable) {
                                             (
                                                 Variable::Owned(ASTNode::Instance { .. }),
