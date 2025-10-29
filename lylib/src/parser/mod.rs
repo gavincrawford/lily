@@ -177,14 +177,21 @@ impl Parser {
             // parse the module
             // TODO: we should wrap up all errors that occur here so that every single one of them has
             // the path attached. this will make debugging much easier.
-            let body = parser.parse().context(format!("failed to parse module body\npath => {:?}", path))?;
+            let body = parser
+                .parse()
+                .context(format!("failed to parse module body\npath => {:?}", path))?;
 
             // reset old parser working directory
             parser.set_pwd(temp);
 
             // TODO: more extensive import tests. will require *lots* of files, though
 
-            Ok(ASTNode::Module { alias, path: Some(path), body }.into())
+            Ok(ASTNode::Module {
+                alias,
+                path: Some(path),
+                body,
+            }
+            .into())
         } else {
             bail!("expected path after import");
         }

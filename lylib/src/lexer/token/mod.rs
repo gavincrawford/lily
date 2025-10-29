@@ -69,21 +69,22 @@ impl Token {
     /// Returns true if `self` is an operator.
     /// Returns true for both numeric and logical operators.
     pub(crate) fn is_operator(&self) -> bool {
-        matches!(self,
+        matches!(
+            self,
             Token::Add
-            | Token::Sub
-            | Token::Mul
-            | Token::Div
-            | Token::Floor
-            | Token::Pow
-            | Token::LogicalL
-            | Token::LogicalLe
-            | Token::LogicalG
-            | Token::LogicalGe
-            | Token::LogicalEq
-            | Token::LogicalNeq
-            | Token::LogicalAnd
-            | Token::LogicalOr
+                | Token::Sub
+                | Token::Mul
+                | Token::Div
+                | Token::Floor
+                | Token::Pow
+                | Token::LogicalL
+                | Token::LogicalLe
+                | Token::LogicalG
+                | Token::LogicalGe
+                | Token::LogicalEq
+                | Token::LogicalNeq
+                | Token::LogicalAnd
+                | Token::LogicalOr
         )
     }
 
