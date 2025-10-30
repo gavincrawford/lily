@@ -340,7 +340,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // Resolve values before passing them as arguments. We do this so that the
                 // arguments are already in their most basic form-- math expressions become single
                 // numbers, variables become owned values, etc.
-                let mut resolved_args = vec![];
+                let mut resolved_args = Vec::with_capacity(arguments.len());
                 for arg in arguments {
                     resolved_args.push(
                         self.execute_expr(arg)
