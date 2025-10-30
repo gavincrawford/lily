@@ -102,7 +102,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Executes an individual expression.
     fn execute_expr(&mut self, statement: &Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
         let statement = statement.clone();
-        match &*statement {
+        match statement.as_ref() {
             ASTNode::Literal(Token::Identifier(sym)) => {
                 // resovle variable and return literal value
                 match self.get(&ID::new_sym(*sym))? {
@@ -170,7 +170,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 // math & numeric equality
                 opmatch!(
-                    match op, &*a, &*b => Number(l), Number(r) if
+                    match op, a.as_ref(), b.as_ref() => Number(l), Number(r) if
                     Add => Number(l + r),
                     Sub => Number(l - r),
                     Mul => Number(l * r),
@@ -185,35 +185,35 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 // bi-directional string concatenation
                 opmatch!(
-                    match op, &*a, &*b => Str(l), r if
+                    match op, a.as_ref(), b.as_ref() => Str(l), r if
                     Add => Str(l.clone() + &*format!("{r}"))
                 );
                 opmatch!(
-                    match op, &*a, &*b => l, Str(r) if
+                    match op, a.as_ref(), b.as_ref() => l, Str(r) if
                     Add => Str(format!("{l}") + r)
                 );
 
                 // and & or
                 opmatch!(
-                    match op, &*a, &*b => Bool(l), Bool(r) if
+                    match op, a.as_ref(), b.as_ref() => Bool(l), Bool(r) if
                     LogicalAnd => Bool(*l && *r),
                     LogicalOr => Bool(*l || *r)
                 );
 
                 // equality
                 opmatch!(
-                    match op, &*a, &*b => l, r if
+                    match op, a.as_ref(), b.as_ref() => l, r if
                     LogicalEq => Bool(l == r),
                     LogicalNeq => Bool(l != r)
                 );
-                bail!("operator not implemented ({} {:#?} {})", &*a, op, &*b)
+                bail!("operator not implemented ({} {:#?} {})", a.as_ref(), op, b.as_ref())
             }
             ASTNode::UnaryOp { target, op } => match op {
                 // increment/decrement operations need special handling
                 Token::Increment | Token::Decrement => {
                     // TODO: i'm pretty sure this doesn't work with dot notation or anything
                     // like that. that's a later fix, though
-                    if let ASTNode::Literal(Token::Identifier(sym)) = &**target {
+                    if let ASTNode::Literal(Token::Identifier(sym)) = target.as_ref() {
                         // get variable
                         let id = ID::new_sym(*sym);
                         if let Variable::Owned(ASTNode::Literal(Token::Number(n))) =
@@ -268,7 +268,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::FunctionCall { target, arguments } => {
                 // get target variable and check if we need to set instance context
-                let (variable, instance_context) = match &**target {
+                let (variable, instance_context) = match target.as_ref() {
                     ASTNode::Literal(Token::Identifier(sym)) => (
                         self.get(&ID::new_sym(*sym))?,
                         None,
@@ -307,12 +307,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .context("deref parent cannot be undefined")?;
 
                             // get the child identifier
-                            let ASTNode::Literal(Token::Identifier(member_id)) = &**child else {
+                            let ASTNode::Literal(Token::Identifier(member_id)) = child.as_ref() else {
                                 bail!("deref child must be an identifier")
                             };
 
                             // get the variable from the parent value
-                            let variable = match &*parent_value {
+                            let variable = match parent_value.as_ref() {
                                 ASTNode::Instance { svt, .. } => {
                                     svt.borrow().get_owned(*member_id)?
                                 }
@@ -320,7 +320,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             };
 
                             // set instance context to the parent value (the instance we're calling the method on)
-                            let instance_context = match &*parent_value {
+                            let instance_context = match parent_value.as_ref() {
                                 ASTNode::Instance { .. } => {
                                     Some(Variable::Owned(ASTNode::inner_to_owned(&parent_value)))
                                 }
@@ -482,7 +482,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .unwrap();
 
                 // find item if applicable, bail otherwise
-                match &*target {
+                match target.as_ref() {
                     ASTNode::List(items) => {
                         if let Variable::Owned(value) = &*items
                             .get(usize_idx)
@@ -522,10 +522,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         .context("deref parent cannot be undefined")?;
 
                     // deref child & pull value from svt
-                    let ASTNode::Literal(Token::Identifier(member_id)) = &**child else {
+                    let ASTNode::Literal(Token::Identifier(member_id)) = child.as_ref() else {
                         bail!("deref child must be an identifier")
                     };
-                    match &*parent {
+                    match parent.as_ref() {
                         ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_id)?,
                         _ => bail!("cannot dereference member of {:#?}", parent),
                     }
