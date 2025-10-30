@@ -76,24 +76,29 @@ impl ASTNode {
     /// Returns a reference to the constructor of the structure represented by this node. If this
     /// node is not a structure, or no constructor was found, returns `None`.
     pub(crate) fn constructor(&self) -> Option<Rc<ASTNode>> {
-        if let ASTNode::Struct { id, body } = self {
-            if let ASTNode::Block(nodes) = &**body {
-                // get the struct name for comparison
-                if let IDKind::Symbol(struct_name) = id.get_kind() {
-                    for node in nodes {
-                        if let ASTNode::Function { id, .. } = &**node {
-                            if let IDKind::Symbol(name) = id.get_kind() {
-                                // functions with an identical name to the structure are
-                                // constructors, and should be treated as such
-                                if name == struct_name {
-                                    return Some(node.clone());
-                                }
-                            }
-                        }
+        // unwrap structure fields
+        let ASTNode::Struct { id, body } = self else {
+            return None;
+        };
+
+        // find constructor function in struct body
+        if let (ASTNode::Block(nodes), IDKind::Symbol(struct_name)) = (body.as_ref(), id.get_kind())
+        {
+            for node in nodes {
+                // unwrap function node to get ID value, skipping others
+                let ASTNode::Function { id, .. } = node.as_ref() else {
+                    continue;
+                };
+
+                // functions with an identical name to the structure are constructors
+                if let IDKind::Symbol(name) = id.get_kind() {
+                    if name == struct_name {
+                        return Some(node.clone());
                     }
                 }
             }
         }
+
         None
     }
 
