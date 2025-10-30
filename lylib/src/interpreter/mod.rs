@@ -186,11 +186,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // bi-directional string concatenation
                 opmatch!(
                     match op, a.as_ref(), b.as_ref() => Str(l), r if
-                    Add => Str(l.clone() + &*format!("{r}"))
+                    Add => Str(format!("{l}{r}"))
                 );
                 opmatch!(
                     match op, a.as_ref(), b.as_ref() => l, Str(r) if
-                    Add => Str(format!("{l}") + r)
+                    Add => Str(format!("{l}{r}"))
                 );
 
                 // and & or
@@ -206,7 +206,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     LogicalEq => Bool(l == r),
                     LogicalNeq => Bool(l != r)
                 );
-                bail!("operator not implemented ({} {:#?} {})", a.as_ref(), op, b.as_ref())
+                bail!(
+                    "operator not implemented ({} {op:#?} {})",
+                    a.as_ref(),
+                    b.as_ref()
+                )
             }
             ASTNode::UnaryOp { target, op } => match op {
                 // increment/decrement operations need special handling
