@@ -1,14 +1,14 @@
-//!  # Lily
-//!  ## Running a Buffer
-//!  To run a buffer, use the configuration struct:
-/// ```
-/// use lylib::LyConfig;
-/// use std::io::{stdin, stdout};
-/// # fn main() {
-/// let cfg = LyConfig::new()
-///     .execute("print(\"hello world!\")", stdout(), stdin());
-/// # }
-/// ```
+//! # Lily
+//! To start using Lily, execute a buffer using the `LyConfig` helper!
+//! The config helper allows you to configure language behavior.
+//! ```
+//! use lylib::LyConfig;
+//! use std::io::{stdin, stdout};
+//! # fn main() {
+//! let cfg = LyConfig::new()
+//!     .execute("print(\"hello world!\")", stdout(), stdin());
+//! # }
+//! ```
 
 // Export macros crate-wide
 #[macro_use]
