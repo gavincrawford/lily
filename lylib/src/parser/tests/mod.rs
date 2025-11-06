@@ -104,21 +104,35 @@ fn comparisons() {
         let b = 100 <= 200;
         let c = 200 > 100;
         let d = 200 >= 100;
-        let e = !true;
-        let f = true && false;
-        let g = true || false;
+        let e = true && false;
+        let f = true || false;
         a++;
         a--;";
         node!(declare a => node!(op 100, LogicalL, 200)),
         node!(declare b => node!(op 100, LogicalLe, 200)),
         node!(declare c => node!(op 200, LogicalG, 100)),
         node!(declare d => node!(op 200, LogicalGe, 100)),
-        node!(declare e => node!(unary LogicalNot, lit!(true))),
-        node!(declare f => node!(op true, LogicalAnd, false)),
-        node!(declare g => node!(op true, LogicalOr, false)),
+        node!(declare e => node!(op true, LogicalAnd, false)),
+        node!(declare f => node!(op true, LogicalOr, false)),
         node!(unary Increment, ident!("a")),
         node!(unary Decrement, ident!("a"))
     );
+}
+
+#[test]
+fn unary() {
+    parse_eq!(
+        "let v = !true;";
+        node!(declare v => node!(unary LogicalNot, lit!(true)))
+    )
+}
+
+#[test]
+fn unary_nested() {
+    parse_eq!(
+        "let v = !!true;";
+        node!(declare v => node!(unary LogicalNot, node!(unary LogicalNot, lit!(true))))
+    )
 }
 
 #[test]

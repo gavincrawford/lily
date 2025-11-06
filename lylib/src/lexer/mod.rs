@@ -162,20 +162,26 @@ impl Lexer {
                         match (token, c) {
                             (Equal, '=') => tokens.push(LogicalEq),
                             (Equal, _) => tokens.push(Equal),
-                            (LogicalNot, '=') => tokens.push(LogicalNeq),
                             (LogicalL, '=') => tokens.push(LogicalLe),
                             (LogicalL, _) => tokens.push(LogicalL),
                             (LogicalG, '=') => tokens.push(LogicalGe),
                             (LogicalG, _) => tokens.push(LogicalG),
-                            (LogicalAnd, '&') => {
-                                tokens.push(LogicalAnd);
-                            }
-                            (LogicalOr, '|') => {
-                                tokens.push(LogicalOr);
+                            (LogicalAnd, '&') => tokens.push(LogicalAnd),
+                            (LogicalOr, '|') => tokens.push(LogicalOr),
+                            (LogicalNot, '=') => tokens.push(LogicalNeq),
+                            (LogicalNot, _) => {
+                                // NOTE:
+                                // this bit is required to skip the character advancement that
+                                // occurs for all of the other branches here. this specifically
+                                // fixes double negatives (`!!true`). it's likely that there's
+                                // other bugs similar to this one that might need this workaround
+                                tokens.push(LogicalNot);
+                                self.equality_register = None;
+                                mode = CaptureMode::General;
+                                continue;
                             }
                             _ => {
-                                tokens.push(LogicalNot);
-                                self.keyword_register.push(c);
+                                unreachable!()
                             }
                         }
                     }
