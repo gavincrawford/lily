@@ -273,10 +273,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::FunctionCall { target, arguments } => {
                 // get target variable and check if we need to set instance context
                 let (variable, instance_context) = match target.as_ref() {
-                    ASTNode::Literal(Token::Identifier(sym)) => (
-                        self.get(&ID::new_sym(*sym))?,
-                        None,
-                    ),
+                    ASTNode::Literal(Token::Identifier(sym)) => {
+                        (self.get(&ID::new_sym(*sym))?, None)
+                    }
                     ASTNode::Deref { parent, child } => {
                         // try to convert to ID for simple derefs (`a.b`)
                         if let Ok(id) = self.node_to_id(target.clone()) {
@@ -311,7 +310,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .context("deref parent cannot be undefined")?;
 
                             // get the child identifier
-                            let ASTNode::Literal(Token::Identifier(member_id)) = child.as_ref() else {
+                            let ASTNode::Literal(Token::Identifier(member_id)) = child.as_ref()
+                            else {
                                 bail!("deref child must be an identifier")
                             };
 
@@ -405,7 +405,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         Ok(Some(
                             ASTNode::Instance {
                                 kind: variable.into(),
-                                svt: svt,
+                                svt,
                             }
                             .into(),
                         ))

@@ -42,7 +42,7 @@ impl ID {
     /// Creates a new symbolic ID.
     pub(crate) fn new_sym(sym: usize) -> ID {
         ID {
-            id: IDKind::Symbol(sym)
+            id: IDKind::Symbol(sym),
         }
     }
 
