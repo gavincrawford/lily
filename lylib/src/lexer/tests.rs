@@ -89,13 +89,17 @@ fn math() {
 
 #[test]
 fn unary() {
-    lex_eq!("var++; var--; !var;" =>
+    lex_eq!("var++; var--; !var; !!var;" =>
         Increment,
         Identifier(intern!("var")),
         Endl,
         Decrement,
         Identifier(intern!("var")),
         Endl,
+        LogicalNot,
+        Identifier(intern!("var")),
+        Endl,
+        LogicalNot,
         LogicalNot,
         Identifier(intern!("var")),
         Endl
@@ -210,6 +214,15 @@ fn functions() {
         Number(4.),
         ParenClose
     );
+
+    lex_eq!("fna(fnb())" =>
+        Identifier(intern!("fna")),
+        ParenOpen,
+        Identifier(intern!("fnb")),
+        ParenOpen,
+        ParenClose,
+        ParenClose
+    );
 }
 
 #[test]
@@ -221,8 +234,8 @@ fn strings() {
 
 #[test]
 fn chars() {
-    lex_eq!("'a' 'b' 'c';" =>
-        Char('a'), Char('b'), Char('c'), Endl
+    lex_eq!("'a' 'b' 'c' '\"';" =>
+        Char('a'), Char('b'), Char('c'), Char('\"'), Endl
     );
 }
 
