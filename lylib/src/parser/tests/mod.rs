@@ -122,16 +122,12 @@ fn comparisons() {
 #[test]
 fn unary() {
     parse_eq!(
-        "let v = !true;";
-        node!(declare v => node!(unary LogicalNot, lit!(true)))
-    )
-}
-
-#[test]
-fn unary_nested() {
-    parse_eq!(
-        "let v = !!true;";
-        node!(declare v => node!(unary LogicalNot, node!(unary LogicalNot, lit!(true))))
+        "let a = !true;
+        let b = !!true;
+        let c = !!!true;";
+        node!(declare a => node!(unary LogicalNot, lit!(true))),
+        node!(declare b => node!(unary LogicalNot, node!(unary LogicalNot, lit!(true)))),
+        node!(declare c => node!(unary LogicalNot, node!(unary LogicalNot, node!(unary LogicalNot, lit!(true)))))
     )
 }
 
