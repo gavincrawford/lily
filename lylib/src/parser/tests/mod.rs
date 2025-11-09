@@ -132,6 +132,32 @@ fn unary() {
 }
 
 #[test]
+fn unary_complex() {
+    parse_eq!(
+        "let a = -(1 + 2);
+        let b = -x;
+        let c = !!(1 + 1);
+        let d = -list[0];";
+        node!(declare a => node!(unary Sub, node!(op 1, Add, 2))),
+        node!(declare b => node!(unary Sub, ident!("x"))),
+        node!(declare c => node!(unary LogicalNot, node!(unary LogicalNot, node!(op 1, Add, 1)))),
+        node!(declare d => node!(unary Sub, node!(list[0])))
+    );
+}
+
+#[test]
+fn unary_mixed() {
+    parse_eq!(
+        "let a = -!true;
+        let b = !-x;
+        let c = -!!y;";
+        node!(declare a => node!(unary Sub, node!(unary LogicalNot, lit!(true)))),
+        node!(declare b => node!(unary LogicalNot, node!(unary Sub, ident!("x")))),
+        node!(declare c => node!(unary Sub, node!(unary LogicalNot, node!(unary LogicalNot, ident!("y")))))
+    );
+}
+
+#[test]
 fn precedence() {
     parse_eq!(
         "let a = 1 + 1 == 4 / 2;
@@ -272,5 +298,26 @@ fn structs() {
             node!(declare value => lit!(0))
         )),
         node!(declare instance => node!(Number()))
+    );
+}
+
+#[test]
+fn loops() {
+    parse_eq!(
+        "while true do; a = a + 1; end;
+        while x < 10 do; x++; end;
+        while 1 + 1 > 0 do; end;";
+        node!(
+            loop lit!(true) =>
+                block!(node!(assign a => node!(op ident!("a"), Add, lit!(1))));
+        ),
+        node!(
+            loop node!(op ident!("x"), LogicalL, lit!(10)) =>
+                block!(node!(unary Increment, ident!("x")));
+        ),
+        node!(
+            loop node!(op node!(op 1, Add, 1), LogicalG, lit!(0)) =>
+                block!();
+        )
     );
 }

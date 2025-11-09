@@ -65,6 +65,9 @@ macro_rules! block {
 /// // conditionals
 /// node!(if lit!(true) => block!(lit!(1)); else => block!(lit!(2)););
 ///
+/// // loops
+/// node!(loop lit!(true) => block!(node!(assign x => lit!(1))););
+///
 /// // function calls
 /// node!(print(lit!(42)));
 /// node!(math.pow(lit!(2), lit!(3))); // module function call
@@ -147,6 +150,14 @@ macro_rules! node {
             condition: $cond,
             if_body: $ifbody,
             else_body: $elsebody,
+        }.into()
+    };
+
+    // loops (`loop node!(..) => block!(..);`)
+    (loop $cond:expr => $body:expr;) => {
+        ASTNode::Loop {
+            condition: $cond,
+            body: $body,
         }.into()
     };
 
