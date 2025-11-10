@@ -560,11 +560,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let ctx = match alias {
                     // if alias exists, create named module and execute in its context
                     Some(sym) => {
-                        if let Some(current_context) = self.context.clone() {
-                            Some(current_context.borrow_mut().add_module(*sym))
-                        } else {
-                            Some(self.memory.borrow_mut().add_module(*sym))
-                        }
+                        let context = self.context.clone().unwrap_or(self.memory.clone());
+                        let module = context.borrow_mut().add_module(*sym);
+                        Some(module)
                     }
 
                     // otherwise, run in anonymous (current) context
