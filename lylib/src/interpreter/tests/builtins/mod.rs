@@ -36,3 +36,5 @@ test!(sort => (
         lit!("mango")
     ])
 ));
+
+test!(sort_mixed_types => panic);
