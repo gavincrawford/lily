@@ -76,6 +76,10 @@ impl PartialOrd for Variable {
                 Variable::Owned(ASTNode::Literal(Token::Number(a))),
                 Variable::Owned(ASTNode::Literal(Token::Number(b))),
             ) => a.partial_cmp(b),
+            (
+                Variable::Owned(ASTNode::Literal(Token::Str(a))),
+                Variable::Owned(ASTNode::Literal(Token::Str(b))),
+            ) => a.partial_cmp(b),
             _ => panic!("cannot order variables ({self:?}, {other:?})"),
         }
     }
