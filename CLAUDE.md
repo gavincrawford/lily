@@ -51,21 +51,31 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 - **Memory Management**: Uses `SVTable` (Scope-Variable Table) with reference counting (`Rc<RefCell<>>`) and string interning for efficient identifier storage
 - **String Interning**: Global `StringInterner` deduplicates strings, using `usize` indices for fast lookups
 - **Variable System**: Supports scoped variables, modules, and function execution contexts
-- **Built-ins**: Standard functions like `print`, `len`, `sort`, `chars` in `interpreter/builtins.rs`
+- **Built-ins**: Standard functions in `interpreter/builtins.rs`:
+  - `print` - Outputs values to stdout
+  - `len` - Returns length of lists or strings
+  - `sort` - Sorts lists of numbers or strings (validates type consistency; errors on mixed types)
+  - `chars` - Converts strings to character lists
+  - `assert` - Validates conditions, errors if false
 - **Standard Library**: Located in `ly/src/std/` (currently only contains `math.ly`)
 
 ### Module Structure
 
 - **lylib/src/interpreter/mod.rs**: Interpreter implementation, executes syntax trees
+- **lylib/src/interpreter/builtins.rs**: Built-in function definitions (print, len, sort, chars, assert)
+- **lylib/src/interpreter/execute_function.rs**: Function execution logic
+- **lylib/src/interpreter/node_to_id.rs**: Converts AST nodes to identifiers
+- **lylib/src/interpreter/resolve_refs.rs**: Resolves references in lists (indices and nested lists)
 - **lylib/src/interpreter/mem/**: Memory management subsystem with variable tracking and scope tables
-- **lylib/src/interpreter/id.rs**: Identifier class declaration and associated functions
+- **lylib/src/interpreter/id/**: Identifier class declaration and associated functions
 - **lylib/src/interpreter/tests/**: Extensive test suite organized by feature/builtin/implementation categories
 - **lylib/src/interner.rs**: String interning system for memory optimization
 - **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens
 - **lylib/src/lexer/token/mod.rs**: Token definition
 - **lylib/src/parser/mod.rs**: Parser implementation, converts tokens into a syntax tree
 - **lylib/src/parser/astnode.rs**: AST node variant definitions
-- **ly/src/execute.rs**: Main execution logic for the CLI
+- **lylib/src/execute.rs**: Configuration and execution logic for running Lily programs
+- **ly/src/main.rs**: CLI entry point
 
 ## Macros System
 
@@ -90,9 +100,10 @@ The project uses an extensive macro system (`lylib/src/macros.rs`) to simplify A
 
 - **`parse_eq!()`** - Tests parser output against expected AST
 - **`interpret!()`** - Executes `.ly` files and captures output for testing
-- **`test!()`** - Comprehensive test macro with two modes:
+- **`test!()`** - Comprehensive test macro with three modes:
   - Variable equality: `test!(filename => (var := expected_value))`
   - Output testing: `test!(filename => "expected output")`
+  - Panic/error testing: `test!(filename => panic)` - expects the test to fail
 
 ### Built-in Function Macro
 
