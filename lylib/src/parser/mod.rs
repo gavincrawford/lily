@@ -1,6 +1,6 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
-use crate::interpreter::{Variable, ID};
+use crate::interpreter::{MemoryInterface, SVTable, Variable, ID};
 use crate::lexer::{Lexer, Token};
 use anyhow::{bail, Context, Result};
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
@@ -279,12 +279,59 @@ impl Parser {
         self.expect(Token::Struct)?;
         match self.next() {
             Some(Token::Identifier(sym)) => {
+                // expect endl before struct body
                 self.expect(Token::Endl)?;
-                Ok(ASTNode::Struct {
-                    id: ID::new_sym(sym),
-                    body: self.parse()?,
+
+                // parse body in its entirety
+                let body = self.parse()?;
+
+                // find default fields
+                let mut default_fields = vec![];
+                let ASTNode::Block(body_nodes) = &*body else {
+                    unreachable!();
+                };
+                for node in body_nodes {
+                    match &**node {
+                        // if the member is a structure variable, add an owned value
+                        ASTNode::Declare { target, value } => {
+                            // if this field is literal, add it, bail otherwise
+                            let ASTNode::Literal(Token::Identifier(variable)) = &**target else {
+                                bail!("invalid default field '{:?}'", target);
+                            };
+                            default_fields.push((
+                                ID::new_sym(*variable),
+                                Variable::Owned(ASTNode::inner_to_owned(value)),
+                            ));
+                        }
+
+                        // if the member is a function, add a reference to it
+                        ASTNode::Function { id, .. } => {
+                            default_fields.push((id.clone(), Variable::Function(node.clone())))
+                        }
+
+                        other => {
+                            bail!("unexpected structure field: {other:?}")
+                        }
+                    }
                 }
-                .into())
+
+                // create a new variable table and instantiate default values
+                let mut template = SVTable::new();
+                for (target, value) in default_fields {
+                    // get the first value in the interned path
+                    let id = *target.to_path().first().unwrap();
+
+                    // add it to the table
+                    template.declare(id, value, 0)?;
+                }
+
+                // create structure & provide the new template
+                let node = ASTNode::Struct {
+                    id: ID::new_sym(sym),
+                    body,
+                    template,
+                };
+                Ok(node.into())
             }
             other => {
                 bail!("expected identifier, found {:?}", other)

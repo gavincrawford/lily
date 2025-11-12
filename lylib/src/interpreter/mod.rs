@@ -391,7 +391,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         // get template as refcell
                         let svt = Rc::new(RefCell::new(
                             structure
-                                .create_struct_template()
+                                .template()
                                 .context("failed to create structure template")?,
                         ));
 

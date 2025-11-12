@@ -209,6 +209,8 @@ macro_rules! node {
         ASTNode::Struct {
             id: crate::interpreter::ID::new_sym(intern!(stringify!($id))),
             body: $body,
+            // this template doesn't need to match for testing purposes, and is exempt
+            template: crate::parser::SVTable::new(),
         }.into()
     };
 

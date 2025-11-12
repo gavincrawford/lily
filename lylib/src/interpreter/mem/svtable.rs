@@ -15,6 +15,31 @@ pub struct SVTable {
     modules: FxHashMap<usize, Rc<RefCell<SVTable>>>,
 }
 
+impl Clone for SVTable {
+    /// Deep clone the SVTable, creating new Rc<RefCell<Variable>> instances for each variable.
+    fn clone(&self) -> Self {
+        Self {
+            // deep clone the table: for each scope, create new Rc<RefCell<Variable>> instances
+            table: self
+                .table
+                .iter()
+                .map(|scope| {
+                    scope
+                        .iter()
+                        .map(|(&id, var)| (id, Rc::new(RefCell::new(var.borrow().clone()))))
+                        .collect()
+                })
+                .collect(),
+            // deep clone the modules: create new Rc<RefCell<SVTable>> instances
+            modules: self
+                .modules
+                .iter()
+                .map(|(&id, module)| (id, Rc::new(RefCell::new(module.borrow().clone()))))
+                .collect(),
+        }
+    }
+}
+
 impl SVTable {
     /// Creates a new scoped-variable table with a default scope.
     #[inline]
