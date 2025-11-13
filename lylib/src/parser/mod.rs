@@ -111,14 +111,20 @@ impl Parser {
     fn parse_statement(&mut self) -> Result<Rc<ASTNode>> {
         // process all possible base statements
         let result = match self.peek()? {
-            Token::Import => self.parse_import(),
-            Token::Let => self.parse_decl_var(),
-            Token::If => self.parse_cond(),
-            Token::Function => self.parse_decl_fn(),
-            Token::Struct => self.parse_decl_struct(),
-            Token::While => self.parse_while(),
+            Token::Import => self.parse_import().context("failed to parse import"),
+            Token::Let => self.parse_decl_var().context("failed to parse declaration"),
+            Token::If => self.parse_cond().context("failed to parse conditional"),
+            Token::Function => self
+                .parse_decl_fn()
+                .context("failed to parse function declaration"),
+            Token::Struct => self
+                .parse_decl_struct()
+                .context("failed to parse structure declaration"),
+            Token::While => self.parse_while().context("failed to parse while loop"),
             Token::Identifier(_) => self.parse_expr(None),
-            Token::Return => self.parse_return(),
+            Token::Return => self
+                .parse_return()
+                .context("failed to parse return statement"),
             Token::Increment | Token::Decrement => {
                 // safety: destructuring
                 self.parse_operator(Self::get_precedence(self.peek().unwrap()))
