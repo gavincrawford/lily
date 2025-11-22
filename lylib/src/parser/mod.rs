@@ -3,6 +3,7 @@
 use crate::interpreter::{MemoryInterface, SVTable, Variable, ID};
 use crate::lexer::{Lexer, Token};
 use anyhow::{bail, Context, Result};
+use std::collections::VecDeque;
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
 
 pub mod astnode;
@@ -11,8 +12,7 @@ mod tests;
 
 /// The parser converts a sequence of tokens into an Abstract Syntax Tree (AST).
 pub struct Parser {
-    tokens: Vec<Token>,
-    position: usize,
+    tokens: VecDeque<Token>,
     path: PathBuf,
 }
 
@@ -22,8 +22,7 @@ impl Parser {
     // directory, we should just abort (only happens when cwd has bad permissions/DNE)
     pub fn new(tokens: Vec<Token>) -> Self {
         Self {
-            tokens,
-            position: 0,
+            tokens: tokens.into(),
             path: env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
         }
     }
@@ -35,23 +34,17 @@ impl Parser {
 
     /// Peek at the next token. Returns `Err` on EOF.
     fn peek(&self) -> Result<&Token> {
-        self.tokens.get(self.position).context("unexpected EOF")
+        self.tokens.front().context("unexpected EOF")
     }
 
     /// Peek `n` positions ahead. Returns `Err` on EOF.
     fn peek_n(&self, n: usize) -> Result<&Token> {
-        self.tokens.get(self.position + n).context("unexpected EOF")
+        self.tokens.get(n).context("unexpected EOF")
     }
 
     /// Get and return the next token.
     fn next(&mut self) -> Option<Token> {
-        if self.position < self.tokens.len() {
-            // TODO: it would be nice to not have to clone tokens at each step
-            self.position += 1;
-            Some(self.tokens[self.position - 1].clone())
-        } else {
-            None
-        }
+        self.tokens.pop_front()
     }
 
     /// Throws an error if the next token is not `expected`.
