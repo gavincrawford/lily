@@ -1,2 +1,5 @@
-let a = len([])
-let b = len([1, 2, 3, 4, 5])
+let empty_list = len([])
+let empty_string = len("")
+let string = len("hello world")
+let list = len([1, 2, 3, 4, 5])
+let unicode = len("🔥")

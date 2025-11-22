@@ -1,5 +1,9 @@
 let numbers = [1, 4, 3, 2, 5]
 let sorted_numbers = sort(numbers)
-
 let words = ["mango", "banana", "apple"]
 let sorted_words = sort(words)
+let empty = sort([])
+let single = sort([42])
+let reverse_sorted = sort([5, 4, 3, 2, 1])
+let duplicates = sort([3, 1, 2, 1, 3, 2])
+let negatives = sort([-3, -1, -2, 0, 1])
