@@ -18,6 +18,8 @@ pub struct Parser {
 
 impl Parser {
     /// Creates a new parser over `tokens`.
+    // TODO: this should most likely return a result, because if we can't get the current
+    // directory, we should just abort (only happens when cwd has bad permissions/DNE)
     pub fn new(tokens: Vec<Token>) -> Self {
         Self {
             tokens,
@@ -44,6 +46,7 @@ impl Parser {
     /// Get and return the next token.
     fn next(&mut self) -> Option<Token> {
         if self.position < self.tokens.len() {
+            // TODO: it would be nice to not have to clone tokens at each step
             self.position += 1;
             Some(self.tokens[self.position - 1].clone())
         } else {
@@ -81,6 +84,7 @@ impl Parser {
 
     /// Parses until a block end is found. (EOF, return, etc.)
     pub fn parse(&mut self) -> Result<Rc<ASTNode>> {
+        // parse without any imports
         self.parse_with_imports(vec![])
     }
 
@@ -151,7 +155,10 @@ impl Parser {
             // check if alias is provided
             let mut alias = None;
             if let Token::As = self.peek()? {
+                // consume keyword
                 self.next();
+
+                // attempt to find alias as an identifier
                 if let Token::Identifier(alias_str) = self.peek()? {
                     // if an identifier is found, it is our alias
                     alias = Some(alias_str.to_owned());
@@ -456,6 +463,8 @@ impl Parser {
             // if we hit the expected token, break
             if let Some(ref token) = expect {
                 if self.peek()? == token {
+                    // run the token through `expect` to provide an error message if it doesn't
+                    // match what we thiink that it should be
                     self.expect(expect.unwrap())?;
                     break;
                 }
