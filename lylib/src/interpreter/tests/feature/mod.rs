@@ -149,6 +149,16 @@ test!(lists => (
     spread_nested == node!([node!([lit!(1), lit!(2), lit!(3)])])
 ));
 
+test!(lists_concat => (
+    simple == node!([lit!(1), lit!(2), lit!(3), lit!(4)]),
+    empty_left == node!([lit!(1), lit!(2)]),
+    empty_right == node!([lit!(1), lit!(2)]),
+    both_empty == node!([]),
+    nested == node!([node!([lit!(1), lit!(2)]), node!([lit!(3), lit!(4)])]),
+    mixed_types == node!([lit!(1), lit!("a"), lit!(true), lit!('c')]),
+    chained == node!([lit!(1), lit!(2), lit!(3)])
+));
+
 test!(imports => (
     get_res := 4,
     assign_res := "reassignment value",

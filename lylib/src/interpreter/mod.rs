@@ -210,6 +210,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     LogicalEq => Bool(l == r),
                     LogicalNeq => Bool(l != r)
                 );
+
+                // list concatenation
+                // TODO: use macro
+                if let (Add, ASTNode::List(l), ASTNode::List(r)) = (op, a.as_ref(), b.as_ref()) {
+                    let mut combined = l.clone();
+                    combined.extend(r.clone());
+                    return Ok(Some(Rc::new(ASTNode::List(combined))));
+                }
+
+                // no match, fail
                 bail!(
                     "operator not implemented ({} {op:#?} {})",
                     a.as_ref(),
