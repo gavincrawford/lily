@@ -104,7 +104,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         let statement = statement.clone();
         match statement.as_ref() {
             ASTNode::Literal(Token::Identifier(sym)) => {
-                // resovle variable and return literal value
+                // resolve variable and return literal value
                 match self.get(&ID::new_sym(*sym))? {
                     Variable::Owned(var) => Ok(Some(var.into())),
                     Variable::Function(func) => Ok(Some(func.clone())),
@@ -163,10 +163,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 }
 
                 // evaluate operands
-                let (Ok(Some(a)), Ok(Some(b))) = (self.execute_expr(lhs), self.execute_expr(rhs))
-                else {
-                    bail!("failed to evaluate operands");
-                };
+                let a = self
+                    .execute_expr(lhs)
+                    .context("failed to evaluate left operand")?
+                    .context("left operand is undefined")?;
+                let b = self
+                    .execute_expr(rhs)
+                    .context("failed to evaluate right operand")?
+                    .context("right operand is undefined")?;
 
                 // math & numeric equality
                 opmatch!(
