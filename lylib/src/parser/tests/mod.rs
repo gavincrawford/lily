@@ -158,6 +158,26 @@ fn unary_mixed() {
 }
 
 #[test]
+fn nested_imports() {
+    parse_eq!(
+        "import \"./module1.ly\" as mod1; let ten_mod1 = mod1.add1(5, 5); let ten_mod2 = mod1.mod2.add2(5, 5);",
+        "src/parser/tests/nested_imports";
+        node!(mod mod1 => block!(
+            node!(mod mod2 => block!(
+                node!(func add2(a, b) => block!(
+                    node!(return node!(op ident!("a"), Add, ident!("b")))
+                ))
+            )),
+            node!(func add1(a, b) => block!(
+                node!(return node!(op ident!("a"), Add, ident!("b")))
+            ))
+        )),
+        node!(declare ten_mod1 => node!(mod1.add1(lit!(5), lit!(5)))),
+        node!(declare ten_mod2 => node!(mod1.mod2.add2(lit!(5), lit!(5))))
+    );
+}
+
+#[test]
 fn precedence() {
     parse_eq!(
         "let a = 1 + 1 == 4 / 2;
@@ -268,25 +288,6 @@ fn function_calls() {
     parse_eq!(
         "a().b().c();";
         node!(call node!(deref node!(call node!(deref node!(a()), ident!("b"))), ident!("c")))
-    );
-}
-
-#[test]
-fn import() {
-    parse_eq!(
-        "import \"./module1.ly\" as mod1; let ten = mod1.mod2.add2(5, 5);",
-        "src/parser/tests";
-        node!(mod mod1 => block!(
-            node!(mod mod2 => block!(
-                node!(func add2(a, b) => block!(
-                    node!(return node!(op ident!("a"), Add, ident!("b")))
-                ))
-            )),
-            node!(func add1(a, b) => block!(
-                node!(return node!(op ident!("a"), Add, ident!("b")))
-            ))
-        )),
-        node!(declare ten => node!(mod1.mod2.add2(lit!(5), lit!(5))))
     );
 }
 
