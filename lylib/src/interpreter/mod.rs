@@ -171,10 +171,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .execute_expr(rhs)
                     .context("failed to evaluate right operand")?
                     .context("right operand is undefined")?;
+                let (a, b) = (a.as_ref(), b.as_ref());
 
                 // math & numeric equality
                 opmatch!(
-                    match op, a.as_ref(), b.as_ref() => Number(l), Number(r) if
+                    match op, a, b => Number(l), Number(r) if
                     Add => Number(l + r),
                     Sub => Number(l - r),
                     Mul => Number(l * r),
@@ -189,42 +190,38 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 // bi-directional string concatenation
                 opmatch!(
-                    match op, a.as_ref(), b.as_ref() => Str(l), r if
+                    match op, a, b => Str(l), r if
                     Add => Str(format!("{l}{r}"))
                 );
                 opmatch!(
-                    match op, a.as_ref(), b.as_ref() => l, Str(r) if
+                    match op, a, b => l, Str(r) if
                     Add => Str(format!("{l}{r}"))
                 );
 
                 // and & or
                 opmatch!(
-                    match op, a.as_ref(), b.as_ref() => Bool(l), Bool(r) if
+                    match op, a, b => Bool(l), Bool(r) if
                     LogicalAnd => Bool(*l && *r),
                     LogicalOr => Bool(*l || *r)
                 );
 
                 // equality
                 opmatch!(
-                    match op, a.as_ref(), b.as_ref() => l, r if
+                    match op, a, b => l, r if
                     LogicalEq => Bool(l == r),
                     LogicalNeq => Bool(l != r)
                 );
 
                 // list concatenation
                 // TODO: use macro
-                if let (Add, ASTNode::List(l), ASTNode::List(r)) = (op, a.as_ref(), b.as_ref()) {
+                if let (Add, ASTNode::List(l), ASTNode::List(r)) = (op, a, b) {
                     let mut combined = l.clone();
                     combined.extend(r.clone());
                     return Ok(Some(Rc::new(ASTNode::List(combined))));
                 }
 
                 // no match, fail
-                bail!(
-                    "operator not implemented ({} {op:#?} {})",
-                    a.as_ref(),
-                    b.as_ref()
-                )
+                bail!("operator not implemented ({} {op:#?} {})", a, b)
             }
             ASTNode::UnaryOp { target, op } => match op {
                 // increment/decrement operations need special handling
