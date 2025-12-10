@@ -1,6 +1,6 @@
 [package]
 name = "lylib"
-version = "0.25.6"
+version = "0.25.7"
 edition = "2021"
 
 [dependencies]
@@ -9,7 +9,7 @@ derivative = "2.2"
 rustc-hash = "2.1"
 
 [dev-dependencies]
-criterion = { version = "0.7", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 [[bench]]
 name = "interpret"
