@@ -91,8 +91,10 @@ mod tests {
             "some.member.access".to_string(),
             "function_123".to_string(),
             "_private_var".to_string(),
+            "unicode💔".to_string(),
         ];
 
+        // intern all strings and store their cooresponding ids
         let mut ids = Vec::new();
         for var in &variables {
             ids.push(interner.intern(var.clone()));
