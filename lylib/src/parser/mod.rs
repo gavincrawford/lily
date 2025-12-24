@@ -185,7 +185,7 @@ impl Parser {
             // the path attached. this will make debugging much easier.
             let body = parser
                 .parse()
-                .context(format!("failed to parse module body\npath => {:?}", path))?;
+                .context(format!("failed to parse module body\npath => {path:?}"))?;
 
             // reset old parser working directory
             parser.set_pwd(temp);
