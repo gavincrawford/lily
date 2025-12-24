@@ -1,9 +1,3 @@
-let matrix = [
-  [1, 2, 3],
-  [4, 5, 6],
-  [7, 8, 9],
-]
-
 func rotate matrix do
   let new_matrix = [
     [matrix[0][0], matrix[1][0], matrix[2][0]],
@@ -13,4 +7,14 @@ func rotate matrix do
   return new_matrix
 end
 
-let result = rotate(matrix)
+let matrix_a = rotate([
+  [1, 2, 3],
+  [4, 5, 6],
+  [7, 8, 9],
+])
+
+let matrix_b = rotate([
+  [1, 1, 1],
+  [1, 1, 1],
+  [1, 1, 1],
+])

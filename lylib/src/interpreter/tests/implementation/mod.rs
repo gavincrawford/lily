@@ -24,9 +24,14 @@ test!(factorial => (
 ));
 
 test!(matrix_rotation => (
-    result == node!([
+    matrix_a == node!([
         node!([lit!(1), lit!(4), lit!(7)]),
         node!([lit!(2), lit!(5), lit!(8)]),
         node!([lit!(3), lit!(6), lit!(9)])
+    ]),
+    matrix_b == node!([
+        node!([lit!(1), lit!(1), lit!(1)]),
+        node!([lit!(1), lit!(1), lit!(1)]),
+        node!([lit!(1), lit!(1), lit!(1)])
     ])
 ));

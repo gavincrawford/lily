@@ -111,9 +111,18 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     _ => Ok(None),
                 }
             }
-            ASTNode::Literal(_) | ASTNode::List(_) | ASTNode::Instance { .. } => {
+            ASTNode::Literal(_) | ASTNode::Instance { .. } => {
                 // return raw literal without resolving
                 Ok(Some(statement))
+            }
+            ASTNode::List(items) => {
+                // return deeply-cloned list
+                // this avoids mutation of the original AST
+                let cloned_items: Vec<_> = items
+                    .iter()
+                    .map(|item| Rc::new(RefCell::new(item.borrow().clone())))
+                    .collect();
+                Ok(Some(Rc::new(ASTNode::List(cloned_items))))
             }
             ASTNode::Assign { target, value } => {
                 // resolve target & expression

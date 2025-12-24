@@ -10,7 +10,6 @@ pub type ExFn = dyn for<'a> Fn(
 ) -> Result<Option<Rc<ASTNode>>>;
 
 /// Represents stored information.
-#[derive(Clone)]
 pub enum Variable {
     /// For owned variables.
     Owned(ASTNode),
@@ -37,6 +36,27 @@ impl From<ASTNode> for Variable {
 impl From<Rc<ASTNode>> for Variable {
     fn from(value: Rc<ASTNode>) -> Self {
         Self::Owned(ASTNode::inner_to_owned(&value))
+    }
+}
+
+impl Clone for Variable {
+    fn clone(&self) -> Self {
+        match self {
+            // lists deeply clone their items
+            Variable::Owned(ASTNode::List(items)) => {
+                let cloned_items: Vec<_> = items
+                    .iter()
+                    .map(|item| Rc::new(RefCell::new(item.borrow().clone())))
+                    .collect();
+                Variable::Owned(ASTNode::List(cloned_items))
+            }
+
+            // all other variables are cloned as is
+            Variable::Owned(node) => Variable::Owned(node.clone()),
+            Variable::Function(node) => Variable::Function(node.clone()),
+            Variable::Extern(func) => Variable::Extern(func.clone()),
+            Variable::Type(node) => Variable::Type(node.clone()),
+        }
     }
 }
 
