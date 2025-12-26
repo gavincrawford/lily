@@ -10,7 +10,7 @@ test!(tree => (
     l_value := 2,
     l_r_value := 3,
     l_r_r_value := 4,
-    r_does_not_exist := -1
+    dne := true
 ));
 
 test!(fibonacci => (

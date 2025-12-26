@@ -36,4 +36,4 @@ let l_r_value = tree.left().right().v
 let l_r_r_value = tree.left().right().right().v
 
 # check right hand side value doesn't exist
-let r_does_not_exist = tree.right()
+let dne = tree.right() == -1 && tree.left().left() == -1 && tree.left().right().left() == -1
