@@ -3,7 +3,7 @@
 mod token;
 pub use token::Token;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 mod tests;
 
 /// Lexer capture mode.

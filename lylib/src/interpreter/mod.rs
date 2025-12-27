@@ -9,7 +9,7 @@ mod resolve_refs;
 mod tests;
 
 use crate::{lexer::Token, parser::ASTNode, *};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::{
     cell::RefCell,
     io::{Read, Write},
@@ -18,7 +18,7 @@ use std::{
 };
 
 pub(crate) use id::*;
-pub(crate) use mem::{svtable::SVTable, variable::*, MemoryInterface};
+pub(crate) use mem::{MemoryInterface, svtable::SVTable, variable::*};
 
 /// The interpreter executes Abstract Syntax Trees (ASTs) and manages program state.
 #[derive(Debug)]
@@ -282,11 +282,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
                 }
             },
-            ASTNode::Function {
-                ref id,
-                arguments: ref _arguments,
-                body: ref _body,
-            } => {
+            ASTNode::Function { id, .. } => {
                 self.declare(id, Variable::Function(statement.clone()))?;
                 Ok(None)
             }
@@ -564,7 +560,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     _ => bail!(format!("cannot convert {:#?} to valid node", variable)),
                 }
             }
-            ASTNode::Return(ref expr) => {
+            ASTNode::Return(expr) => {
                 // resolve expression
                 let expr = self
                     .execute_expr(expr)

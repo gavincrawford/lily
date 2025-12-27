@@ -1,5 +1,5 @@
 use super::*;
-use crate::interpreter::{IDKind, SVTable, Variable, ID};
+use crate::interpreter::{ID, IDKind, SVTable, Variable};
 use derivative::Derivative;
 use std::{cell::RefCell, fmt::Display};
 
@@ -111,7 +111,7 @@ impl ASTNode {
         match self {
             ASTNode::Literal(Token::Bool(v)) => *v,
             ASTNode::Literal(Token::Number(n)) => !(*n == 0.),
-            ASTNode::Literal(ref t) if *t != Token::Undefined => true,
+            ASTNode::Literal(t) if *t != Token::Undefined => true,
             ASTNode::List(_) => true,
             ASTNode::Instance { .. } => true,
             ASTNode::Function { .. } => true,

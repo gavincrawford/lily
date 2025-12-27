@@ -1,8 +1,8 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
-use crate::interpreter::{MemoryInterface, SVTable, Variable, ID};
+use crate::interpreter::{ID, MemoryInterface, SVTable, Variable};
 use crate::lexer::{Lexer, Token};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use std::collections::VecDeque;
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
 
