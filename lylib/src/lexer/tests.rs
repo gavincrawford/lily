@@ -287,8 +287,8 @@ fn lists() {
 
 #[test]
 fn loops() {
-    lex_eq!("while true do; end;" =>
-        While, Bool(true), BlockStart, Endl, BlockEnd, Endl
+    lex_eq!("while true do; break; end;" =>
+        While, Bool(true), BlockStart, Endl, Break, Endl, BlockEnd, Endl
     );
 }
 

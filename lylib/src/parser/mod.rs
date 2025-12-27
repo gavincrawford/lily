@@ -122,6 +122,7 @@ impl Parser {
             Token::Return => self
                 .parse_return()
                 .context("failed to parse return statement"),
+            Token::Break => self.parse_break(),
             Token::Increment | Token::Decrement => {
                 // safety: destructuring
                 self.parse_operator(Self::get_precedence(self.peek().unwrap()))
@@ -133,6 +134,12 @@ impl Parser {
 
         // return result with added context
         result.context("failed to parse statement")
+    }
+
+    /// Parses breaks.
+    fn parse_break(&mut self) -> Result<Rc<ASTNode>> {
+        self.expect(Token::Break)?;
+        Ok(ASTNode::Break.into())
     }
 
     /// Parses imports.

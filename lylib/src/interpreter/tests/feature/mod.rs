@@ -109,6 +109,10 @@ test!(loops => (
     x := 25
 ));
 
+test!(loops_break => (
+    x := 1
+));
+
 test!(loops_nested => (
     x := 25
 ));

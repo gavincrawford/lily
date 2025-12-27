@@ -190,6 +190,11 @@ macro_rules! node {
         }.into()
     };
 
+    // breaks
+    (break) => {
+        ASTNode::Break.into()
+    };
+
     // return statements (`return node!(..)`)
     (return $value:expr) => {
         ASTNode::Return($value).into()

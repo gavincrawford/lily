@@ -10,7 +10,6 @@ pub enum Token {
     Identifier(usize),
     Function,
     Struct,
-    Return,
     Let,
 
     // data types
@@ -26,6 +25,8 @@ pub enum Token {
     While,
     BlockStart,
     BlockEnd,
+    Break,
+    Return,
 
     // delimiters
     ParenOpen,

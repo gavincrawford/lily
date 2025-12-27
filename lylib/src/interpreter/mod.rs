@@ -466,9 +466,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(None)
             }
             ASTNode::Loop { condition, body } => {
-                // create result buffer, default none
-                let mut result = None;
-
                 // increase scope level and execute body
                 self.scope_id += 1;
                 while let Some(condition) = self.execute_expr(condition)? {
@@ -478,19 +475,24 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
 
                     // get cycle result. if return reached, stop loop
-                    result = self.execute(body.clone())?;
-                    if result.is_some() {
-                        break;
+                    let result = self.execute(body.clone())?;
+                    if let Some(node) = result {
+                        self.drop_scope();
+                        if ASTNode::Break == *node {
+                            return Ok(None);
+                        } else {
+                            return Ok(Some(node));
+                        }
                     }
-
                     // after each execution of the loop, clear values at this scope
                     self.drop_here();
                 }
 
-                // after finishing, decrease scope level and drop locals
+                // loop finished, drop locals and continue
                 self.drop_scope();
-                Ok(result)
+                Ok(None)
             }
+            ASTNode::Break => Ok(Some(statement)),
             ASTNode::Index { target, index } => {
                 // get index as a usize
                 let usize_idx = self

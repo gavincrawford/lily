@@ -254,6 +254,7 @@ impl Lexer {
             "if" => Some(If),
             "else" => Some(Else),
             "while" => Some(While),
+            "break" => Some(Break),
             "do" => Some(BlockStart),
             "end" => Some(BlockEnd),
             "true" => Some(Bool(true)),

@@ -20,6 +20,7 @@ impl Debug for Token {
             Token::While => write!(f, "While"),
             Token::BlockStart => write!(f, "BlockStart"),
             Token::BlockEnd => write!(f, "BlockEnd"),
+            Token::Break => write!(f, "Break"),
             Token::ParenOpen => write!(f, "ParenOpen"),
             Token::ParenClose => write!(f, "ParenClose"),
             Token::BracketOpen => write!(f, "BracketOpen"),

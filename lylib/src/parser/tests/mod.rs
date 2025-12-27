@@ -307,7 +307,7 @@ fn loops() {
     parse_eq!(
         "while true do; a = a + 1; end;
         while x < 10 do; x++; end;
-        while 1 + 1 > 0 do; end;";
+        while 1 + 1 > 0 do; break; end;";
         node!(
             loop lit!(true) =>
                 block!(node!(assign a => node!(op ident!("a"), Add, lit!(1))));
@@ -318,7 +318,7 @@ fn loops() {
         ),
         node!(
             loop node!(op node!(op 1, Add, 1), LogicalG, lit!(0)) =>
-                block!();
+                block!(node!(break));
         )
     );
 }

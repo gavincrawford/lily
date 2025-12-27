@@ -70,6 +70,7 @@ pub enum ASTNode {
         op: Token,
     },
     Return(Rc<ASTNode>),
+    Break,
     Literal(Token),
     List(Vec<Rc<RefCell<Variable>>>),
 }
