@@ -163,6 +163,12 @@ test!(lists_concat => (
     chained == node!([lit!(1), lit!(2), lit!(3)])
 ));
 
+test!(lists_with_indices => (
+    with_index == node!([lit!(20)]),
+    with_many_index == node!([lit!(10), lit!(30)]),
+    with_nested_index == node!([node!([lit!(20)])])
+));
+
 test!(imports => (
     get_res := 4,
     assign_res := "reassignment value",

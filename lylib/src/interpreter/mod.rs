@@ -116,13 +116,19 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(Some(statement))
             }
             ASTNode::List(items) => {
-                // return deeply-cloned list
+                // deeply-clone list
                 // this avoids mutation of the original AST
                 let cloned_items: Vec<_> = items
                     .iter()
                     .map(|item| Rc::new(RefCell::new(item.borrow().clone())))
                     .collect();
-                Ok(Some(Rc::new(ASTNode::List(cloned_items))))
+
+                // resolve all refs before returning
+                let resolved_list = self
+                    .resolve_refs(ASTNode::List(cloned_items))
+                    .context("failed to resolve list items")?;
+
+                Ok(Some(resolved_list))
             }
             ASTNode::Assign { target, value } => {
                 // resolve target & expression
