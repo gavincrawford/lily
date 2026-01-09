@@ -70,11 +70,8 @@ mod tests {
         let result = interpreter.resolve_refs(list_with_index).unwrap();
         if let ASTNode::List(items) = &*result {
             assert_eq!(items.len(), 1);
-            match &*items[0].borrow() {
-                Variable::Owned(ASTNode::Literal(Token::Number(n))) => {
-                    assert_eq!(*n, 2.0);
-                }
-                _ => {}
+            if let Variable::Owned(ASTNode::Literal(Token::Number(n))) = &*items[0].borrow() {
+                assert_eq!(*n, 2.0);
             }
         }
     }
