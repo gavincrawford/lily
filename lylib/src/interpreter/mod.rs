@@ -366,7 +366,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     );
                 }
 
-                let result = match variable {
+                match variable {
                     // this branch should trigger on external functions
                     Variable::Extern(closure) => {
                         // call closure with i/o handles
@@ -426,9 +426,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             .into(),
                         ))
                     }
-                };
-
-                result
+                }
             }
             ASTNode::Struct { id, .. } => {
                 self.declare(id, Variable::Type(statement.clone()))

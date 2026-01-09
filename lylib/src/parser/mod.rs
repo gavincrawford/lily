@@ -461,13 +461,13 @@ impl Parser {
         // keep looping until we've found the largest possible primary
         loop {
             // if we hit the expected token, break
-            if let Some(ref token) = expect {
-                if self.peek()? == token {
-                    // run the token through `expect` to provide an error message if it doesn't
-                    // match what we thiink that it should be
-                    self.expect(expect.unwrap())?;
-                    break;
-                }
+            if let Some(ref token) = expect
+                && self.peek()? == token
+            {
+                // run the token through `expect` to provide an error message if it doesn't
+                // match what we thiink that it should be
+                self.expect(expect.unwrap())?;
+                break;
             }
 
             // match operator with precedence handling

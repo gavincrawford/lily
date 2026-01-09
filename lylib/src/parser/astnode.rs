@@ -94,10 +94,10 @@ impl ASTNode {
                 };
 
                 // functions with an identical name to the structure are constructors
-                if let IDKind::Symbol(name) = id.get_kind() {
-                    if name == struct_name {
-                        return Some(node.clone());
-                    }
+                if let IDKind::Symbol(name) = id.get_kind()
+                    && name == struct_name
+                {
+                    return Some(node.clone());
                 }
             }
         }
