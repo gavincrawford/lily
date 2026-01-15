@@ -113,3 +113,80 @@ mod feature;
 
 #[cfg(test)]
 mod implementation;
+
+/// Tests that all code examples in SYNTAX.md are valid and runnable.
+/// This ensures documentation stays in sync with the implementation.
+#[test]
+fn syntax() {
+    use std::io::Cursor;
+
+    let syntax_md = include_str!("../../../../SYNTAX.md");
+    let mut in_code_block = false;
+    let mut current_block = String::new();
+    let mut skip_next_block = false;
+    let mut blocks: Vec<String> = Vec::new();
+
+    for line in syntax_md.lines() {
+        // check for skip marker
+        if line.starts_with("```lily !skip") {
+            skip_next_block = true;
+            continue;
+        }
+
+        if line.starts_with("```lily") {
+            in_code_block = true;
+            current_block.clear();
+            continue;
+        }
+
+        if line.starts_with("```") && in_code_block {
+            in_code_block = false;
+            if !skip_next_block && !current_block.trim().is_empty() {
+                blocks.push(current_block.clone());
+            }
+            skip_next_block = false;
+            continue;
+        }
+
+        if in_code_block {
+            current_block.push_str(line);
+            current_block.push('\n');
+        }
+    }
+
+    // run each code block through the interpreter
+    for (i, block) in blocks.iter().enumerate() {
+        let mut interpreter = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
+        let lexer_result = Lexer::default().lex(block.clone());
+
+        let tokens = match lexer_result {
+            Ok(t) => t,
+            Err(e) => panic!(
+                "SYNTAX.md block {} failed to lex:\n{}\nError: {}",
+                i + 1,
+                block,
+                e
+            ),
+        };
+
+        let mut parser = Parser::new(tokens);
+        let ast = match parser.parse() {
+            Ok(a) => a,
+            Err(e) => panic!(
+                "SYNTAX.md block {} failed to parse:\n{}\nError: {}",
+                i + 1,
+                block,
+                e
+            ),
+        };
+
+        if let Err(e) = interpreter.execute(ast) {
+            panic!(
+                "SYNTAX.md block {} failed to execute:\n{}\nError: {}",
+                i + 1,
+                block,
+                e
+            );
+        }
+    }
+}

@@ -63,21 +63,24 @@ x = 100             # assignment
 
 ### Conditionals
 ```lily
-if condition do
-  # body
+let x = 10
+
+if x > 5 do
+  x = 1
 end
 
-if condition do
-  # if body
+if x == 1 do
+  x = 2
 else
-  # else body
+  x = 3
 end
 ```
 
 ### Loops
 ```lily
-while condition do
-  # body
+let i = 0
+while i < 3 do
+  i = i + 1
 end
 
 while true do
@@ -88,30 +91,32 @@ end
 ## Functions
 
 ```lily
-func name param1 param2 do
-  return value
+func add a b do
+  return a + b
 end
 
 # call
-let result = name(arg1, arg2)
+let result = add(2, 3)
 ```
 
 ## Structs
 
 ```lily
-struct Name
-  let field = default_value
+struct Point
+  let x = 0
+  let y = 0
 
   # constructor (same name as struct)
-  func Name arg do
-    field = arg
+  func Point a b do
+    x = a
+    y = b
   end
 end
 
-let instance = new Name(value)
-let v = instance.field
-instance.field = new_value
-instance.new_field = value    # can add fields dynamically
+let p = new Point(10, 20)
+let px = p.x
+p.y = 30
+p.z = 40    # can add fields dynamically
 ```
 
 ## Lists
@@ -131,11 +136,11 @@ let combined = [1, 2] + [3, 4]
 
 ## Modules
 
-```lily
-import "./path/to/file.ly" as alias
+```lily !skip
+import "./math.ly" as math
 
-let result = alias.function(args)
-let value = alias.variable
+let result = math.add(1, 2)
+let value = math.pi
 ```
 
 ## Built-in Functions
