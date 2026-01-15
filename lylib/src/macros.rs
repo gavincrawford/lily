@@ -215,7 +215,7 @@ macro_rules! node {
             id: crate::interpreter::ID::new_sym(intern!(stringify!($id))),
             body: $body,
             // this template doesn't need to match for testing purposes, and is exempt
-            template: crate::parser::SVTable::new(),
+            template: crate::parser::SVTable::default(),
         }.into()
     };
 

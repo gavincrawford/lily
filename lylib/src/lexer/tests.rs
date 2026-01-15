@@ -21,7 +21,7 @@ use Token::*;
 #[macro_export]
 macro_rules! lex_eq {
     ($input:expr => $($token:expr),*) => {
-        let result = Lexer::new().lex($input.into());
+        let result = Lexer::default().lex($input.into());
         lex_eq!(@compare result, $($token),*);
     };
     (@compare $result:expr, $($token:expr),*) => {

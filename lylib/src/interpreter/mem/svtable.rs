@@ -40,6 +40,12 @@ impl Clone for SVTable {
     }
 }
 
+impl Default for SVTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SVTable {
     /// Creates a new scoped-variable table with a default scope.
     #[inline]
@@ -73,7 +79,7 @@ impl SVTable {
     pub fn add_module(&mut self, name: usize) -> Rc<RefCell<SVTable>> {
         self.modules
             .entry(name)
-            .or_insert_with(|| RefCell::new(SVTable::new()).into())
+            .or_insert_with(|| RefCell::new(SVTable::default()).into())
             .clone()
     }
 

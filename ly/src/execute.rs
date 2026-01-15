@@ -14,7 +14,7 @@ pub fn execute(args: Args) -> Result<()> {
     let buf = fs::read_to_string(args.buffer).context("failed to open file")?;
 
     // create lily config & execute file
-    let mut cfg = LyConfig::new();
+    let mut cfg = LyConfig::default();
     if !args.no_std {
         cfg.include_as("math", include_str!("./std/math.ly").to_string());
         cfg.include_as("complex", include_str!("./std/complex.ly").to_string());

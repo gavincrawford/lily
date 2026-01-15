@@ -18,7 +18,7 @@ use std::{
 /// use lylib::LyConfig;
 /// use std::io::{stdin, stdout};
 /// # fn main() {
-/// let cfg = LyConfig::new()
+/// let cfg = LyConfig::default()
 ///     .debug_parser(false) // disable/enable AST debugger
 ///     .debug_lexer(false) // disable/enable lexer debugger
 ///     .include_as("math", "func add a b do return a + b end;") // add imported code
@@ -36,6 +36,12 @@ pub struct LyConfig {
     dbg_tokens: bool,
     /// If true, debug parser output.
     dbg_ast: bool,
+}
+
+impl Default for LyConfig {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl LyConfig {
@@ -83,7 +89,7 @@ impl LyConfig {
         input: In,
     ) -> Result<Interpreter<Out, In>> {
         // Interpret file
-        let mut lexer = Lexer::new();
+        let mut lexer = Lexer::default();
         let tokens = lexer.lex(buffer.into()).context("failed to lex buffer")?;
 
         // Debug lexer, if applicable
@@ -96,7 +102,7 @@ impl LyConfig {
             .include
             .iter()
             .map(|(alias, source)| {
-                let tokens = Lexer::new()
+                let tokens = Lexer::default()
                     .lex(source.clone().to_string())
                     .context("failed to lex included module")?;
                 let body = Parser::new(tokens)

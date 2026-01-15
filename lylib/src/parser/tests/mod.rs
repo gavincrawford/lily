@@ -7,7 +7,7 @@ use crate::{lexer::Token::*, parser::*, *};
 macro_rules! parse_eq {
     ($code:expr; $($block:expr),*) => {
         (|| {
-            let result = Parser::new(Lexer::new().lex($code.into()).unwrap()).parse();
+            let result = Parser::new(Lexer::default().lex($code.into()).unwrap()).parse();
             assert!(result.is_ok(), "Parser failed: {:?}", result);
             let result = result.unwrap(); // safety ^^^
             let block = block!($($block),*);
@@ -18,7 +18,7 @@ macro_rules! parse_eq {
     };
     ($code:expr, $path:expr; $($block:expr),*) => {
         (|| {
-            let mut parser = Parser::new(Lexer::new().lex($code.into()).unwrap());
+            let mut parser = Parser::new(Lexer::default().lex($code.into()).unwrap());
             parser.set_pwd($path.into());
             let result = parser.parse();
             assert!(result.is_ok(), "Parser failed: {:?}", result);

@@ -27,6 +27,12 @@ pub struct Lexer {
     equality_register: Option<Token>,
 }
 
+impl Default for Lexer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Lexer {
     /// Creates a new lexer with the provided interner.
     pub fn new() -> Self {

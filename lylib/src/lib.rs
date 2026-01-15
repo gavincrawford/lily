@@ -5,7 +5,7 @@
 //! use lylib::LyConfig;
 //! use std::io::{stdin, stdout};
 //! # fn main() {
-//! let cfg = LyConfig::new()
+//! let cfg = LyConfig::default()
 //!     .execute("print(\"hello world!\")", stdout(), stdin());
 //! # }
 //! ```

@@ -40,7 +40,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Creates a new interpreter with default builtins.
     pub fn new(input: In, output: Out) -> Self {
         let mut i = Self {
-            memory: Rc::new(RefCell::new(SVTable::new())),
+            memory: Rc::new(RefCell::new(SVTable::default())),
             context: None,
             scope_id: 0,
             output,

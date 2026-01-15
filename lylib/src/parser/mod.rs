@@ -177,7 +177,7 @@ impl Parser {
                 .context("failed to read file data")?;
 
             // lex buffer into tokens
-            let tokens = Lexer::new()
+            let tokens = Lexer::default()
                 .lex(buffer)
                 .context("failed to lex imported file")?;
 
@@ -329,7 +329,7 @@ impl Parser {
                 }
 
                 // create a new variable table and instantiate default values
-                let mut template = SVTable::new();
+                let mut template = SVTable::default();
                 for (target, value) in default_fields {
                     // get the first value in the interned path
                     let id = *target.to_path().first().unwrap();
