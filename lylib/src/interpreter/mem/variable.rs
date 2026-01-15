@@ -118,7 +118,7 @@ impl MemoryInterface for Variable {
             let inner = item.borrow().clone();
             Ok(inner)
         } else {
-            bail!("invalid access to variable '{:#?}'", self);
+            bail!("invalid access to variable '{self:#?}'");
         }
     }
 
@@ -127,7 +127,7 @@ impl MemoryInterface for Variable {
             let item = items.get(id).context("index out of bounds")?;
             Ok(item.clone())
         } else {
-            bail!("invalid access to variable '{:#?}'", self);
+            bail!("invalid access to variable '{self:#?}'");
         }
     }
 
@@ -140,7 +140,7 @@ impl MemoryInterface for Variable {
             items.insert(id, value.into());
             Ok(())
         } else {
-            bail!("invalid declaration to variable '{:#?}'", self);
+            bail!("invalid declaration to variable '{self:#?}'");
         }
     }
 
@@ -149,7 +149,7 @@ impl MemoryInterface for Variable {
             *items.get_mut(id).context("index out of bounds")? = value.into();
             Ok(())
         } else {
-            bail!("invalid assignment to variable '{:#?}'", self);
+            bail!("invalid assignment to variable '{self:#?}'");
         }
     }
 }

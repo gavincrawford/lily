@@ -236,7 +236,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 }
 
                 // no match, fail
-                bail!("operator not implemented ({} {op:#?} {})", a, b)
+                bail!("operator not implemented ({a} {op:#?} {b})")
             }
             ASTNode::UnaryOp { target, op } => match op {
                 // increment/decrement operations need special handling
@@ -279,11 +279,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         }
                         // bail for others
                         _ => {
-                            bail!(
-                                "unsupported unary operation: {:?} on {:?}",
-                                op,
-                                target_result
-                            );
+                            bail!("unsupported unary operation: {op:?} on {target_result:?}");
                         }
                     }
                 }
@@ -342,7 +338,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 ASTNode::Instance { svt, .. } => {
                                     svt.borrow().get_owned(*member_id)?
                                 }
-                                _ => bail!("cannot dereference member of {:#?}", parent_value),
+                                _ => bail!("cannot dereference member of {parent_value:#?}"),
                             };
 
                             // set instance context to the parent value (the instance we're calling the method on)
@@ -356,7 +352,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             (variable, instance_context)
                         }
                     }
-                    other => bail!("cannot call {:#?}", other),
+                    other => bail!("cannot call {other:#?}"),
                 };
 
                 // Resolve values before passing them as arguments. We do this so that the
@@ -553,7 +549,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     };
                     match parent.as_ref() {
                         ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_id)?,
-                        _ => bail!("cannot dereference member of {:#?}", parent),
+                        _ => bail!("cannot dereference member of {parent:#?}"),
                     }
                 };
 
@@ -561,7 +557,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 match variable {
                     Variable::Owned(node) => Ok(Some(Rc::new(node))),
                     Variable::Function(func) => Ok(Some(func)),
-                    _ => bail!(format!("cannot convert {:#?} to valid node", variable)),
+                    _ => bail!(format!("cannot convert {variable:#?} to valid node")),
                 }
             }
             ASTNode::Return(expr) => {

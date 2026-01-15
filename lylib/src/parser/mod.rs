@@ -52,7 +52,7 @@ impl Parser {
         match self.next() {
             Some(token) if token == expected => Ok(()),
             Some(token) => {
-                bail!("found {:?}, expected {:?}", token, expected);
+                bail!("found {token:?}, expected {expected:?}");
             }
             _ => {
                 bail!("unexpected EOF")
@@ -253,7 +253,7 @@ impl Parser {
         // expect an identifier after the dot
         let child = match self.next() {
             Some(Token::Identifier(id)) => ASTNode::Literal(Token::Identifier(id)).into(),
-            Some(token) => bail!("expected identifier after '.', found {:?}", token),
+            Some(token) => bail!("expected identifier after '.', found {token:?}"),
             None => bail!("unexpected EOF after '.'"),
         };
 
@@ -309,7 +309,7 @@ impl Parser {
                         ASTNode::Declare { target, value } => {
                             // if this field is literal, add it, bail otherwise
                             let ASTNode::Literal(Token::Identifier(variable)) = &**target else {
-                                bail!("invalid default field '{:?}'", target);
+                                bail!("invalid default field '{target:?}'");
                             };
                             default_fields.push((
                                 ID::new_sym(*variable),
@@ -347,7 +347,7 @@ impl Parser {
                 Ok(node.into())
             }
             other => {
-                bail!("expected identifier, found {:?}", other)
+                bail!("expected identifier, found {other:?}")
             }
         }
     }

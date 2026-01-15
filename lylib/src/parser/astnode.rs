@@ -139,7 +139,7 @@ impl ASTNode {
         if let ASTNode::Struct { template, .. } = self {
             return Ok(template.clone());
         }
-        bail!("cannot create template of non-structure value: {:?}", self);
+        bail!("cannot create template of non-structure value: {self:?}");
     }
 
     pub(crate) fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {
