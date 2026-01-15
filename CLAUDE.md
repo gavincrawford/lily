@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Rust-based programming language implementation called "Lily" (`.ly` files). The project consists of two main crates:
+This is a Rust-based programming language implementation called "Lily" (`.ly` files). See @SYNTAX.md for the language syntax reference. The project consists of two main crates:
 
 - **lylib** - Core language library containing lexer, parser, and interpreter
 - **ly** - CLI executable that uses lylib to execute Lily programs
