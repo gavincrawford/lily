@@ -139,8 +139,10 @@ test!(indices_negative_access => panic);
 test!(indices_negative_assign => panic);
 
 test!(indices_nested => (
-    nest_0 == node!([lit!(123)]),
-    nest_1 := 123
+    nest_0 == node!([lit!(123), lit!(321)]),
+    nest_1 := 123,
+    nest_2 := 321,
+    nest_3 := true
 ));
 
 test!(indices_out_of_range => panic);
@@ -164,9 +166,10 @@ test!(lists_concat => (
 ));
 
 test!(lists_with_indices => (
+    source == node!([lit!(10), lit!(20), lit!(30)]),
     with_index == node!([lit!(20)]),
     with_many_index == node!([lit!(10), lit!(30)]),
-    with_nested_index == node!([node!([lit!(20)])])
+    with_nested_index == node!([node!([node!([lit!(20)])])])
 ));
 
 test!(imports => (
