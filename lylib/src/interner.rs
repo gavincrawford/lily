@@ -94,7 +94,7 @@ mod tests {
             "unicode💔".to_string(),
         ];
 
-        // intern all strings and store their cooresponding ids
+        // intern all strings and store their corresponding ids
         let mut ids = Vec::new();
         for var in &variables {
             ids.push(interner.intern(var.clone()));

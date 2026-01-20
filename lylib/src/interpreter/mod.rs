@@ -241,8 +241,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::UnaryOp { target, op } => match op {
                 // increment/decrement operations need special handling
                 Token::Increment | Token::Decrement => {
-                    // TODO: i'm pretty sure this doesn't work with dot notation or anything
-                    // like that. that's a later fix, though
+                    // TODO: increment/decrement currently only works with simple identifiers,
+                    // not dot notation (e.g., obj.field++) or index access (list[0]++)
                     if let ASTNode::Literal(Token::Identifier(sym)) = target.as_ref() {
                         // get variable
                         let id = ID::new_sym(*sym);

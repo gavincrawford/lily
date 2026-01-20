@@ -88,7 +88,7 @@ impl ASTNode {
         if let (ASTNode::Block(nodes), IDKind::Symbol(struct_name)) = (body.as_ref(), id.get_kind())
         {
             for node in nodes {
-                // unwrap function node to get ID value, skipping others
+                // check if this is a function with the same name as the struct (constructor)
                 let ASTNode::Function { id, .. } = node.as_ref() else {
                     continue;
                 };

@@ -34,7 +34,7 @@ impl Default for Lexer {
 }
 
 impl Lexer {
-    /// Creates a new lexer with the provided interner.
+    /// Creates a new lexer.
     pub fn new() -> Self {
         Self {
             number_register: String::new(),

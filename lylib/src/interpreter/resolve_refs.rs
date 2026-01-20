@@ -4,8 +4,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Evaluates all expressions inside this list to their resolved values.
     /// This resolves variable references, indices, operations, and nested lists.
     pub(crate) fn resolve_refs(&mut self, mut expr: ASTNode) -> Result<Rc<ASTNode>> {
-        // PERF: this requires ownership of the expression passed to it-- meaning we clone lists
-        // every single time we return them. there's gotta be another way...
+        // PERF: this requires ownership of the expression, meaning we clone lists every time we
+        // return them. this is acceptable for correctness but could be optimized with Rc/RefCell manipulation.
 
         // if this value isn't a list, it doesn't need to be resolved
         let ASTNode::List(ref mut items) = expr else {

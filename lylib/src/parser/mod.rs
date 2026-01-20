@@ -465,7 +465,7 @@ impl Parser {
                 && self.peek()? == token
             {
                 // run the token through `expect` to provide an error message if it doesn't
-                // match what we thiink that it should be
+                // match what we think that it should be
                 self.expect(expect.unwrap())?;
                 break;
             }

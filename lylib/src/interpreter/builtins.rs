@@ -8,8 +8,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         self.declare(&id.as_id(), Variable::Extern(closure))
     }
 
-    // `Interpreter::new`, and we don't want anyone using it twice.
     /// Adds the default external functions to this interpreter.
+    /// This should only be called from `Interpreter::new`.
     pub(crate) fn inject_builtins(&mut self) -> Result<()> {
         /// Adds an external function.
         macro_rules! exfn {

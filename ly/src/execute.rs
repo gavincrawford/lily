@@ -10,7 +10,7 @@ use std::{
 
 /// Executes a file.
 pub fn execute(args: Args) -> Result<()> {
-    //read file to buffer
+    // read file to buffer
     let buf = fs::read_to_string(args.buffer).context("failed to open file")?;
 
     // create lily config & execute file
