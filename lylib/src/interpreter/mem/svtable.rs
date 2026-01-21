@@ -1,6 +1,6 @@
 //! Implements the SVTable, or the scoped-variable table.
 
-use super::*;
+use super::{scope::Scope, *};
 use anyhow::{Result, bail};
 use rustc_hash::FxHashMap;
 use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
@@ -10,7 +10,7 @@ use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
 #[derive(Debug, PartialEq)]
 pub struct SVTable {
     /// Holds all the scope frames, each of which hold their respective variables.
-    table: Vec<FxHashMap<usize, Rc<RefCell<Variable>>>>,
+    table: Vec<Scope>,
     /// Holds all the modules defined at this SVTable's scope.
     modules: FxHashMap<usize, Rc<RefCell<SVTable>>>,
 }
@@ -20,16 +20,7 @@ impl Clone for SVTable {
     fn clone(&self) -> Self {
         Self {
             // deep clone the table: for each scope, create new Rc<RefCell<Variable>> instances
-            table: self
-                .table
-                .iter()
-                .map(|scope| {
-                    scope
-                        .iter()
-                        .map(|(&id, var)| (id, Rc::new(RefCell::new(var.borrow().clone()))))
-                        .collect()
-                })
-                .collect(),
+            table: self.table.iter().map(|scope| scope.deep_clone()).collect(),
             // deep clone the modules: create new Rc<RefCell<SVTable>> instances
             modules: self
                 .modules
@@ -51,26 +42,26 @@ impl SVTable {
     #[inline]
     pub fn new() -> Self {
         Self {
-            table: vec![FxHashMap::default()],
+            table: vec![Scope::default()],
             modules: FxHashMap::default(),
         }
     }
 
     /// Returns the iterator to the internal list of frames.
     #[inline]
-    pub fn iter(&self) -> Iter<'_, FxHashMap<usize, Rc<RefCell<Variable>>>> {
+    pub fn iter(&self) -> Iter<'_, Scope> {
         self.table.iter()
     }
 
     /// Returns the inner list of frames.
     #[inline]
-    pub fn inner(&self) -> &Vec<FxHashMap<usize, Rc<RefCell<Variable>>>> {
+    pub fn inner(&self) -> &Vec<Scope> {
         &self.table
     }
 
     /// Returns the inner list of frames, mutable.
     #[inline]
-    pub fn inner_mut(&mut self) -> &mut Vec<FxHashMap<usize, Rc<RefCell<Variable>>>> {
+    pub fn inner_mut(&mut self) -> &mut Vec<Scope> {
         &mut self.table
     }
 
@@ -95,15 +86,12 @@ impl SVTable {
     /// Adds a new scope.
     #[inline]
     pub fn add_scope(&mut self) {
-        self.table.push(FxHashMap::default());
+        self.table.push(Scope::default());
     }
 
     /// Gets a scope map. Mutable by default.
     #[inline]
-    pub fn get_scope(
-        &mut self,
-        index: usize,
-    ) -> Option<&mut FxHashMap<usize, Rc<RefCell<Variable>>>> {
+    pub fn get_scope(&mut self, index: usize) -> Option<&mut Scope> {
         self.table.get_mut(index)
     }
 
@@ -252,7 +240,7 @@ impl Display for SVTable {
             writeln!(f, "scope {scope_idx}")?;
 
             // iterate through scope values, sorted by key name
-            let mut keys = scope.keys().collect::<Vec<&usize>>();
+            let mut keys = scope.keys();
             keys.sort();
             for &key in keys {
                 // obtain debug string respective to variable value

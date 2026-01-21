@@ -5,6 +5,7 @@ use super::*;
 use anyhow::Result;
 
 pub mod drop;
+pub mod scope;
 pub mod svtable;
 pub mod variable;
 
