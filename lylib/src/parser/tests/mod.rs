@@ -5,30 +5,26 @@ use crate::{lexer::Token::*, parser::*, *};
 /// Shorthand for creating and executing the parser, and comparing its output to an expression.
 #[macro_export]
 macro_rules! parse_eq {
-    ($code:expr; $($block:expr),*) => {
-        (|| {
-            let result = Parser::new(Lexer::default().lex($code.into()).unwrap()).parse();
-            assert!(result.is_ok(), "Parser failed: {:?}", result);
-            let result = result.unwrap(); // safety ^^^
-            let block = block!($($block),*);
-            if result != block {
-                panic!("expected: {:#?}\ngot: {:#?}", block, result);
-            }
-        })()
-    };
-    ($code:expr, $path:expr; $($block:expr),*) => {
-        (|| {
-            let mut parser = Parser::new(Lexer::default().lex($code.into()).unwrap());
-            parser.set_pwd($path.into());
-            let result = parser.parse();
-            assert!(result.is_ok(), "Parser failed: {:?}", result);
-            let result = result.unwrap(); // safety ^^^
-            let block = block!($($block),*);
-            if result != block {
-                panic!("expected: {:#?}\ngot: {:#?}", block, result);
-            }
-        })()
-    };
+    ($code:expr; $($block:expr),*) => {{
+        let result = Parser::new(Lexer::default().lex($code.into()).unwrap()).parse();
+        assert!(result.is_ok(), "Parser failed: {:?}", result);
+        let result = result.unwrap(); // safety ^^^
+        let block = block!($($block),*);
+        if result != block {
+            panic!("expected: {:#?}\ngot: {:#?}", block, result);
+        }
+    }};
+    ($code:expr, $path:expr; $($block:expr),*) => {{
+        let mut parser = Parser::new(Lexer::default().lex($code.into()).unwrap());
+        parser.set_pwd($path.into());
+        let result = parser.parse();
+        assert!(result.is_ok(), "Parser failed: {:?}", result);
+        let result = result.unwrap(); // safety ^^^
+        let block = block!($($block),*);
+        if result != block {
+            panic!("expected: {:#?}\ngot: {:#?}", block, result);
+        }
+    }};
 }
 
 #[test]
