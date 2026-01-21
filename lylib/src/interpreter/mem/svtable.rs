@@ -13,6 +13,8 @@ pub struct SVTable {
     table: Vec<Scope>,
     /// Holds all the modules defined at this SVTable's scope.
     modules: FxHashMap<usize, Rc<RefCell<SVTable>>>,
+    // TODO: implement with `Scope`
+    // this might require a bit of generics, and we might want to rename
 }
 
 impl Clone for SVTable {
@@ -107,7 +109,7 @@ impl SVTable {
     #[inline]
     fn find_variable(&self, id: usize) -> Option<&Rc<RefCell<Variable>>> {
         for scope in self.iter().rev() {
-            if let Some(variable) = scope.get(&id) {
+            if let Some(variable) = scope.get(id) {
                 return Some(variable);
             }
         }
@@ -118,7 +120,7 @@ impl SVTable {
     #[inline]
     fn find_variable_mut(&mut self, id: usize) -> Option<&Rc<RefCell<Variable>>> {
         for scope in self.inner_mut().iter_mut().rev() {
-            if let Some(variable) = scope.get(&id) {
+            if let Some(variable) = scope.get(id) {
                 return Some(variable);
             }
         }
@@ -164,9 +166,7 @@ impl MemoryInterface for SVTable {
         let var_map = self
             .get_scope(scope)
             .context(format!("cannot declare at scope {scope}",))?;
-        if var_map.insert(id, Rc::new(RefCell::new(value))).is_some() {
-            bail!("variable '{}' already exists", resolve!(id));
-        }
+        var_map.insert(id, Rc::new(RefCell::new(value)));
         Ok(())
     }
 
@@ -242,9 +242,9 @@ impl Display for SVTable {
             // iterate through scope values, sorted by key name
             let mut keys = scope.keys();
             keys.sort();
-            for &key in keys {
+            for key in keys {
                 // obtain debug string respective to variable value
-                let value = scope.get(&key).unwrap();
+                let value = scope.get(key).unwrap();
                 let dbg_ln = match &*value.borrow() {
                     Variable::Owned(node) => prettify(node.to_owned().into()).to_string(),
                     Variable::Function(reference) => format!("&{}", prettify(reference.clone())),
