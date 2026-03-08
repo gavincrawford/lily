@@ -105,7 +105,7 @@ impl LyConfig {
                 let tokens = Lexer::default()
                     .lex(source.clone().to_string())
                     .context("failed to lex included module")?;
-                let body = Parser::new(tokens)
+                let body = Parser::new(tokens)?
                     .parse()
                     .context("failed to parse included module")?;
                 Ok::<Rc<ASTNode>, anyhow::Error>(
@@ -120,7 +120,7 @@ impl LyConfig {
             .collect::<Result<Vec<Rc<ASTNode>>>>()?;
 
         // Parse file
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(tokens)?;
         let ast = parser
             .parse_with_imports(includes)
             .context("failed to parse buffer")?;

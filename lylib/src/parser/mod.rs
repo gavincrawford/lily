@@ -18,12 +18,13 @@ pub struct Parser {
 
 impl Parser {
     /// Creates a new parser over `tokens`.
-    // TODO: this should most likely return a result, because if we can't get the current
-    // directory, we should just abort (only happens when cwd has bad permissions/DNE)
-    pub fn new(tokens: Vec<Token>) -> Self {
-        Self {
-            tokens: tokens.into(),
-            path: env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
+    pub fn new(tokens: Vec<Token>) -> Result<Self> {
+        match env::current_dir() {
+            Ok(path) => Ok(Self {
+                tokens: tokens.into(),
+                path,
+            }),
+            Err(_) => bail!("could not open working directory."),
         }
     }
 
@@ -182,7 +183,7 @@ impl Parser {
                 .context("failed to lex imported file")?;
 
             // create a parser and point it to the file's parent directory temporarily
-            let mut parser = Self::new(tokens);
+            let mut parser = Self::new(tokens)?;
             path.pop();
             let temp = parser.path.clone();
             parser.set_pwd(path.clone());

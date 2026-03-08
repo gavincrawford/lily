@@ -64,7 +64,7 @@ macro_rules! test {
         // interpret file
         use std::io::Cursor;
         let mut i = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
-        let mut p = Parser::new(Lexer::default().lex(include_str!($path).to_string()).unwrap());
+        let mut p = Parser::new(Lexer::default().lex(include_str!($path).to_string()).unwrap()).unwrap();
         p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
         let ast = p.parse().unwrap();
         i.execute(ast).unwrap();
@@ -169,7 +169,7 @@ fn syntax() {
             ),
         };
 
-        let mut parser = Parser::new(tokens);
+        let mut parser = Parser::new(tokens).unwrap();
         let ast = match parser.parse() {
             Ok(a) => a,
             Err(e) => panic!(

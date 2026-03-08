@@ -13,9 +13,14 @@ use std::{
 macro_rules! ast {
     ($src:expr) => {
         black_box(
-            Parser::new(Lexer::default().lex(include_str!($src).to_string()).unwrap())
-                .parse()
-                .unwrap(),
+            Parser::new(
+                Lexer::default()
+                    .lex(include_str!($src).to_string())
+                    .unwrap(),
+            )
+            .unwrap()
+            .parse()
+            .unwrap(),
         )
     };
 }
