@@ -208,3 +208,9 @@ test!(struct_functions => (
     sub := 0,
     last := 0
 ));
+
+test!(unary => (
+    v := true,
+    not_v := false,
+    not_not_v := true
+));
