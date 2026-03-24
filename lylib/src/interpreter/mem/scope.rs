@@ -10,15 +10,17 @@ impl Scope {
         Self { map }
     }
 
-    pub(crate) fn deep_clone(&self) -> Scope {
-        // deep clone the values within this scope
-        let deep_map = self
-            .map
-            .iter()
-            .map(|var| Rc::new(RefCell::new(var.borrow().clone())))
-            .collect();
+    /// Shallow clone this scope, sharing variable `Rc` references with the original.
+    /// Only used when cloning struct templates, whose variables are never mutated.
+    /// Writes to the clone go through `SVTable::assign`, which replaces the `Rc` slot
+    /// rather than mutating through it (copy-on-write).
+    pub(crate) fn shallow_clone(&self) -> Scope {
+        Scope::new(self.map.clone())
+    }
 
-        Scope::new(deep_map)
+    /// Returns whether a variable exists at this identifier.
+    pub(crate) fn contains(&self, id: usize) -> bool {
+        self.get(id).is_some()
     }
 
     /// Gets a reference to a variable by its identifier.

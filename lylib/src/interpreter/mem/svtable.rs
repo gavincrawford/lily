@@ -18,12 +18,20 @@ pub struct SVTable {
 }
 
 impl Clone for SVTable {
-    /// Deep clone the SVTable, creating new Rc<RefCell<Variable>> instances for each variable.
+    /// Shallow clone the SVTable, sharing variable `Rc` references with the original.
+    ///
+    /// This is safe because SVTable cloning only occurs when creating struct instances from
+    /// their templates (see `ASTNode::template()`). Templates are constant source data that
+    /// are never mutated after parsing, so shared references won't be written through.
+    /// Assignments to instance fields go through `assign`, which always inserts a new `Rc`
+    /// rather than mutating a potentially-shared one (copy-on-write).
     fn clone(&self) -> Self {
         Self {
-            // deep clone the table: for each scope, create new Rc<RefCell<Variable>> instances
-            table: self.table.iter().map(|scope| scope.deep_clone()).collect(),
-            // deep clone the modules: create new Rc<RefCell<SVTable>> instances
+            table: self
+                .table
+                .iter()
+                .map(|scope| scope.shallow_clone())
+                .collect(),
             modules: self
                 .modules
                 .iter()
@@ -115,17 +123,6 @@ impl SVTable {
         }
         None
     }
-
-    /// Helper method to find a variable in any scope with mutable access, returns the found variable reference.
-    #[inline]
-    fn find_variable_mut(&mut self, id: usize) -> Option<&Rc<RefCell<Variable>>> {
-        for scope in self.inner_mut().iter_mut().rev() {
-            if let Some(variable) = scope.get(id) {
-                return Some(variable);
-            }
-        }
-        None
-    }
 }
 
 impl MemoryInterface for SVTable {
@@ -172,13 +169,22 @@ impl MemoryInterface for SVTable {
 
     #[inline]
     fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<()> {
-        // replace the value of the top-most variable if possible
-        if let Some(variable) = self.find_variable_mut(id) {
-            *variable.borrow_mut() = value;
+        // find which scope index contains the variable
+        let target_scope = self
+            .table
+            .iter()
+            .enumerate()
+            .rev()
+            .find_map(|(idx, scope)| if scope.contains(id) { Some(idx) } else { None });
+
+        if let Some(scope_idx) = target_scope {
+            // always insert a new Rc, safe even if the old Rc is shared (COW)
+            self.table[scope_idx].insert(id, Rc::new(RefCell::new(value)));
             return Ok(());
         }
 
-        // otherwise, manual insert. this is used for structures & modules
+        // otherwise, manual insert. this is used for dynamic structure/module assignment, such as:
+        // s.x = 0 # where `s` does not contain `x`
         let var_map = self
             .get_scope(scope)
             .context(format!("cannot assign at scope {scope}",))?;
