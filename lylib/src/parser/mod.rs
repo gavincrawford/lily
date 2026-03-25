@@ -128,6 +128,7 @@ impl Parser {
                 // safety: destructuring
                 self.parse_operator(Self::get_precedence(self.peek().unwrap()))
             }
+            Token::ParenOpen => self.parse_expr(Some(Token::ParenClose)),
             _ => {
                 bail!("expected statement, found {:?}", self.peek());
             }

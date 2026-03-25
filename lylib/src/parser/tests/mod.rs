@@ -272,17 +272,21 @@ fn functions() {
 }
 
 #[test]
-fn function_calls() {
+fn function_call() {
     parse_eq!(
-        "a();";
-        node!(a())
+        "a(); b(); c();";
+        node!(a()),
+        node!(b()),
+        node!(c())
     );
+}
+
+#[test]
+fn function_call_nested() {
     parse_eq!(
-        "a().b();";
-        node!(call node!(deref node!(a()), ident!("b")))
-    );
-    parse_eq!(
-        "a().b().c();";
+        "a().b().c(); (a()).b().c(); (a().b()).c();";
+        node!(call node!(deref node!(call node!(deref node!(a()), ident!("b"))), ident!("c"))),
+        node!(call node!(deref node!(call node!(deref node!(a()), ident!("b"))), ident!("c"))),
         node!(call node!(deref node!(call node!(deref node!(a()), ident!("b"))), ident!("c")))
     );
 }
