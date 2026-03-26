@@ -1,10 +1,13 @@
 //! ID structure that allows for many kinds of identifiers.
+//! These types include symbols, literals, and member access.
 
 /// Debug implementations for `ID` & `IDKind`.
 mod debug;
 
 use std::rc::Rc;
 
+/// Lily's internal identifier.
+/// This is used at run-time as a stored token to track where things live.
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct ID {
     pub(crate) id: IDKind,
@@ -23,18 +26,18 @@ pub enum IDKind {
 /// This trait provides an easy way to convert strings to symbolic IDs.
 pub(crate) trait AsID {
     /// Converts into an `ID` type.
-    fn as_id(self) -> ID;
+    fn as_id(&self) -> ID;
 }
 
 impl AsID for String {
-    fn as_id(self) -> ID {
+    fn as_id(&self) -> ID {
         ID::new_sym(intern!(self))
     }
 }
 
 impl AsID for &'static str {
-    fn as_id(self) -> ID {
-        ID::new_sym(intern!(self))
+    fn as_id(&self) -> ID {
+        ID::new_sym(intern!(*self))
     }
 }
 
