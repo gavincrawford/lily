@@ -533,21 +533,30 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // NOTE: we should really just figure out how to `self.get` values with IDs that
                 // represent a function call, but that might get a bit messy
 
+                // Resolve parent where it's applicable. This is done manually for a few cases that
+                // chained derefs might apply to
+                let resolved_parent = match &**parent {
+                    ASTNode::FunctionCall { .. } | ASTNode::UnaryOp { .. } => &self
+                        .execute_expr(parent)?
+                        .context("deref parent cannot be undefined")?,
+                    _ => parent,
+                };
+
                 // get applicable memory entry
-                let variable = if let Ok(deref_id) = self.node_to_id(statement.clone()) {
+                let variable = if let Ok(deref_id) = self.node_to_id(Rc::new(ASTNode::Deref {
+                    parent: resolved_parent.clone(),
+                    child: child.clone(),
+                })) {
                     // for simple derefs, convert directly
                     self.get(&deref_id)?
                 } else {
-                    // for complex derefs (like `parent().child`), evaluate parts
-                    let parent = self
-                        .execute_expr(parent)?
-                        .context("deref parent cannot be undefined")?;
+                    // this should basically only happen in the case of instance derefs
 
                     // deref child & pull value from svt
                     let ASTNode::Literal(Token::Identifier(member_id)) = child.as_ref() else {
                         bail!("deref child must be an identifier")
                     };
-                    match parent.as_ref() {
+                    match resolved_parent.as_ref() {
                         ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_id)?,
                         _ => bail!("cannot dereference member of {parent:#?}"),
                     }

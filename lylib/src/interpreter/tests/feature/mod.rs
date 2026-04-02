@@ -214,3 +214,13 @@ test!(unary => (
     not_v := false,
     not_not_v := true
 ));
+
+test!(struct_deref_func => (
+    px := 10,
+    py := 20
+));
+
+test!(struct_deref_unary => (
+    neg := -5,
+    flipped := false
+));
