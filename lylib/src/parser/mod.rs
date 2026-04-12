@@ -144,14 +144,45 @@ impl Parser {
         Ok(ASTNode::Break.into())
     }
 
-    /// Parses imports.
+    /// Given a module path, returns the full parsed AST.
+    /// This function should only be used internally, as an encapsulation of the file read, lex, and
+    /// parse logic that's used.
+    fn parse_module(&self, mut path: PathBuf) -> Result<Rc<ASTNode>> {
+        // read the file to be imported to a buffer
+        let mut buffer = String::new();
+        File::open(&path)
+            .context("failed to create file buffer")?
+            .read_to_string(&mut buffer)
+            .context("failed to read file data")?;
+
+        // lex buffer into tokens
+        let tokens = Lexer::default()
+            .lex(buffer)
+            .context("failed to lex imported file")?;
+
+        // create a parser and point it to the file's parent directory temporarily
+        let mut parser = Self::new(tokens)?;
+        path.pop();
+        let temp = parser.path.clone();
+        parser.set_pwd(path.clone());
+
+        // parse the module
+        let body = parser.parse().context("failed to parse module body")?;
+
+        // reset old parser working directory
+        parser.set_pwd(temp);
+
+        Ok(body)
+    }
+
+    /// Parses import statements.
     fn parse_import(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Import)?;
         if let Some(Token::Str(path)) = self.next() {
             // get full path
-            let mut path = self.path.join(PathBuf::from(path));
+            let path = self.path.join(PathBuf::from(path));
             if !path.exists() {
-                bail!("module not found at '{}'", path.display());
+                bail!("module not found ({})", path.display());
             }
 
             // check if alias is provided
@@ -171,33 +202,10 @@ impl Parser {
                 }
             }
 
-            // read the file to be imported to a buffer
-            let mut buffer = String::new();
-            File::open(&path)
-                .context("failed to create file buffer")?
-                .read_to_string(&mut buffer)
-                .context("failed to read file data")?;
-
-            // lex buffer into tokens
-            let tokens = Lexer::default()
-                .lex(buffer)
-                .context("failed to lex imported file")?;
-
-            // create a parser and point it to the file's parent directory temporarily
-            let mut parser = Self::new(tokens)?;
-            path.pop();
-            let temp = parser.path.clone();
-            parser.set_pwd(path.clone());
-
-            // parse the module
-            // TODO: we should wrap up all errors that occur here so that every single one of them has
-            // the path attached. this will make debugging much easier.
-            let body = parser
-                .parse()
-                .context(format!("failed to parse module body\npath => {path:?}"))?;
-
-            // reset old parser working directory
-            parser.set_pwd(temp);
+            // parse file & get AST
+            let body = self
+                .parse_module(path.clone())
+                .context(format!("parsing import '{}'", path.display()))?;
 
             // TODO: more extensive import tests. will require *lots* of files, though
 
@@ -423,9 +431,7 @@ impl Parser {
     fn parse_assignment(&mut self, target: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
         // parse value
         self.expect(Token::Equal)?;
-        let value = self
-            .parse_expr(None)
-            .context("failed to parse assignment value")?;
+        let value = self.parse_expr(None).context("failed to parse new value")?;
 
         // return node
         Ok(ASTNode::Assign { target, value }.into())
@@ -435,12 +441,10 @@ impl Parser {
     fn parse_decl_var(&mut self) -> Result<Rc<ASTNode>> {
         // parse id and value
         self.expect(Token::Let)?;
-        let target = self
-            .parse_expr(Some(Token::Equal))
-            .context("failed to parse declaration target")?;
+        let target = self.parse_expr(Some(Token::Equal))?;
         let value = self
             .parse_expr(None)
-            .context("failed to parse declaration value")?;
+            .context("failed to parse initial value")?;
 
         // return node
         Ok(ASTNode::Declare { target, value }.into())
@@ -479,7 +483,7 @@ impl Parser {
                     let op = self.next().unwrap(); // safety: peek
                     let rhs = self
                         .parse_operator(Self::get_precedence(&op))
-                        .context("failed to parse high precedence operand")?;
+                        .context(format!("failed to parse operator: '{op}'"))?;
                     ASTNode::Op {
                         lhs: primary,
                         op,
@@ -525,7 +529,7 @@ impl Parser {
             }
             _ => self
                 .parse_primary()
-                .context("failed to parse primary in precedence expr")?,
+                .context("failed to parse left operand")?,
         };
 
         // Handle high precedence operations like deref, function calls, and indexing
@@ -659,7 +663,10 @@ impl Parser {
                 .context("failed to parse new structure instance"),
 
             _ => {
-                bail!("invalid primary '{:?}'", self.peek());
+                bail!(
+                    "invalid primary expression: '{:?}'",
+                    self.peek().unwrap_or(&Token::Undefined)
+                );
             }
         }
     }
@@ -690,7 +697,8 @@ impl Parser {
             // get resolved item
             let item = self
                 .parse_expr(Some(Token::Comma))
-                .context("failed to parse list item")?;
+                .context("failed to parse list item")
+                .context(format!("in list: {items:?}"))?;
 
             // add item to the list
             items.push(Variable::Owned(ASTNode::inner_to_owned(&item)).into())
