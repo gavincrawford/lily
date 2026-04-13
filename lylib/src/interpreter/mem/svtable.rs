@@ -1,20 +1,17 @@
 //! Implements the SVTable, or the scoped-variable table.
 
-use super::{scope::Scope, *};
+use super::{flatrcmap::FlatRcMap, *};
 use anyhow::{Result, bail};
 use rustc_hash::FxHashMap;
 use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
 
 /// Scoped-variable table. Holds values with respect to their variable names.
-/// Internally, uses a `FxHashMap` providing fast but less secure access.
 #[derive(Debug, PartialEq)]
 pub struct SVTable {
     /// Holds all the scope frames, each of which hold their respective variables.
-    table: Vec<Scope>,
+    table: Vec<FlatRcMap<Variable>>,
     /// Holds all the modules defined at this SVTable's scope.
     modules: FxHashMap<usize, Rc<RefCell<SVTable>>>,
-    // TODO: implement with `Scope`
-    // this might require a bit of generics, and we might want to rename
 }
 
 impl Clone for SVTable {
@@ -27,11 +24,7 @@ impl Clone for SVTable {
     /// rather than mutating a potentially-shared one (copy-on-write).
     fn clone(&self) -> Self {
         Self {
-            table: self
-                .table
-                .iter()
-                .map(|scope| scope.shallow_clone())
-                .collect(),
+            table: self.table.iter().map(|map| map.shallow_clone()).collect(),
             modules: self
                 .modules
                 .iter()
@@ -52,26 +45,20 @@ impl SVTable {
     #[inline]
     pub fn new() -> Self {
         Self {
-            table: vec![Scope::default()],
+            table: vec![FlatRcMap::default()],
             modules: FxHashMap::default(),
         }
     }
 
     /// Returns the iterator to the internal list of frames.
     #[inline]
-    pub fn iter(&self) -> Iter<'_, Scope> {
+    pub(crate) fn iter(&self) -> Iter<'_, FlatRcMap<Variable>> {
         self.table.iter()
-    }
-
-    /// Returns the inner list of frames.
-    #[inline]
-    pub fn inner(&self) -> &Vec<Scope> {
-        &self.table
     }
 
     /// Returns the inner list of frames, mutable.
     #[inline]
-    pub fn inner_mut(&mut self) -> &mut Vec<Scope> {
+    pub(crate) fn inner_mut(&mut self) -> &mut Vec<FlatRcMap<Variable>> {
         &mut self.table
     }
 
@@ -80,7 +67,7 @@ impl SVTable {
     pub fn add_module(&mut self, name: usize) -> Rc<RefCell<SVTable>> {
         self.modules
             .entry(name)
-            .or_insert_with(|| RefCell::new(SVTable::default()).into())
+            .or_insert_with(|| Rc::new(RefCell::new(SVTable::default())))
             .clone()
     }
 
@@ -96,12 +83,12 @@ impl SVTable {
     /// Adds a new scope.
     #[inline]
     pub fn add_scope(&mut self) {
-        self.table.push(Scope::default());
+        self.table.push(FlatRcMap::default());
     }
 
     /// Gets a scope map. Mutable by default.
     #[inline]
-    pub fn get_scope(&mut self, index: usize) -> Option<&mut Scope> {
+    pub(crate) fn get_scope(&mut self, index: usize) -> Option<&mut FlatRcMap<Variable>> {
         self.table.get_mut(index)
     }
 
@@ -115,7 +102,7 @@ impl SVTable {
 impl SVTable {
     /// Helper method to find a variable in any scope, returns the found variable reference.
     #[inline]
-    fn find_variable(&self, id: usize) -> Option<&Rc<RefCell<Variable>>> {
+    fn find_variable(&self, id: usize) -> Option<Rc<RefCell<Variable>>> {
         for scope in self.iter().rev() {
             if let Some(variable) = scope.get(id) {
                 return Some(variable);
@@ -144,12 +131,10 @@ impl MemoryInterface for SVTable {
 
     #[inline]
     fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>> {
-        match self.modules.get(&id) {
-            Some(module) => Ok(module.clone()),
-            _ => {
-                bail!("could not find module '{:#?}'", resolve!(id))
-            }
-        }
+        self.modules
+            .get(&id)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("could not find module '{:#?}'", resolve!(id)))
     }
 
     #[inline]
