@@ -1,12 +1,13 @@
 [package]
 name = "lylib"
-version = "0.27.11"
+version = "0.27.12"
 edition = "2024"
 
 [dependencies]
 anyhow = "1.0"
 derivative = "2.2"
 rustc-hash = "2.1"
+thiserror = "2.0.18"
 
 [dev-dependencies]
 criterion = { version = "0.8", features = ["html_reports"] }

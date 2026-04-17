@@ -112,44 +112,44 @@ impl Ord for Variable {
 }
 
 impl MemoryInterface for Variable {
-    fn get_owned(&self, id: usize) -> Result<Variable> {
+    fn get_owned(&self, id: usize) -> Result<Variable, MemoryError> {
         if let Variable::Owned(ASTNode::List(items)) = self {
-            let item = items.get(id).context("index out of bounds")?;
+            let item = items.get(id).ok_or(MemoryError::IndexOutOfBounds(id))?;
             let inner = item.borrow().clone();
             Ok(inner)
         } else {
-            bail!("invalid access to variable '{self:#?}'");
+            Err(MemoryError::VariableRead(format!("{self:#?}")))
         }
     }
 
-    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>> {
+    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>, MemoryError> {
         if let Variable::Owned(ASTNode::List(items)) = self {
-            let item = items.get(id).context("index out of bounds")?;
+            let item = items.get(id).ok_or(MemoryError::IndexOutOfBounds(id))?;
             Ok(item.clone())
         } else {
-            bail!("invalid access to variable '{self:#?}'");
+            Err(MemoryError::VariableRead(format!("{self:#?}")))
         }
     }
 
-    fn get_module(&self, _: usize) -> Result<Rc<RefCell<SVTable>>> {
-        bail!("variables cannot contain modules");
+    fn get_module(&self, _: usize) -> Result<Rc<RefCell<SVTable>>, MemoryError> {
+        Err(MemoryError::ModuleInVar)
     }
 
-    fn declare(&mut self, id: usize, value: Variable, _: usize) -> Result<()> {
+    fn declare(&mut self, id: usize, value: Variable, _: usize) -> Result<(), MemoryError> {
         if let Variable::Owned(ASTNode::List(items)) = self {
             items.insert(id, value.into());
             Ok(())
         } else {
-            bail!("invalid declaration to variable '{self:#?}'");
+            Err(MemoryError::VariableWrite(format!("{self:#?}")))
         }
     }
 
-    fn assign(&mut self, id: usize, value: Variable, _: usize) -> Result<()> {
+    fn assign(&mut self, id: usize, value: Variable, _: usize) -> Result<(), MemoryError> {
         if let Variable::Owned(ASTNode::List(items)) = self {
-            *items.get_mut(id).context("index out of bounds")? = value.into();
+            *items.get_mut(id).ok_or(MemoryError::IndexOutOfBounds(id))? = value.into();
             Ok(())
         } else {
-            bail!("invalid assignment to variable '{self:#?}'");
+            Err(MemoryError::VariableWrite(format!("{self:#?}")))
         }
     }
 }

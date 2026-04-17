@@ -29,12 +29,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
     /// Drops all variables in the current scope.
     pub(crate) fn drop_here(&mut self) {
+        // NOTE: this does suppress two possible scope failures
         if let Some(mod_pointer) = &self.context {
             let mut module = mod_pointer.borrow_mut();
-            if let Some(this_scope) = module.get_scope(self.scope_id) {
+            if let Ok(this_scope) = module.get_scope(self.scope_id) {
                 this_scope.clear();
             }
-        } else if let Some(this_scope) = self.memory.borrow_mut().get_scope(self.scope_id) {
+        } else if let Ok(this_scope) = self.memory.borrow_mut().get_scope(self.scope_id) {
             this_scope.clear();
         }
     }

@@ -1,7 +1,7 @@
 //! Implements the SVTable, or the scoped-variable table.
 
 use super::{flatrcmap::FlatRcMap, *};
-use anyhow::{Result, bail};
+use anyhow::Result;
 use rustc_hash::FxHashMap;
 use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
 
@@ -71,15 +71,6 @@ impl SVTable {
             .clone()
     }
 
-    /// Gets a module by name. Returns an immutable reference to the module if found.
-    #[inline]
-    pub fn get_module(&self, name: usize) -> Result<Rc<RefCell<SVTable>>> {
-        self.modules
-            .get(&name)
-            .cloned()
-            .ok_or_else(|| anyhow::anyhow!("failed to find module '{}'", resolve!(name)))
-    }
-
     /// Adds a new scope.
     #[inline]
     pub fn add_scope(&mut self) {
@@ -88,8 +79,14 @@ impl SVTable {
 
     /// Gets a scope map. Mutable by default.
     #[inline]
-    pub(crate) fn get_scope(&mut self, index: usize) -> Option<&mut FlatRcMap<Variable>> {
-        self.table.get_mut(index)
+    pub(crate) fn get_scope(
+        &mut self,
+        index: usize,
+    ) -> Result<&mut FlatRcMap<Variable>, MemoryError> {
+        match self.table.get_mut(index) {
+            Some(table) => Ok(table),
+            None => Err(MemoryError::NoScope(index)),
+        }
     }
 
     /// Returns the number of scopes in this table.
@@ -114,46 +111,44 @@ impl SVTable {
 
 impl MemoryInterface for SVTable {
     #[inline]
-    fn get_owned(&self, id: usize) -> Result<Variable> {
+    fn get_owned(&self, id: usize) -> Result<Variable, MemoryError> {
         match self.find_variable(id) {
             Some(variable) => Ok(variable.borrow().clone()),
-            None => bail!("failed to get owned value {:#?}", resolve!(id)),
+            None => Err(MemoryError::VariableRead(resolve!(id))),
         }
     }
 
     #[inline]
-    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>> {
+    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>, MemoryError> {
         match self.find_variable(id) {
             Some(variable) => Ok(variable.clone()),
-            None => bail!("failed to get ref value {:#?}", resolve!(id)),
+            None => Err(MemoryError::VariableRead(resolve!(id))),
         }
     }
 
     #[inline]
-    fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>> {
+    fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>, MemoryError> {
         self.modules
             .get(&id)
             .cloned()
-            .ok_or_else(|| anyhow::anyhow!("could not find module '{:#?}'", resolve!(id)))
+            .ok_or_else(|| MemoryError::NoModule(resolve!(id)))
     }
 
     #[inline]
-    fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<()> {
+    fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<(), MemoryError> {
         // add scopes if necessary
         while self.scopes() <= scope {
             self.add_scope();
         }
 
-        // get variable map and insert new value. if the value already exists, bail
-        let var_map = self
-            .get_scope(scope)
-            .context(format!("cannot declare at scope {scope}",))?;
+        // get variable map and insert new value
+        let var_map = self.get_scope(scope)?;
         var_map.insert(id, Rc::new(RefCell::new(value)));
         Ok(())
     }
 
     #[inline]
-    fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<()> {
+    fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<(), MemoryError> {
         // find which scope index contains the variable
         let target_scope = self
             .table
@@ -170,9 +165,7 @@ impl MemoryInterface for SVTable {
 
         // otherwise, manual insert. this is used for dynamic structure/module assignment, such as:
         // s.x = 0 # where `s` does not contain `x`
-        let var_map = self
-            .get_scope(scope)
-            .context(format!("cannot assign at scope {scope}",))?;
+        let var_map = self.get_scope(scope)?;
         var_map.insert(id, Rc::new(RefCell::new(value)));
         Ok(())
     }

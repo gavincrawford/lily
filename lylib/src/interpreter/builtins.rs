@@ -1,4 +1,5 @@
 use super::{mem::variable::ExFn, *};
+use crate::errors::ExternalFunctionError;
 use anyhow::anyhow;
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {

@@ -2,6 +2,7 @@
 //! This includes getting and setting variables.
 
 use super::*;
+use crate::errors::MemoryError;
 use anyhow::Result;
 
 pub mod drop;
@@ -11,11 +12,11 @@ pub mod variable;
 
 /// This trait can be added to any type to give it the ability to be accessed by identifier.
 pub(crate) trait MemoryInterface {
-    fn get_owned(&self, id: usize) -> Result<Variable>;
-    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>>;
-    fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>>;
-    fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<()>;
-    fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<()>;
+    fn get_owned(&self, id: usize) -> Result<Variable, MemoryError>;
+    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>, MemoryError>;
+    fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>, MemoryError>;
+    fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<(), MemoryError>;
+    fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<(), MemoryError>;
 }
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
@@ -40,7 +41,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             } => {
                 let path = id.to_path();
                 for &item in &path[0..(path.len() - 1)] {
-                    // try to get module first, then check if it's a struct/list access
+                    // try module lookup first; any error means "not a module" — fall through
+                    // to struct/list deref below
                     let module_result = module.borrow().get_module(item);
 
                     // if this is a simple module, use that and continue
@@ -81,7 +83,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         let handle = module.borrow();
 
         // return value
-        handle.get_owned(id)
+        Ok(handle.get_owned(id)?)
     }
 
     /// Declares a new variable.
@@ -94,7 +96,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         let mut module = module.borrow_mut();
 
         // declare value
-        module.declare(id, value, self.scope_id)
+        Ok(module.declare(id, value, self.scope_id)?)
     }
 
     /// Assigns to an existing variable.
@@ -107,6 +109,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         let mut module = module.borrow_mut();
 
         // assign value
-        module.assign(id, value, self.scope_id)
+        Ok(module.assign(id, value, self.scope_id)?)
     }
 }

@@ -22,6 +22,7 @@ mod execute;
 pub use execute::LyConfig;
 
 // Internals
+mod errors;
 pub mod interner;
 pub mod interpreter;
 pub mod lexer;
