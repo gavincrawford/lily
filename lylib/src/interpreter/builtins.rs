@@ -60,6 +60,25 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
         });
 
+        // split string by delimiter into list of strings
+        exfn!(split, |string, delimiter; _stdout, _stdin| {
+            let delimiter = match &**delimiter {
+                ASTNode::Literal(Token::Str(s)) => s.clone(),
+                ASTNode::Literal(Token::Char(c)) => c.to_string(),
+                _ => bail!("split delimiter must be a string or char, got {:?}", &**delimiter),
+            };
+            match &**string {
+                ASTNode::Literal(Token::Str(string)) => {
+                    let parts: Vec<Rc<RefCell<Variable>>> = string
+                        .split(delimiter.as_str())
+                        .map(|part| Variable::Owned(ASTNode::Literal(Token::Str(part.to_string()))).into())
+                        .collect();
+                    Ok(Some(ASTNode::List(parts).into()))
+                }
+                _ => bail!("cannot split {:?}", &**string)
+            }
+        });
+
         // chars (get characters of string as list)
         exfn!(chars, |string; _stdout, _stdin| {
             match &**string {

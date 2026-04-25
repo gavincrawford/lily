@@ -151,6 +151,7 @@ let value = math.pi
 | `len(list_or_string)` | Get length |
 | `sort(list)` | Sort list (numbers or strings, not mixed) |
 | `chars(string)` | Convert string to char list |
+| `split(string, delimiter)` | Split string by a given character or string delimiter, returns list |
 | `assert(condition)` | Error if false |
 
 ## String Operations
@@ -161,6 +162,7 @@ let with_num = "count: " + 42
 let with_char = "ab" + 'c'
 let length = len("hello")
 let char_list = chars("abc")    # ['a', 'b', 'c']
+let parts = split("a,b,c", ',') # ["a", "b", "c"]
 let indexed = "hello"[0]        # 'h'
 ```
 

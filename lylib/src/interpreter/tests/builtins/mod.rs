@@ -36,3 +36,10 @@ test!(sort => (
 ));
 
 test!(sort_mixed_types => panic);
+
+test!(split => (
+    by_comma == node!([lit!("a"), lit!("b"), lit!("c")]),
+    by_space == node!([lit!("hello"), lit!("world"), lit!("foo")]),
+    no_match == node!([lit!("abc")]),
+    by_double_colon == node!([lit!("one"), lit!("two"), lit!("three")])
+));
