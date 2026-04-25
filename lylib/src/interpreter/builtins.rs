@@ -12,102 +12,115 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Adds the default external functions to this interpreter.
     /// This should only be called from `Interpreter::new`.
     pub(crate) fn inject_builtins(&mut self) -> Result<()> {
-        /// Adds an external function.
-        macro_rules! exfn {
-            ($id:tt, |$($arg:ident),*;$out:ident, $in:ident| $body:expr) => {
-                self.inject_extern(
-                    stringify!($id),
-                    Rc::new(|stdout, stdin, args| {
-                        let $out = stdout;
-                        let $in = stdin;
-                        let [$($arg),*] = args.as_slice() else { bail!("invalid arguments provided to external function"); };
-                        $body
-                    })
-                )?
+        /// Injects an external function.
+        macro_rules! inject {
+            ($fxn:expr) => {
+                self.inject_extern(stringify!($fxn), $fxn)?
             };
         }
 
         // print
-        exfn!(print, |value; stdout, _stdin| {
+        let print: Rc<ExFn> = Rc::new(|stdout, _stdin, args| {
+            let [value] = args.as_slice() else {
+                Err(ExternalFunctionError::InvalidArguments)?
+            };
             match &**value {
                 ASTNode::Literal(token) => writeln!(stdout, "{token}"),
                 other => writeln!(stdout, "{other:?}"),
             }?;
             Ok(None)
         });
+        inject!(print);
 
         // length
-        exfn!(len, |item; _stdout, _stdin| {
+        let len: Rc<ExFn> = Rc::new(|_stdout, _stdin, args| {
+            let [item] = args.as_slice() else {
+                Err(ExternalFunctionError::InvalidArguments)?
+            };
             match &**item {
-                ASTNode::List(items) => {
-                    Ok(Some(lit!(Token::Number(items.len() as f32))))
-                }
+                ASTNode::List(items) => Ok(Some(lit!(Token::Number(items.len() as f32)))),
                 ASTNode::Literal(Token::Str(string)) => {
                     Ok(Some(lit!(Token::Number(string.len() as f32))))
                 }
-                _ => bail!("cannot take length of {:?}", &**item)
+                _ => bail!("cannot take length of {:?}", &**item),
             }
         });
+        inject!(len);
 
         // sort
-        exfn!(sort, |list; _stdout, _stdin| {
+        let sort: Rc<ExFn> = Rc::new(|_stdout, _stdin, args| {
+            let [list] = args.as_slice() else {
+                Err(ExternalFunctionError::InvalidArguments)?
+            };
             match &**list {
                 ASTNode::List(items) => {
                     let mut clone = items.clone();
                     clone.sort();
                     Ok(Some(ASTNode::List(clone).into()))
                 }
-                _ => bail!("cannot sort {:?}", &**list)
+                _ => bail!("cannot sort {:?}", &**list),
             }
         });
+        inject!(sort);
 
         // split string by delimiter into list of strings
-        exfn!(split, |string, delimiter; _stdout, _stdin| {
+        let split: Rc<ExFn> = Rc::new(|_stdout, _stdin, args| {
+            let [string, delimiter] = args.as_slice() else {
+                Err(ExternalFunctionError::InvalidArguments)?
+            };
             let delimiter = match &**delimiter {
                 ASTNode::Literal(Token::Str(s)) => s.clone(),
                 ASTNode::Literal(Token::Char(c)) => c.to_string(),
-                _ => bail!("split delimiter must be a string or char, got {:?}", &**delimiter),
+                _ => bail!(
+                    "split delimiter must be a string or char, got {:?}",
+                    &**delimiter
+                ),
             };
             match &**string {
                 ASTNode::Literal(Token::Str(string)) => {
                     let parts: Vec<Rc<RefCell<Variable>>> = string
                         .split(delimiter.as_str())
-                        .map(|part| Variable::Owned(ASTNode::Literal(Token::Str(part.to_string()))).into())
+                        .map(|part| {
+                            Variable::Owned(ASTNode::Literal(Token::Str(part.to_string()))).into()
+                        })
                         .collect();
                     Ok(Some(ASTNode::List(parts).into()))
                 }
-                _ => bail!("cannot split {:?}", &**string)
+                _ => bail!("cannot split {:?}", &**string),
             }
         });
+        inject!(split);
 
         // chars (get characters of string as list)
-        exfn!(chars, |string; _stdout, _stdin| {
+        let chars: Rc<ExFn> = Rc::new(|_stdout, _stdin, args| {
+            let [string] = args.as_slice() else {
+                Err(ExternalFunctionError::InvalidArguments)?
+            };
             match &**string {
-                ASTNode::Literal(Token::Str(v)) =>
-                {
-                    // collect chars into a vector of nodes
-                    let values: Vec<Rc<RefCell<Variable>>> = v.chars().map(|ch| {
-                        Variable::Owned(ASTNode::Literal(Token::Char(ch))).into()
-                    }).collect();
-
-                    // return new list
+                ASTNode::Literal(Token::Str(v)) => {
+                    let values: Vec<Rc<RefCell<Variable>>> = v
+                        .chars()
+                        .map(|ch| Variable::Owned(ASTNode::Literal(Token::Char(ch))).into())
+                        .collect();
                     Ok(Some(ASTNode::List(values).into()))
-                },
-                _ => bail!("cannot fetch characters of {:?}", &**string)
+                }
+                _ => bail!("cannot fetch characters of {:?}", &**string),
             }
         });
+        inject!(chars);
 
         // assert (returns err if condition != true)
-        exfn!(assert, |condition; _stdout, _stdin| {
-            // return err unless condition is true
+        let assert: Rc<ExFn> = Rc::new(|_stdout, _stdin, args| {
+            let [condition] = args.as_slice() else {
+                Err(ExternalFunctionError::InvalidArguments)?
+            };
             match &**condition {
-                ASTNode::Literal(Token::Bool(true)) => {},
-                _ => {
-                    return Err(anyhow!("assertion failed"));
-                }
+                ASTNode::Literal(Token::Bool(true)) => {}
+                _ => return Err(anyhow!("assertion failed")),
             }
             Ok(None)
         });
+        inject!(assert);
 
         Ok(())
     }
