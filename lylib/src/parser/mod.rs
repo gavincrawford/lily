@@ -549,9 +549,10 @@ impl Parser {
         }
 
         while let Ok(next) = self.peek() {
-            // If the precedence of the `peek`ed token is lower than the minimum, break
+            // If the precedence of the `peek`ed token is lower than the minimum, or it isn't an
+            // operator at all, break
             // This means we've gotten to a point where the next token does *not* take precedence
-            if Self::get_precedence(next) < min_precedence {
+            if !next.is_operator() || Self::get_precedence(next) < min_precedence {
                 break;
             }
 

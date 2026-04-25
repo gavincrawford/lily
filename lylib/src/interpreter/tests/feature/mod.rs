@@ -212,7 +212,9 @@ test!(struct_functions => (
 test!(unary => (
     v := true,
     not_v := false,
-    not_not_v := true
+    complex_not_a := true,
+    complex_not_b := false,
+    complex_not_c := false
 ));
 
 test!(struct_deref_func => (
