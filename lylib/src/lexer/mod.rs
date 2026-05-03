@@ -47,205 +47,214 @@ impl Lexer {
     /// Lexes the provided file, as a string, into a vector of tokens.
     pub fn lex(&mut self, buf: String) -> Result<Vec<Token>> {
         use Token::*;
-        let buf = buf.replace("\n", ";");
         let mut chars = buf.chars().peekable();
         let mut tokens = vec![];
         let mut mode = CaptureMode::General;
         let mut c = chars.next().context("source file empty")?;
-        loop {
-            match mode {
-                CaptureMode::General => {
-                    match c {
-                        // TODO this should just get moved out to its own mode vvv
+        let mut line = 1;
+        let res = (|| {
+            loop {
+                match mode {
+                    CaptureMode::General => {
+                        match c {
+                            // TODO this should just get moved out to its own mode vvv
 
-                        // operators
-                        '+' => self.long_op(&mut chars, &mut tokens, '+', Increment, Add),
-                        '-' => self.long_op(&mut chars, &mut tokens, '-', Decrement, Sub),
-                        '*' => tokens.push(Mul),
-                        '/' => self.long_op(&mut chars, &mut tokens, '/', Floor, Div),
-                        '^' => tokens.push(Pow),
+                            // operators
+                            '+' => self.long_op(&mut chars, &mut tokens, '+', Increment, Add),
+                            '-' => self.long_op(&mut chars, &mut tokens, '-', Decrement, Sub),
+                            '*' => tokens.push(Mul),
+                            '/' => self.long_op(&mut chars, &mut tokens, '/', Floor, Div),
+                            '^' => tokens.push(Pow),
 
-                        // equalities
-                        '=' => {
-                            self.equality_register = Some(Equal);
-                            mode = CaptureMode::Equality;
-                        }
-                        '!' => {
-                            self.equality_register = Some(LogicalNot);
-                            mode = CaptureMode::Equality;
-                        }
-                        '>' => {
-                            self.equality_register = Some(LogicalG);
-                            mode = CaptureMode::Equality;
-                        }
-                        '<' => {
-                            self.equality_register = Some(LogicalL);
-                            mode = CaptureMode::Equality;
-                        }
-                        '&' => {
-                            self.equality_register = Some(LogicalAnd);
-                            mode = CaptureMode::Equality;
-                        }
-                        '|' => {
-                            self.equality_register = Some(LogicalOr);
-                            mode = CaptureMode::Equality;
-                        }
-
-                        // numbers
-                        c if c.is_numeric() && self.keyword_register.is_empty() => {
-                            mode = CaptureMode::Number;
-                            self.number_register.push(c);
-                        }
-
-                        // quotes, for str & char
-                        '\"' => {
-                            mode = CaptureMode::String;
-                        }
-                        '\'' => {
-                            mode = CaptureMode::Char;
-                        }
-
-                        // keywords and identifiers
-                        '(' | ')' | '[' | ']' | ',' | ' ' => {
-                            if let Some(token) = self.keyword_from_register() {
-                                // if the register contains a keyword, that takes priority
-                                tokens.push(token);
-                            } else if !self.keyword_register.is_empty() {
-                                // otherwise, it'd be an identifier
-                                tokens.push(Identifier(intern!(self.keyword_register.clone())));
+                            // equalities
+                            '=' => {
+                                self.equality_register = Some(Equal);
+                                mode = CaptureMode::Equality;
                             }
-                            self.keyword_register.clear();
+                            '!' => {
+                                self.equality_register = Some(LogicalNot);
+                                mode = CaptureMode::Equality;
+                            }
+                            '>' => {
+                                self.equality_register = Some(LogicalG);
+                                mode = CaptureMode::Equality;
+                            }
+                            '<' => {
+                                self.equality_register = Some(LogicalL);
+                                mode = CaptureMode::Equality;
+                            }
+                            '&' => {
+                                self.equality_register = Some(LogicalAnd);
+                                mode = CaptureMode::Equality;
+                            }
+                            '|' => {
+                                self.equality_register = Some(LogicalOr);
+                                mode = CaptureMode::Equality;
+                            }
 
-                            // match delimiters
-                            match c {
-                                '(' => tokens.push(ParenOpen),
-                                ')' => tokens.push(ParenClose),
-                                '[' => tokens.push(BracketOpen),
-                                ']' => tokens.push(BracketClose),
-                                ',' => tokens.push(Comma),
-                                _ => {}
+                            // numbers
+                            c if c.is_numeric() && self.keyword_register.is_empty() => {
+                                mode = CaptureMode::Number;
+                                self.number_register.push(c);
                             }
-                        }
-                        c if c.is_alphanumeric() || c == '_' => {
-                            self.keyword_register.push(c);
-                        }
-                        '.' => {
-                            if !self.keyword_register.is_empty() {
-                                tokens.push(Identifier(intern!(self.keyword_register.clone())));
-                            }
-                            self.keyword_register.clear();
-                            tokens.push(Dot);
-                        }
 
-                        // endlines
-                        ';' | '\n' => {
-                            if let Some(token) = self.keyword_from_register() {
-                                tokens.push(token);
-                            } else if !self.keyword_register.is_empty() {
-                                tokens.push(Identifier(intern!(self.keyword_register.clone())));
+                            // quotes, for str & char
+                            '\"' => {
+                                mode = CaptureMode::String;
                             }
-                            self.keyword_register.clear();
+                            '\'' => {
+                                mode = CaptureMode::Char;
+                            }
+
+                            // keywords and identifiers
+                            '(' | ')' | '[' | ']' | ',' | ' ' => {
+                                if let Some(token) = self.keyword_from_register() {
+                                    // if the register contains a keyword, that takes priority
+                                    tokens.push(token);
+                                } else if !self.keyword_register.is_empty() {
+                                    // otherwise, it'd be an identifier
+                                    tokens.push(Identifier(intern!(self.keyword_register.clone())));
+                                }
+                                self.keyword_register.clear();
+
+                                // match delimiters
+                                match c {
+                                    '(' => tokens.push(ParenOpen),
+                                    ')' => tokens.push(ParenClose),
+                                    '[' => tokens.push(BracketOpen),
+                                    ']' => tokens.push(BracketClose),
+                                    ',' => tokens.push(Comma),
+                                    _ => {}
+                                }
+                            }
+                            c if c.is_alphanumeric() || c == '_' => {
+                                self.keyword_register.push(c);
+                            }
+                            '.' => {
+                                if !self.keyword_register.is_empty() {
+                                    tokens.push(Identifier(intern!(self.keyword_register.clone())));
+                                }
+                                self.keyword_register.clear();
+                                tokens.push(Dot);
+                            }
+
+                            // endlines
+                            ';' | '\n' => {
+                                if let Some(token) = self.keyword_from_register() {
+                                    tokens.push(token);
+                                } else if !self.keyword_register.is_empty() {
+                                    tokens.push(Identifier(intern!(self.keyword_register.clone())));
+                                }
+                                self.keyword_register.clear();
+                                tokens.push(Endl);
+
+                                // advance line counter only if this is an endline
+                                // semicolons do not count as lines
+                                if c == '\n' {
+                                    line += 1;
+                                }
+                            }
+
+                            // comments
+                            '#' => {
+                                mode = CaptureMode::Comment;
+                            }
+
+                            // other
+                            _ => {}
+                        }
+                    }
+                    CaptureMode::Comment => {
+                        if c == '\n' || c == ';' {
                             tokens.push(Endl);
+                            mode = CaptureMode::General;
                         }
-
-                        // comments
-                        '#' => {
-                            mode = CaptureMode::Comment;
-                        }
-
-                        // other
-                        _ => {}
                     }
-                }
-                CaptureMode::Comment => {
-                    if c == '\n' || c == ';' {
-                        tokens.push(Endl);
+                    CaptureMode::Equality => {
+                        if let Some(token) = &self.equality_register {
+                            match (token, c) {
+                                (Equal, '=') => tokens.push(LogicalEq),
+                                (Equal, _) => tokens.push(Equal),
+                                (LogicalL, '=') => tokens.push(LogicalLe),
+                                (LogicalL, _) => tokens.push(LogicalL),
+                                (LogicalG, '=') => tokens.push(LogicalGe),
+                                (LogicalG, _) => tokens.push(LogicalG),
+                                (LogicalAnd, '&') => tokens.push(LogicalAnd),
+                                (LogicalOr, '|') => tokens.push(LogicalOr),
+                                (LogicalNot, '=') => tokens.push(LogicalNeq),
+                                (LogicalNot, _) => {
+                                    // NOTE:
+                                    // this bit is required to skip the character advancement that
+                                    // occurs for all of the other branches here. this specifically
+                                    // fixes double negatives (`!!true`). it's likely that there's
+                                    // other bugs similar to this one that might need this workaround
+                                    tokens.push(LogicalNot);
+                                    self.equality_register = None;
+                                    mode = CaptureMode::General;
+                                    continue;
+                                }
+                                _ => {
+                                    unreachable!()
+                                }
+                            }
+                        }
+                        self.equality_register = None;
                         mode = CaptureMode::General;
                     }
-                }
-                CaptureMode::Equality => {
-                    if let Some(token) = &self.equality_register {
-                        match (token, c) {
-                            (Equal, '=') => tokens.push(LogicalEq),
-                            (Equal, _) => tokens.push(Equal),
-                            (LogicalL, '=') => tokens.push(LogicalLe),
-                            (LogicalL, _) => tokens.push(LogicalL),
-                            (LogicalG, '=') => tokens.push(LogicalGe),
-                            (LogicalG, _) => tokens.push(LogicalG),
-                            (LogicalAnd, '&') => tokens.push(LogicalAnd),
-                            (LogicalOr, '|') => tokens.push(LogicalOr),
-                            (LogicalNot, '=') => tokens.push(LogicalNeq),
-                            (LogicalNot, _) => {
-                                // NOTE:
-                                // this bit is required to skip the character advancement that
-                                // occurs for all of the other branches here. this specifically
-                                // fixes double negatives (`!!true`). it's likely that there's
-                                // other bugs similar to this one that might need this workaround
-                                tokens.push(LogicalNot);
-                                self.equality_register = None;
-                                mode = CaptureMode::General;
-                                continue;
-                            }
-                            _ => {
-                                unreachable!()
-                            }
+                    CaptureMode::Number => match c {
+                        n if n.is_numeric() || n == '.' => {
+                            self.number_register.push(n);
                         }
-                    }
-                    self.equality_register = None;
-                    mode = CaptureMode::General;
-                }
-                CaptureMode::Number => match c {
-                    n if n.is_numeric() || n == '.' => {
-                        self.number_register.push(n);
-                    }
-                    _ => {
-                        if let Ok(number) = self.number_register.parse::<f32>() {
-                            // number parsed ok-- push token
-                            tokens.push(Number(number));
-                            self.number_register.clear();
+                        _ => {
+                            if let Ok(number) = self.number_register.parse::<f32>() {
+                                // number parsed ok-- push token
+                                tokens.push(Number(number));
+                                self.number_register.clear();
+                            } else {
+                                // number failed to parse, bail
+                                bail!("cannot coerce {} to number", self.number_register);
+                            }
+                            mode = CaptureMode::General;
+                            continue;
+                        }
+                    },
+                    CaptureMode::String => match c {
+                        '\"' => {
+                            tokens.push(Str(self.string_register.clone()));
+                            self.string_register.clear();
+                            mode = CaptureMode::General;
+                        }
+                        _ => {
+                            self.string_register.push(c);
+                        }
+                    },
+                    CaptureMode::Char => {
+                        if let Some(next) = chars.peek() {
+                            // peek ahead to make sure the char is 1 in length
+                            if *next != '\'' {
+                                bail!("literals can only be one character long");
+                            }
+
+                            // skip second quote
+                            chars.next();
+
+                            // push char token
+                            tokens.push(Char(c));
+                            mode = CaptureMode::General;
                         } else {
-                            // number failed to parse, bail
-                            bail!("cannot coerce {} to number", self.number_register);
+                            // if no char is found, this is an EOF
+                            bail!("expected char, found EOF");
                         }
-                        mode = CaptureMode::General;
-                        continue;
-                    }
-                },
-                CaptureMode::String => match c {
-                    '\"' => {
-                        tokens.push(Str(self.string_register.clone()));
-                        self.string_register.clear();
-                        mode = CaptureMode::General;
-                    }
-                    _ => {
-                        self.string_register.push(c);
-                    }
-                },
-                CaptureMode::Char => {
-                    if let Some(next) = chars.peek() {
-                        // peek ahead to make sure the char is 1 in length
-                        if *next != '\'' {
-                            bail!("literals can only be one character long");
-                        }
-
-                        // skip second quote
-                        chars.next();
-
-                        // push char token
-                        tokens.push(Char(c));
-                        mode = CaptureMode::General;
-                    } else {
-                        // if no char is found, this is an EOF
-                        bail!("expected char, found EOF");
                     }
                 }
+                if let Some(next_c) = chars.next() {
+                    c = next_c;
+                } else {
+                    return Ok(tokens);
+                }
             }
-            if let Some(next_c) = chars.next() {
-                c = next_c;
-            } else {
-                return Ok(tokens);
-            }
-        }
+        })();
+        res.context(format!("on line {}", line))
     }
 
     /// Return the enum variant of the keyword stored in the keyword register.
