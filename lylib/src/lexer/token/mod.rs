@@ -2,6 +2,41 @@ mod debug;
 mod display;
 mod from;
 
+/// Pairs a token with the source line it was lexed from.
+///
+/// Used by the parser to attach line numbers to error messages. The lexer produces a
+/// `Vec<TaggedToken>` via `Lexer::lex_tagged`; the parser consumes these directly and strips the
+/// line tag at the AST construction boundary so runtime values never carry parse-time line data.
+#[derive(PartialEq, Clone)]
+pub struct TaggedToken {
+    kind: Token,
+    line: usize,
+}
+
+impl TaggedToken {
+    /// Returns the source line on which this token was lexed.
+    pub(crate) fn line(&self) -> usize {
+        self.line
+    }
+
+    /// Returns a reference to the inner token kind, discarding the line tag.
+    pub(crate) fn kind(&self) -> &Token {
+        &self.kind
+    }
+}
+
+impl From<TaggedToken> for Token {
+    fn from(value: TaggedToken) -> Self {
+        value.kind
+    }
+}
+
+impl PartialEq<TaggedToken> for Token {
+    fn eq(&self, other: &TaggedToken) -> bool {
+        *self == other.kind
+    }
+}
+
 /// Represents all possible tokens.
 #[derive(PartialEq, Clone)]
 pub enum Token {
@@ -96,5 +131,13 @@ impl Token {
             self,
             Token::Number(_) | Token::Str(_) | Token::Char(_) | Token::Bool(_)
         )
+    }
+
+    /// Returns a tagged token with the given line attached.
+    pub(crate) fn at_line(&self, line: usize) -> TaggedToken {
+        TaggedToken {
+            kind: self.clone(),
+            line,
+        }
     }
 }

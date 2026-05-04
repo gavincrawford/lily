@@ -1,3 +1,7 @@
+//! Debugging implementations for `Token` types.
+//! These are used as a nicer display visual for tokens so that they don't take up as much space if
+//! a crash or assertion propogates one to `stderr`.
+
 use crate::lexer::*;
 use std::fmt::Debug;
 
@@ -49,5 +53,11 @@ impl Debug for Token {
             Token::New => write!(f, "New"),
             Token::Endl => write!(f, "Endl"),
         }
+    }
+}
+
+impl Debug for TaggedToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?} (line {})", self.kind, self.line)
     }
 }

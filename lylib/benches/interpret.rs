@@ -15,7 +15,7 @@ macro_rules! ast {
         black_box(
             Parser::new(
                 Lexer::default()
-                    .lex(include_str!($src).to_string())
+                    .lex_tagged(include_str!($src).to_string())
                     .unwrap(),
             )
             .unwrap()
@@ -47,11 +47,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         )
     });
     c.bench_function("tree", |b| {
-        b.iter_batched(
-            || ast!("source/tree.ly"),
-            interpret,
-            BatchSize::LargeInput,
-        )
+        b.iter_batched(|| ast!("source/tree.ly"), interpret, BatchSize::LargeInput)
     });
 }
 

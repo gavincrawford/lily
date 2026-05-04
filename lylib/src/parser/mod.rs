@@ -1,7 +1,7 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
 use crate::interpreter::{ID, MemoryInterface, SVTable, Variable};
-use crate::lexer::{Lexer, Token};
+use crate::lexer::{Lexer, TaggedToken, Token};
 use anyhow::{Context, Result, bail};
 use std::collections::VecDeque;
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
@@ -12,13 +12,13 @@ mod tests;
 
 /// The parser converts a sequence of tokens into an Abstract Syntax Tree (AST).
 pub struct Parser {
-    tokens: VecDeque<Token>,
+    tokens: VecDeque<TaggedToken>,
     path: PathBuf,
 }
 
 impl Parser {
     /// Creates a new parser over `tokens`.
-    pub fn new(tokens: Vec<Token>) -> Result<Self> {
+    pub fn new(tokens: Vec<TaggedToken>) -> Result<Self> {
         match env::current_dir() {
             Ok(path) => Ok(Self {
                 tokens: tokens.into(),
@@ -35,20 +35,36 @@ impl Parser {
 
     /// Peek at the next token. Returns `Err` on EOF.
     fn peek(&self) -> Result<&Token> {
-        self.tokens.front().context("unexpected EOF")
+        self.tokens
+            .front()
+            .map(TaggedToken::kind)
+            .context("unexpected EOF")
     }
 
     /// Peek `n` positions ahead. Returns `Err` on EOF.
     fn peek_n(&self, n: usize) -> Result<&Token> {
-        self.tokens.get(n).context("unexpected EOF")
+        self.tokens
+            .get(n)
+            .map(TaggedToken::kind)
+            .context("unexpected EOF")
+    }
+
+    /// Peek at the line number of the next token. Returns `Err` on EOF.
+    fn peek_line(&self) -> Result<usize> {
+        self.tokens
+            .front()
+            .map(TaggedToken::line)
+            .context("unexpected EOF")
     }
 
     /// Get and return the next token.
     fn next(&mut self) -> Option<Token> {
-        self.tokens.pop_front()
+        self.tokens.pop_front().map(Token::from)
     }
 
     /// Throws an error if the next token is not `expected`.
+    /// Line attribution is handled by the statement-level context wrap in `parse_with_imports`,
+    /// so the bail message itself does not need to repeat the line.
     fn expect(&mut self, expected: Token) -> Result<()> {
         match self.next() {
             Some(token) if token == expected => Ok(()),
@@ -98,8 +114,13 @@ impl Parser {
                 // consume endlines
                 self.next();
             } else {
-                // otherwise, parse the next statement
-                statements.push(self.parse_statement()?);
+                // capture line at statement boundary so all parser errors get a line
+                // attached uniformly via context, regardless of which inner bail fires
+                let line = self.peek_line()?;
+                statements.push(
+                    self.parse_statement()
+                        .with_context(|| format!("on line {line}"))?,
+                );
             }
         }
         Ok(ASTNode::Block([imports, statements].concat()).into())
@@ -157,7 +178,7 @@ impl Parser {
 
         // lex buffer into tokens
         let tokens = Lexer::default()
-            .lex(buffer)
+            .lex_tagged(buffer)
             .context("failed to lex imported file")?;
 
         // create a parser and point it to the file's parent directory temporarily

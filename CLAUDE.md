@@ -48,34 +48,46 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 
 ### Key Architectural Details
 
-- **Memory Management**: Uses `SVTable` (Scope-Variable Table) with reference counting (`Rc<RefCell<>>`) and string interning for efficient identifier storage
+- **Memory Management**: Uses `SVTable` (Scope-Variable Table) with reference counting (`Rc<RefCell<>>`) and string interning for efficient identifier storage. Each scope frame is a `FlatRcMap<Variable>` — a `Vec`-backed flat map indexed directly by interned identifier (`usize`), avoiding hashing on the hot path. Modules within a scope are still kept in an `FxHashMap`.
+- **Copy-on-write SVTable cloning**: `SVTable::clone` is a *shallow* clone that shares variable `Rc`s with the original. This is sound because cloning only happens when instantiating structs from their `template` (constant post-parse), and writes always go through `assign`, which replaces the `Rc` slot rather than mutating through it.
 - **String Interning**: Global `StringInterner` deduplicates strings, using `usize` indices for fast lookups
 - **Variable System**: Supports scoped variables, modules, and function execution contexts
+- **Source position tracking**: The lexer produces `Vec<TaggedToken>` via `Lexer::lex_tagged` — each token is paired with its source line. The parser consumes tagged tokens directly and uses `peek_line` to attach line numbers to errors via `anyhow::Context`. The line tag is stripped at the AST construction boundary, so runtime values never carry parse-time line data. (See the in-flight redesign notes in user memory for the planned move to full spans.)
+- **Structured errors**: `lylib/src/errors.rs` defines `thiserror`-based enums (`MemoryError`, `ExternalFunctionError`) used internally; these bubble up into `anyhow::Result` at the public API boundary.
 - **Built-ins**: Standard functions in `interpreter/builtins.rs`:
   - `print` - Outputs values to stdout
   - `len` - Returns length of lists or strings
   - `sort` - Sorts lists of numbers or strings (validates type consistency; errors on mixed types)
+  - `split` - Splits a string by a `char` or `str` delimiter into a list of strings
   - `chars` - Converts strings to character lists
   - `assert` - Validates conditions, errors if false
 - **Standard Library**: Located in `ly/src/std/` (currently only contains `math.ly`)
+- **Rust edition**: `lylib` is on the 2024 edition. Notable deps: `anyhow`, `thiserror`, `derivative` (used to derive `PartialEq`/`Debug` on `ASTNode` while `#[derivative(PartialEq = "ignore")]`-ing fields like struct templates and module paths), and `rustc-hash` (`FxHashMap`).
 
 ### Module Structure
 
 - **lylib/src/interpreter/mod.rs**: Interpreter implementation, executes syntax trees
-- **lylib/src/interpreter/builtins.rs**: Built-in function definitions (print, len, sort, chars, assert)
+- **lylib/src/interpreter/builtins.rs**: Built-in function definitions (print, len, sort, split, chars, assert)
 - **lylib/src/interpreter/execute_function.rs**: Function execution logic
 - **lylib/src/interpreter/node_to_id.rs**: Converts AST nodes to identifiers
 - **lylib/src/interpreter/resolve_refs.rs**: Resolves references in lists (indices and nested lists)
 - **lylib/src/interpreter/mem/**: Memory management subsystem with variable tracking and scope tables
+- **lylib/src/interpreter/mem/svtable.rs**: `SVTable` (scoped variable table) — vec of `FlatRcMap<Variable>` scope frames + module map; implements the `MemoryInterface` trait
+- **lylib/src/interpreter/mem/flatrcmap.rs**: `FlatRcMap<T>` — generic `Vec`-backed map indexed by interned `usize` IDs, used for scope frames; supports `shallow_clone` for COW
+- **lylib/src/interpreter/mem/variable.rs**: `Variable` enum (`Owned`/`Function`/`Extern`/`Type`)
+- **lylib/src/interpreter/mem/drop.rs**: Custom `Drop` glue for memory cleanup
 - **lylib/src/interpreter/id/**: Identifier class declaration and associated functions
 - **lylib/src/interpreter/tests/**: Extensive test suite organized by feature/builtin/implementation categories
+- **lylib/src/errors.rs**: Shared `thiserror`-derived error enums (`MemoryError`, `ExternalFunctionError`)
 - **lylib/src/interner.rs**: String interning system for memory optimization
-- **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens
-- **lylib/src/lexer/token/mod.rs**: Token definition
-- **lylib/src/parser/mod.rs**: Parser implementation, converts tokens into a syntax tree
-- **lylib/src/parser/astnode.rs**: AST node variant definitions
-- **lylib/src/execute.rs**: Configuration and execution logic for running Lily programs
+- **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens; exposes `lex` (untagged) and `lex_tagged` (line-tagged)
+- **lylib/src/lexer/token/mod.rs**: `Token` enum and `TaggedToken` (token + line); `Token::at_line` produces a `TaggedToken`
+- **lylib/src/parser/mod.rs**: Parser implementation, consumes `Vec<TaggedToken>` into a syntax tree (uses `VecDeque` internally; `peek_line` attaches line context to errors)
+- **lylib/src/parser/astnode.rs**: AST node variant definitions (includes `Break`, `UnaryOp`, etc.)
+- **lylib/src/execute.rs**: `LyConfig` factory — configures and runs the interpreter (debug toggles, includes/imports)
 - **ly/src/main.rs**: CLI entry point
+- **ly/src/execute.rs**: CLI-side execution glue
+- **ly/src/std/**: Bundled standard library `.ly` files
 
 ## Macros System
 
@@ -90,11 +102,19 @@ The project uses an extensive macro system (`lylib/src/macros.rs`) to simplify A
 - **`block!()`** - Creates block AST nodes: `block!(node1, node2, node3)`
 - **`node!()`** - Comprehensive AST node creation with multiple patterns:
   - Operations: `node!(op lhs, Token::Add, rhs)`
+  - Unary operations: `node!(unary Token::Sub, ident!("x"))`
   - Declarations: `node!(declare x => lit!(42))`
   - Assignments: `node!(assign x => lit!(100))`
   - Functions: `node!(func foo(a, b) => body)`
+  - Function calls: `node!(foo(arg1, arg2))` or `node!(a.b.c(arg))`
+  - Conditionals: `node!(if cond => if_body; else => else_body;)`
+  - Loops: `node!(loop cond => body;)` and `node!(break)`
+  - Returns: `node!(return value)`
+  - Modules: `node!(mod name => body)`
+  - Structures: `node!(struct Name => body)`
   - Lists: `node!([lit!(1), lit!(2), lit!(3)])`
-  - Indices: `node!(list[0])` or `node!(index target, lit!(0))`
+  - Indices: `node!(list[0])`, `node!(list[expr])`, or `node!(index target, lit!(0))`
+  - Derefs: `node!(a.b.c)` or `node!(deref parent, child)`
 
 ### Testing Macros
 

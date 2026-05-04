@@ -1,7 +1,7 @@
 //! The lexer breaks down text information into tokens, which can be used to assemble syntax.
 
 mod token;
-pub use token::Token;
+pub use token::{TaggedToken, Token};
 
 use anyhow::{Context, Result, bail};
 mod tests;
@@ -46,9 +46,15 @@ impl Lexer {
 
     /// Lexes the provided file, as a string, into a vector of tokens.
     pub fn lex(&mut self, buf: String) -> Result<Vec<Token>> {
+        let res = self.lex_tagged(buf);
+        res.map(|tagged| tagged.into_iter().map(Token::from).collect())
+    }
+
+    /// Lexes the provided file into tagged tokens, preserving line information.
+    pub fn lex_tagged(&mut self, buf: String) -> Result<Vec<TaggedToken>> {
         use Token::*;
         let mut chars = buf.chars().peekable();
-        let mut tokens = vec![];
+        let mut tokens: Vec<TaggedToken> = vec![];
         let mut mode = CaptureMode::General;
         let mut c = chars.next().context("source file empty")?;
         let mut line = 1;
@@ -60,11 +66,11 @@ impl Lexer {
                             // TODO this should just get moved out to its own mode vvv
 
                             // operators
-                            '+' => self.long_op(&mut chars, &mut tokens, '+', Increment, Add),
-                            '-' => self.long_op(&mut chars, &mut tokens, '-', Decrement, Sub),
-                            '*' => tokens.push(Mul),
-                            '/' => self.long_op(&mut chars, &mut tokens, '/', Floor, Div),
-                            '^' => tokens.push(Pow),
+                            '+' => self.long_op(&mut chars, &mut tokens, line, '+', Increment, Add),
+                            '-' => self.long_op(&mut chars, &mut tokens, line, '-', Decrement, Sub),
+                            '*' => tokens.push(Mul.at_line(line)),
+                            '/' => self.long_op(&mut chars, &mut tokens, line, '/', Floor, Div),
+                            '^' => tokens.push(Pow.at_line(line)),
 
                             // equalities
                             '=' => {
@@ -110,20 +116,23 @@ impl Lexer {
                             '(' | ')' | '[' | ']' | ',' | ' ' => {
                                 if let Some(token) = self.keyword_from_register() {
                                     // if the register contains a keyword, that takes priority
-                                    tokens.push(token);
+                                    tokens.push(token.at_line(line));
                                 } else if !self.keyword_register.is_empty() {
                                     // otherwise, it'd be an identifier
-                                    tokens.push(Identifier(intern!(self.keyword_register.clone())));
+                                    tokens.push(
+                                        Identifier(intern!(self.keyword_register.clone()))
+                                            .at_line(line),
+                                    );
                                 }
                                 self.keyword_register.clear();
 
                                 // match delimiters
                                 match c {
-                                    '(' => tokens.push(ParenOpen),
-                                    ')' => tokens.push(ParenClose),
-                                    '[' => tokens.push(BracketOpen),
-                                    ']' => tokens.push(BracketClose),
-                                    ',' => tokens.push(Comma),
+                                    '(' => tokens.push(ParenOpen.at_line(line)),
+                                    ')' => tokens.push(ParenClose.at_line(line)),
+                                    '[' => tokens.push(BracketOpen.at_line(line)),
+                                    ']' => tokens.push(BracketClose.at_line(line)),
+                                    ',' => tokens.push(Comma.at_line(line)),
                                     _ => {}
                                 }
                             }
@@ -132,21 +141,27 @@ impl Lexer {
                             }
                             '.' => {
                                 if !self.keyword_register.is_empty() {
-                                    tokens.push(Identifier(intern!(self.keyword_register.clone())));
+                                    tokens.push(
+                                        Identifier(intern!(self.keyword_register.clone()))
+                                            .at_line(line),
+                                    );
                                 }
                                 self.keyword_register.clear();
-                                tokens.push(Dot);
+                                tokens.push(Dot.at_line(line));
                             }
 
                             // endlines
                             ';' | '\n' => {
                                 if let Some(token) = self.keyword_from_register() {
-                                    tokens.push(token);
+                                    tokens.push(token.at_line(line));
                                 } else if !self.keyword_register.is_empty() {
-                                    tokens.push(Identifier(intern!(self.keyword_register.clone())));
+                                    tokens.push(
+                                        Identifier(intern!(self.keyword_register.clone()))
+                                            .at_line(line),
+                                    );
                                 }
                                 self.keyword_register.clear();
-                                tokens.push(Endl);
+                                tokens.push(Endl.at_line(line));
 
                                 // advance line counter only if this is an endline
                                 // semicolons do not count as lines
@@ -166,29 +181,29 @@ impl Lexer {
                     }
                     CaptureMode::Comment => {
                         if c == '\n' || c == ';' {
-                            tokens.push(Endl);
+                            tokens.push(Endl.at_line(line));
                             mode = CaptureMode::General;
                         }
                     }
                     CaptureMode::Equality => {
                         if let Some(token) = &self.equality_register {
                             match (token, c) {
-                                (Equal, '=') => tokens.push(LogicalEq),
-                                (Equal, _) => tokens.push(Equal),
-                                (LogicalL, '=') => tokens.push(LogicalLe),
-                                (LogicalL, _) => tokens.push(LogicalL),
-                                (LogicalG, '=') => tokens.push(LogicalGe),
-                                (LogicalG, _) => tokens.push(LogicalG),
-                                (LogicalAnd, '&') => tokens.push(LogicalAnd),
-                                (LogicalOr, '|') => tokens.push(LogicalOr),
-                                (LogicalNot, '=') => tokens.push(LogicalNeq),
+                                (Equal, '=') => tokens.push(LogicalEq.at_line(line)),
+                                (Equal, _) => tokens.push(Equal.at_line(line)),
+                                (LogicalL, '=') => tokens.push(LogicalLe.at_line(line)),
+                                (LogicalL, _) => tokens.push(LogicalL.at_line(line)),
+                                (LogicalG, '=') => tokens.push(LogicalGe.at_line(line)),
+                                (LogicalG, _) => tokens.push(LogicalG.at_line(line)),
+                                (LogicalAnd, '&') => tokens.push(LogicalAnd.at_line(line)),
+                                (LogicalOr, '|') => tokens.push(LogicalOr.at_line(line)),
+                                (LogicalNot, '=') => tokens.push(LogicalNeq.at_line(line)),
                                 (LogicalNot, _) => {
                                     // NOTE:
                                     // this bit is required to skip the character advancement that
                                     // occurs for all of the other branches here. this specifically
                                     // fixes double negatives (`!!true`). it's likely that there's
                                     // other bugs similar to this one that might need this workaround
-                                    tokens.push(LogicalNot);
+                                    tokens.push(LogicalNot.at_line(line));
                                     self.equality_register = None;
                                     mode = CaptureMode::General;
                                     continue;
@@ -208,7 +223,7 @@ impl Lexer {
                         _ => {
                             if let Ok(number) = self.number_register.parse::<f32>() {
                                 // number parsed ok-- push token
-                                tokens.push(Number(number));
+                                tokens.push(Number(number).at_line(line));
                                 self.number_register.clear();
                             } else {
                                 // number failed to parse, bail
@@ -220,7 +235,7 @@ impl Lexer {
                     },
                     CaptureMode::String => match c {
                         '\"' => {
-                            tokens.push(Str(self.string_register.clone()));
+                            tokens.push(Str(self.string_register.clone()).at_line(line));
                             self.string_register.clear();
                             mode = CaptureMode::General;
                         }
@@ -239,7 +254,7 @@ impl Lexer {
                             chars.next();
 
                             // push char token
-                            tokens.push(Char(c));
+                            tokens.push(Char(c).at_line(line));
                             mode = CaptureMode::General;
                         } else {
                             // if no char is found, this is an EOF
@@ -254,6 +269,7 @@ impl Lexer {
                 }
             }
         })();
+
         res.context(format!("on line {}", line))
     }
 
@@ -284,7 +300,8 @@ impl Lexer {
     fn long_op(
         &self,
         chars: &mut std::iter::Peekable<std::str::Chars>,
-        tokens: &mut Vec<Token>,
+        tokens: &mut Vec<TaggedToken>,
+        line: usize,
         expected_char: char,
         double_token: Token,
         single_token: Token,
@@ -292,12 +309,12 @@ impl Lexer {
         if let Some(peek_char) = chars.peek() {
             if *peek_char == expected_char {
                 chars.next();
-                tokens.push(double_token);
+                tokens.push(double_token.at_line(line));
             } else {
-                tokens.push(single_token);
+                tokens.push(single_token.at_line(line));
             }
         } else {
-            tokens.push(single_token);
+            tokens.push(single_token.at_line(line));
         }
     }
 }

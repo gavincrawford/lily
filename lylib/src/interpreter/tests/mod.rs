@@ -64,7 +64,7 @@ macro_rules! test {
         // interpret file
         use std::io::Cursor;
         let mut i = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
-        let mut p = Parser::new(Lexer::default().lex(include_str!($path).to_string()).unwrap()).unwrap();
+        let mut p = Parser::new(Lexer::default().lex_tagged(include_str!($path).to_string()).unwrap()).unwrap();
         p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
         let ast = p.parse().unwrap();
         i.execute(ast).unwrap();
@@ -157,7 +157,7 @@ fn syntax() {
     // run each code block through the interpreter
     for (i, block) in blocks.iter().enumerate() {
         let mut interpreter = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
-        let lexer_result = Lexer::default().lex(block.clone());
+        let lexer_result = Lexer::default().lex_tagged(block.clone());
 
         let tokens = match lexer_result {
             Ok(t) => t,
