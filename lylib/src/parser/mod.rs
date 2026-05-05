@@ -1,5 +1,6 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
+use crate::errors::ParserError;
 use crate::interpreter::{ID, MemoryInterface, SVTable, Variable};
 use crate::lexer::{Lexer, SpannedToken, Token};
 use anyhow::{Context, Result, bail};
@@ -117,46 +118,36 @@ impl Parser {
                 // capture line at statement boundary so all parser errors get a line
                 // attached uniformly via context, regardless of which inner bail fires
                 let line = self.peek_line()?;
-                statements.push(
-                    self.parse_statement()
-                        .with_context(|| format!("on line {line}"))?,
-                );
+                statements.push(self.parse_statement().context(format!("on line {line}"))?);
             }
         }
         Ok(ASTNode::Block([imports, statements].concat()).into())
     }
 
     /// Parses a statement.
-    fn parse_statement(&mut self) -> Result<Rc<ASTNode>> {
-        // process all possible base statements
-        let result = match self.peek()? {
-            Token::Import => self.parse_import().context("failed to parse import"),
-            Token::Let => self.parse_decl_var().context("failed to parse declaration"),
-            Token::If => self.parse_cond().context("failed to parse conditional"),
-            Token::Function => self
-                .parse_decl_fn()
-                .context("failed to parse function declaration"),
-            Token::Struct => self
-                .parse_decl_struct()
-                .context("failed to parse structure declaration"),
-            Token::While => self.parse_while().context("failed to parse while loop"),
-            Token::Identifier(_) => self.parse_expr(None),
-            Token::Return => self
-                .parse_return()
-                .context("failed to parse return statement"),
-            Token::Break => self.parse_break(),
+    ///
+    /// Branches that correspond to a distinct statement kind wrap their failure in a
+    /// `ParserError` variant, which preserves the underlying `anyhow::Error` as a source. The
+    /// remaining branches (expressions, breaks, prefix `++`/`--`) propagate their `anyhow::Error`
+    /// directly since they have no statement-level decoration to add.
+    fn parse_statement(&mut self) -> Result<Rc<ASTNode>, ParserError> {
+        match self.peek()? {
+            Token::Import => self.parse_import().map_err(ParserError::Import),
+            Token::Let => self.parse_decl_var().map_err(ParserError::Declaration),
+            Token::If => self.parse_cond().map_err(ParserError::Conditional),
+            Token::Function => self.parse_decl_fn().map_err(ParserError::FunctionDecl),
+            Token::Struct => self.parse_decl_struct().map_err(ParserError::StructDecl),
+            Token::While => self.parse_while().map_err(ParserError::While),
+            Token::Identifier(_) => Ok(self.parse_expr(None)?),
+            Token::Return => self.parse_return().map_err(ParserError::Return),
+            Token::Break => Ok(self.parse_break()?),
             Token::Increment | Token::Decrement => {
                 // safety: destructuring
-                self.parse_operator(Self::get_precedence(self.peek().unwrap()))
+                Ok(self.parse_operator(Self::get_precedence(self.peek().unwrap()))?)
             }
-            Token::ParenOpen => self.parse_expr(Some(Token::ParenClose)),
-            _ => {
-                bail!("expected statement, found {:?}", self.peek());
-            }
-        };
-
-        // return result with added context
-        result.context("failed to parse statement")
+            Token::ParenOpen => Ok(self.parse_expr(Some(Token::ParenClose))?),
+            _ => Err(anyhow::anyhow!("expected statement, found {:?}", self.peek()).into()),
+        }
     }
 
     /// Parses breaks.
