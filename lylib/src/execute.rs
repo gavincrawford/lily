@@ -91,7 +91,7 @@ impl LyConfig {
         // Interpret file
         let mut lexer = Lexer::default();
         let tokens = lexer
-            .lex_tagged(buffer.into())
+            .lex_spanned(buffer.into())
             .context("failed to lex buffer")?;
 
         // Debug lexer, if applicable
@@ -105,7 +105,7 @@ impl LyConfig {
             .iter()
             .map(|(alias, source)| {
                 let tokens = Lexer::default()
-                    .lex_tagged(source.clone().to_string())
+                    .lex_spanned(source.clone().to_string())
                     .context("failed to lex included module")?;
                 let body = Parser::new(tokens)?
                     .parse()

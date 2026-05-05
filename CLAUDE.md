@@ -52,7 +52,7 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 - **Copy-on-write SVTable cloning**: `SVTable::clone` is a *shallow* clone that shares variable `Rc`s with the original. This is sound because cloning only happens when instantiating structs from their `template` (constant post-parse), and writes always go through `assign`, which replaces the `Rc` slot rather than mutating through it.
 - **String Interning**: Global `StringInterner` deduplicates strings, using `usize` indices for fast lookups
 - **Variable System**: Supports scoped variables, modules, and function execution contexts
-- **Source position tracking**: The lexer produces `Vec<TaggedToken>` via `Lexer::lex_tagged` — each token is paired with its source line. The parser consumes tagged tokens directly and uses `peek_line` to attach line numbers to errors via `anyhow::Context`. The line tag is stripped at the AST construction boundary, so runtime values never carry parse-time line data. (See the in-flight redesign notes in user memory for the planned move to full spans.)
+- **Source position tracking**: The lexer produces `Vec<SpannedToken>` via `Lexer::lex_spanned` — each token carries its source line plus a byte-offset span `[start, end)` into the source buffer. The parser consumes spanned tokens directly and uses `peek_line` to attach line numbers to errors via `anyhow::Context`; byte offsets are stored but not yet surfaced in error messages (planned for the upcoming `LilyError` redesign). The position info is stripped at the AST construction boundary, so runtime values never carry parse-time position data.
 - **Structured errors**: `lylib/src/errors.rs` defines `thiserror`-based enums (`MemoryError`, `ExternalFunctionError`) used internally; these bubble up into `anyhow::Result` at the public API boundary.
 - **Built-ins**: Standard functions in `interpreter/builtins.rs`:
   - `print` - Outputs values to stdout
@@ -80,9 +80,9 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 - **lylib/src/interpreter/tests/**: Extensive test suite organized by feature/builtin/implementation categories
 - **lylib/src/errors.rs**: Shared `thiserror`-derived error enums (`MemoryError`, `ExternalFunctionError`)
 - **lylib/src/interner.rs**: String interning system for memory optimization
-- **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens; exposes `lex` (untagged) and `lex_tagged` (line-tagged)
-- **lylib/src/lexer/token/mod.rs**: `Token` enum and `TaggedToken` (token + line); `Token::at_line` produces a `TaggedToken`
-- **lylib/src/parser/mod.rs**: Parser implementation, consumes `Vec<TaggedToken>` into a syntax tree (uses `VecDeque` internally; `peek_line` attaches line context to errors)
+- **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens; exposes `lex` (raw tokens) and `lex_spanned` (tokens with line + byte-offset span)
+- **lylib/src/lexer/token/mod.rs**: `Token` enum and `SpannedToken` (token + line + byte-offset span `[start, end)`); `Token::at(line, start, end)` produces a `SpannedToken`
+- **lylib/src/parser/mod.rs**: Parser implementation, consumes `Vec<SpannedToken>` into a syntax tree (uses `VecDeque` internally; `peek_line` attaches line context to errors)
 - **lylib/src/parser/astnode.rs**: AST node variant definitions (includes `Break`, `UnaryOp`, etc.)
 - **lylib/src/execute.rs**: `LyConfig` factory — configures and runs the interpreter (debug toggles, includes/imports)
 - **ly/src/main.rs**: CLI entry point

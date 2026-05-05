@@ -15,7 +15,7 @@ macro_rules! ast {
         black_box(
             Parser::new(
                 Lexer::default()
-                    .lex_tagged(include_str!($src).to_string())
+                    .lex_spanned(include_str!($src).to_string())
                     .unwrap(),
             )
             .unwrap()

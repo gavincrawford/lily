@@ -56,7 +56,7 @@ impl Debug for Token {
     }
 }
 
-impl Debug for TaggedToken {
+impl Debug for SpannedToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

@@ -6,7 +6,7 @@ use crate::{lexer::Token::*, parser::*, *};
 #[macro_export]
 macro_rules! parse_eq {
     ($code:expr; $($block:expr),*) => {{
-        let result = Parser::new(Lexer::default().lex_tagged($code.into()).unwrap()).unwrap().parse();
+        let result = Parser::new(Lexer::default().lex_spanned($code.into()).unwrap()).unwrap().parse();
         assert!(result.is_ok(), "Parser failed: {:?}", result);
         let result = result.unwrap(); // safety ^^^
         let block = block!($($block),*);
@@ -15,7 +15,7 @@ macro_rules! parse_eq {
         }
     }};
     ($code:expr, $path:expr; $($block:expr),*) => {{
-        let mut parser = Parser::new(Lexer::default().lex_tagged($code.into()).unwrap()).unwrap();
+        let mut parser = Parser::new(Lexer::default().lex_spanned($code.into()).unwrap()).unwrap();
         parser.set_pwd($path.into());
         let result = parser.parse();
         assert!(result.is_ok(), "Parser failed: {:?}", result);

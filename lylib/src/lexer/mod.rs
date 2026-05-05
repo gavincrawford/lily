@@ -1,7 +1,7 @@
 //! The lexer breaks down text information into tokens, which can be used to assemble syntax.
 
 mod token;
-pub use token::{TaggedToken, Token};
+pub use token::{SpannedToken, Token};
 
 use anyhow::{Context, Result, bail};
 mod tests;
@@ -46,15 +46,15 @@ impl Lexer {
 
     /// Lexes the provided file, as a string, into a vector of tokens.
     pub fn lex(&mut self, buf: String) -> Result<Vec<Token>> {
-        let res = self.lex_tagged(buf);
-        res.map(|tagged| tagged.into_iter().map(Token::from).collect())
+        let res = self.lex_spanned(buf);
+        res.map(|spanned| spanned.into_iter().map(Token::from).collect())
     }
 
-    /// Lexes the provided file into tagged tokens, preserving line and byte-span information.
-    pub fn lex_tagged(&mut self, buf: String) -> Result<Vec<TaggedToken>> {
+    /// Lexes the provided file into spanned tokens, preserving line and byte-span information.
+    pub fn lex_spanned(&mut self, buf: String) -> Result<Vec<SpannedToken>> {
         use Token::*;
         let mut chars = buf.chars().peekable();
-        let mut tokens: Vec<TaggedToken> = vec![];
+        let mut tokens: Vec<SpannedToken> = vec![];
         let mut mode = CaptureMode::General;
         let mut c = chars.next().context("source file empty")?;
 
@@ -393,7 +393,7 @@ impl Lexer {
     fn long_op(
         &self,
         chars: &mut std::iter::Peekable<std::str::Chars>,
-        tokens: &mut Vec<TaggedToken>,
+        tokens: &mut Vec<SpannedToken>,
         line: usize,
         pos: &mut usize,
         expected_char: char,

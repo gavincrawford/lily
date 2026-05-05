@@ -1,7 +1,7 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
 use crate::interpreter::{ID, MemoryInterface, SVTable, Variable};
-use crate::lexer::{Lexer, TaggedToken, Token};
+use crate::lexer::{Lexer, SpannedToken, Token};
 use anyhow::{Context, Result, bail};
 use std::collections::VecDeque;
 use std::{env, fs::File, io::Read, path::PathBuf, rc::Rc};
@@ -12,13 +12,13 @@ mod tests;
 
 /// The parser converts a sequence of tokens into an Abstract Syntax Tree (AST).
 pub struct Parser {
-    tokens: VecDeque<TaggedToken>,
+    tokens: VecDeque<SpannedToken>,
     path: PathBuf,
 }
 
 impl Parser {
     /// Creates a new parser over `tokens`.
-    pub fn new(tokens: Vec<TaggedToken>) -> Result<Self> {
+    pub fn new(tokens: Vec<SpannedToken>) -> Result<Self> {
         match env::current_dir() {
             Ok(path) => Ok(Self {
                 tokens: tokens.into(),
@@ -37,7 +37,7 @@ impl Parser {
     fn peek(&self) -> Result<&Token> {
         self.tokens
             .front()
-            .map(TaggedToken::kind)
+            .map(SpannedToken::kind)
             .context("unexpected EOF")
     }
 
@@ -45,7 +45,7 @@ impl Parser {
     fn peek_n(&self, n: usize) -> Result<&Token> {
         self.tokens
             .get(n)
-            .map(TaggedToken::kind)
+            .map(SpannedToken::kind)
             .context("unexpected EOF")
     }
 
@@ -53,7 +53,7 @@ impl Parser {
     fn peek_line(&self) -> Result<usize> {
         self.tokens
             .front()
-            .map(TaggedToken::line)
+            .map(SpannedToken::line)
             .context("unexpected EOF")
     }
 
@@ -178,7 +178,7 @@ impl Parser {
 
         // lex buffer into tokens
         let tokens = Lexer::default()
-            .lex_tagged(buffer)
+            .lex_spanned(buffer)
             .context("failed to lex imported file")?;
 
         // create a parser and point it to the file's parent directory temporarily

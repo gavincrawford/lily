@@ -6,18 +6,18 @@ mod from;
 ///
 /// Carries the line plus byte offsets `[start, end)` into the source buffer. Byte offsets enable
 /// caret-style error rendering and source slicing (e.g. recovering the original lexeme of a
-/// normalized token). The lexer produces a `Vec<TaggedToken>` via `Lexer::lex_tagged`; the parser
-/// consumes these directly and strips the tag at the AST construction boundary so runtime values
-/// never carry parse-time position data.
+/// normalized token). The lexer produces a `Vec<SpannedToken>` via `Lexer::lex_spanned`; the parser
+/// consumes these directly and strips the position info at the AST construction boundary so
+/// runtime values never carry parse-time position data.
 #[derive(PartialEq, Clone)]
-pub struct TaggedToken {
+pub struct SpannedToken {
     kind: Token,
     line: usize,
     start: usize,
     end: usize,
 }
 
-impl TaggedToken {
+impl SpannedToken {
     /// Returns the source line on which this token was lexed.
     pub(crate) fn line(&self) -> usize {
         self.line
@@ -33,20 +33,20 @@ impl TaggedToken {
         self.end
     }
 
-    /// Returns a reference to the inner token kind, discarding the position tag.
+    /// Returns a reference to the inner token kind, discarding the position info.
     pub(crate) fn kind(&self) -> &Token {
         &self.kind
     }
 }
 
-impl From<TaggedToken> for Token {
-    fn from(value: TaggedToken) -> Self {
+impl From<SpannedToken> for Token {
+    fn from(value: SpannedToken) -> Self {
         value.kind
     }
 }
 
-impl PartialEq<TaggedToken> for Token {
-    fn eq(&self, other: &TaggedToken) -> bool {
+impl PartialEq<SpannedToken> for Token {
+    fn eq(&self, other: &SpannedToken) -> bool {
         *self == other.kind
     }
 }
@@ -147,10 +147,10 @@ impl Token {
         )
     }
 
-    /// Returns a tagged token with the given line and byte-offset span attached.
+    /// Returns a `SpannedToken` with the given line and byte-offset span attached.
     /// `end` is exclusive: a span of `[3, 5)` covers bytes 3 and 4.
-    pub(crate) fn at(self, line: usize, start: usize, end: usize) -> TaggedToken {
-        TaggedToken {
+    pub(crate) fn at(self, line: usize, start: usize, end: usize) -> SpannedToken {
+        SpannedToken {
             kind: self,
             line,
             start,
