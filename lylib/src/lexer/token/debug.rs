@@ -58,6 +58,13 @@ impl Debug for Token {
 
 impl Debug for TaggedToken {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?} (line {})", self.kind, self.line)
+        write!(
+            f,
+            "{:?} (line {}, [{}..{}])",
+            self.kind(),
+            self.line(),
+            self.start(),
+            self.end()
+        )
     }
 }
