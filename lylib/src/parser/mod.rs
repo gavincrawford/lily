@@ -432,18 +432,14 @@ impl Parser {
     /// Parses a return statement.
     fn parse_return(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Return)?;
-        Ok(ASTNode::Return(
-            self.parse_expr(None)
-                .context("failed to parse return value")?,
-        )
-        .into())
+        Ok(ASTNode::Return(self.parse_expr(None)?).into())
     }
 
     /// Parses assignment to any target.
     fn parse_assignment(&mut self, target: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
         // parse value
         self.expect(Token::Equal)?;
-        let value = self.parse_expr(None).context("failed to parse new value")?;
+        let value = self.parse_expr(None)?;
 
         // return node
         Ok(ASTNode::Assign { target, value }.into())
@@ -454,9 +450,7 @@ impl Parser {
         // parse id and value
         self.expect(Token::Let)?;
         let target = self.parse_expr(Some(Token::Equal))?;
-        let value = self
-            .parse_expr(None)
-            .context("failed to parse initial value")?;
+        let value = self.parse_expr(None)?;
 
         // return node
         Ok(ASTNode::Declare { target, value }.into())
