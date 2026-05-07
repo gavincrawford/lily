@@ -1,7 +1,7 @@
 //! Implements the outward-facing functions for executing a file with a given set of configuration
 //! options. This allows the end user to customize the behavior of the interpreter.
 
-use crate::{interpreter::*, lexer::*, parser::*};
+use crate::{interner::Symbol, interpreter::*, lexer::*, parser::*};
 use anyhow::{Context, Result};
 use std::{
     io::{Read, Write},
@@ -31,7 +31,7 @@ use std::{
 pub struct LyConfig {
     /// Files to include during parsing, if applicable.
     /// Each value must be a tuple in which the values correspond to `(module alias, module source)`.
-    include: Vec<(Option<usize>, String)>,
+    include: Vec<(Option<Symbol>, String)>,
     /// If true, debug lexer output.
     dbg_tokens: bool,
     /// If true, debug parser output.

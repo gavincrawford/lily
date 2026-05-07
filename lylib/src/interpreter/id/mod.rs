@@ -4,6 +4,7 @@
 /// Debug implementations for `ID` & `IDKind`.
 mod debug;
 
+use crate::interner::Symbol;
 use std::rc::Rc;
 
 /// Lily's internal identifier.
@@ -15,8 +16,8 @@ pub struct ID {
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum IDKind {
-    Symbol(usize),
-    Literal(usize),
+    Symbol(Symbol),
+    Literal(Symbol),
     Member {
         parent: Rc<IDKind>,
         member: Rc<IDKind>,
@@ -43,7 +44,7 @@ impl AsID for &'static str {
 
 impl ID {
     /// Creates a new symbolic ID.
-    pub(crate) fn new_sym(sym: usize) -> ID {
+    pub(crate) fn new_sym(sym: Symbol) -> ID {
         ID {
             id: IDKind::Symbol(sym),
         }
@@ -66,11 +67,11 @@ impl ID {
         path
     }
 
-    /// Converts an `ID` into a vector of interned identifiers (usize).
+    /// Converts an `ID` into a vector of interned identifiers.
     ///
     /// Note: This method loses type information about whether components are symbols or literals.
     /// Use `to_path_kinds()` when you need to distinguish between them.
-    pub fn to_path(&self) -> Vec<usize> {
+    pub fn to_path(&self) -> Vec<Symbol> {
         let mut path = Vec::new();
         self.collect_path_interned(&self.id, &mut path);
         path
@@ -89,7 +90,7 @@ impl ID {
     }
 
     /// Helper function to recursively collect interned path components.
-    fn collect_path_interned(&self, kind: &IDKind, path: &mut Vec<usize>) {
+    fn collect_path_interned(&self, kind: &IDKind, path: &mut Vec<Symbol>) {
         match kind {
             IDKind::Symbol(sym) => path.push(*sym),
             IDKind::Literal(val) => path.push(*val),

@@ -2,7 +2,7 @@
 //! This includes getting and setting variables.
 
 use super::*;
-use crate::errors::MemoryError;
+use crate::{errors::MemoryError, interner::Symbol};
 use anyhow::Result;
 
 pub mod drop;
@@ -12,11 +12,11 @@ pub mod variable;
 
 /// This trait can be added to any type to give it the ability to be accessed by identifier.
 pub(crate) trait MemoryInterface {
-    fn get_owned(&self, id: usize) -> Result<Variable, MemoryError>;
-    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>, MemoryError>;
-    fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>, MemoryError>;
-    fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<(), MemoryError>;
-    fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<(), MemoryError>;
+    fn get_owned(&self, id: Symbol) -> Result<Variable, MemoryError>;
+    fn get_ref(&self, id: Symbol) -> Result<Rc<RefCell<Variable>>, MemoryError>;
+    fn get_module(&self, id: Symbol) -> Result<Rc<RefCell<SVTable>>, MemoryError>;
+    fn declare(&mut self, id: Symbol, value: Variable, scope: usize) -> Result<(), MemoryError>;
+    fn assign(&mut self, id: Symbol, value: Variable, scope: usize) -> Result<(), MemoryError>;
 }
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
@@ -24,7 +24,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     ///
     /// Some identifiers reference variables within stacks of modules, and this function resolves
     /// these long chains of reference into the relevant target and variable name.
-    fn resolve_access_target(&self, id: &ID) -> Result<(Rc<RefCell<dyn MemoryInterface>>, usize)> {
+    fn resolve_access_target(&self, id: &ID) -> Result<(Rc<RefCell<dyn MemoryInterface>>, Symbol)> {
         // get current context (module)
         let mut module: Rc<RefCell<dyn MemoryInterface>> = match &self.context {
             Some(context) => context.clone(),

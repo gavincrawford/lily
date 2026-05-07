@@ -5,6 +5,9 @@
 
 use rustc_hash::FxHashMap;
 
+/// Wrapper for the `usize`s that are intended to hold real symbols at parse- and run-time.
+pub type Symbol = usize;
+
 /// String interner that maps strings to usize identifiers.
 ///
 /// Uses a Vec for storage indexed by usize, and a HashMap for reverse lookup.
@@ -13,7 +16,7 @@ pub struct StringInterner {
     /// Storage for interned strings, indexed by their interned ID
     strings: Vec<String>,
     /// Map from string to interned ID for fast lookup during interning
-    indices: FxHashMap<String, usize>,
+    indices: FxHashMap<String, Symbol>,
 }
 
 impl StringInterner {
@@ -29,7 +32,7 @@ impl StringInterner {
     ///
     /// If the string is already interned, returns the existing identifier.
     /// Otherwise, allocates a new identifier and stores the string.
-    pub(crate) fn intern(&mut self, string: impl Into<String>) -> usize {
+    pub(crate) fn intern(&mut self, string: impl Into<String>) -> Symbol {
         let string = string.into();
         if let Some(&id) = self.indices.get(&string) {
             // string already interned, return existing ID
@@ -47,7 +50,7 @@ impl StringInterner {
     ///
     /// Returns the string associated with the given identifier.
     /// Panics if the identifier is invalid.
-    pub(crate) fn resolve(&self, id: usize) -> &str {
+    pub(crate) fn resolve(&self, id: Symbol) -> &str {
         self.strings
             .get(id)
             .map(|s| s.as_str())

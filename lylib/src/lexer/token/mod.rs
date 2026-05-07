@@ -2,6 +2,8 @@ mod debug;
 mod display;
 mod from;
 
+use crate::interner::Symbol;
+
 /// Pairs a token with the source location it was lexed from.
 ///
 /// Carries the line plus byte offsets `[start, end)` into the source buffer. Byte offsets enable
@@ -56,7 +58,7 @@ impl PartialEq<SpannedToken> for Token {
 pub enum Token {
     // variables
     Equal,
-    Identifier(usize),
+    Identifier(Symbol),
     Function,
     Struct,
     Let,

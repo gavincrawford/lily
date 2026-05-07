@@ -1,6 +1,7 @@
 //! Implements the SVTable, or the scoped-variable table.
 
 use super::{flatrcmap::FlatRcMap, *};
+use crate::interner::Symbol;
 use anyhow::Result;
 use rustc_hash::FxHashMap;
 use std::{cell::RefCell, fmt::Display, rc::Rc, slice::Iter};
@@ -11,7 +12,7 @@ pub struct SVTable {
     /// Holds all the scope frames, each of which hold their respective variables.
     table: Vec<FlatRcMap<Variable>>,
     /// Holds all the modules defined at this SVTable's scope.
-    modules: FxHashMap<usize, Rc<RefCell<SVTable>>>,
+    modules: FxHashMap<Symbol, Rc<RefCell<SVTable>>>,
 }
 
 impl Clone for SVTable {
@@ -64,7 +65,7 @@ impl SVTable {
 
     /// Adds a new module. Returns a reference to the newly created module.
     #[inline]
-    pub fn add_module(&mut self, name: usize) -> Rc<RefCell<SVTable>> {
+    pub fn add_module(&mut self, name: Symbol) -> Rc<RefCell<SVTable>> {
         self.modules
             .entry(name)
             .or_insert_with(|| Rc::new(RefCell::new(SVTable::default())))
@@ -99,7 +100,7 @@ impl SVTable {
 impl SVTable {
     /// Helper method to find a variable in any scope, returns the found variable reference.
     #[inline]
-    fn find_variable(&self, id: usize) -> Option<Rc<RefCell<Variable>>> {
+    fn find_variable(&self, id: Symbol) -> Option<Rc<RefCell<Variable>>> {
         for scope in self.iter().rev() {
             if let Some(variable) = scope.get(id) {
                 return Some(variable);
@@ -111,7 +112,7 @@ impl SVTable {
 
 impl MemoryInterface for SVTable {
     #[inline]
-    fn get_owned(&self, id: usize) -> Result<Variable, MemoryError> {
+    fn get_owned(&self, id: Symbol) -> Result<Variable, MemoryError> {
         match self.find_variable(id) {
             Some(variable) => Ok(variable.borrow().clone()),
             None => Err(MemoryError::VariableRead(resolve!(id))),
@@ -119,7 +120,7 @@ impl MemoryInterface for SVTable {
     }
 
     #[inline]
-    fn get_ref(&self, id: usize) -> Result<Rc<RefCell<Variable>>, MemoryError> {
+    fn get_ref(&self, id: Symbol) -> Result<Rc<RefCell<Variable>>, MemoryError> {
         match self.find_variable(id) {
             Some(variable) => Ok(variable.clone()),
             None => Err(MemoryError::VariableRead(resolve!(id))),
@@ -127,7 +128,7 @@ impl MemoryInterface for SVTable {
     }
 
     #[inline]
-    fn get_module(&self, id: usize) -> Result<Rc<RefCell<SVTable>>, MemoryError> {
+    fn get_module(&self, id: Symbol) -> Result<Rc<RefCell<SVTable>>, MemoryError> {
         self.modules
             .get(&id)
             .cloned()
@@ -135,7 +136,7 @@ impl MemoryInterface for SVTable {
     }
 
     #[inline]
-    fn declare(&mut self, id: usize, value: Variable, scope: usize) -> Result<(), MemoryError> {
+    fn declare(&mut self, id: Symbol, value: Variable, scope: usize) -> Result<(), MemoryError> {
         // add scopes if necessary
         while self.scopes() <= scope {
             self.add_scope();
@@ -148,7 +149,7 @@ impl MemoryInterface for SVTable {
     }
 
     #[inline]
-    fn assign(&mut self, id: usize, value: Variable, scope: usize) -> Result<(), MemoryError> {
+    fn assign(&mut self, id: Symbol, value: Variable, scope: usize) -> Result<(), MemoryError> {
         // find which scope index contains the variable
         let target_scope = self
             .table
