@@ -49,7 +49,7 @@ impl<T: PartialEq> FlatRcMap<T> {
     pub(crate) fn insert(&mut self, id: Symbol, value: Rc<RefCell<T>>) -> Option<Rc<RefCell<T>>> {
         if id < self.map.len() {
             // replace the slot (which may be None) and return the old value if present
-            std::mem::replace(&mut self.map[id], Some(value))
+            self.map[id].replace(value)
         } else {
             // fill gaps with None
             while id > self.map.len() {

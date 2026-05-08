@@ -91,23 +91,23 @@ impl Eq for Variable {}
 
 impl PartialOrd for Variable {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        match (self, other) {
-            (
-                Variable::Owned(ASTNode::Literal(Token::Number(a))),
-                Variable::Owned(ASTNode::Literal(Token::Number(b))),
-            ) => a.partial_cmp(b),
-            (
-                Variable::Owned(ASTNode::Literal(Token::Str(a))),
-                Variable::Owned(ASTNode::Literal(Token::Str(b))),
-            ) => a.partial_cmp(b),
-            _ => panic!("cannot order variables ({self:?}, {other:?})"),
-        }
+        Some(self.cmp(other))
     }
 }
 
 impl Ord for Variable {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap_or(Ordering::Less)
+        match (self, other) {
+            (
+                Variable::Owned(ASTNode::Literal(Token::Number(a))),
+                Variable::Owned(ASTNode::Literal(Token::Number(b))),
+            ) => a.total_cmp(b),
+            (
+                Variable::Owned(ASTNode::Literal(Token::Str(a))),
+                Variable::Owned(ASTNode::Literal(Token::Str(b))),
+            ) => a.cmp(b),
+            _ => panic!("cannot order variables ({self:?}, {other:?})"),
+        }
     }
 }
 
