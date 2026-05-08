@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use crate::{lexer::Token::*, parser::*, *};
+use crate::{interpreter::AsID, lexer::Token::*, parser::*, *};
 
 /// Shorthand for creating and executing the parser, and comparing its output to an expression.
 #[macro_export]

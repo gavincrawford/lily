@@ -112,7 +112,7 @@ impl LyConfig {
                     .context("failed to parse included module")?;
                 Ok::<Rc<ASTNode>, anyhow::Error>(
                     ASTNode::Module {
-                        alias: *alias,
+                        alias: alias.map(|sym| sym.as_id()),
                         path: Some(PathBuf::from(source)),
                         body,
                     }

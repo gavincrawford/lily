@@ -1,7 +1,7 @@
 //! The parser converts lexed tokens into an abstract syntax tree.
 
 use crate::errors::ParserError;
-use crate::interpreter::{ID, MemoryInterface, SVTable, Variable};
+use crate::interpreter::{AsID, ID, MemoryInterface, SVTable, Variable};
 use crate::lexer::{Lexer, SpannedToken, Token};
 use anyhow::{Context, Result, bail};
 use std::collections::VecDeque;
@@ -204,9 +204,9 @@ impl Parser {
                 self.next();
 
                 // attempt to find alias as an identifier
-                if let Token::Identifier(alias_str) = self.peek()? {
-                    // if an identifier is found, it is our alias
-                    alias = Some(alias_str.to_owned());
+                if let Token::Identifier(alias_id) = self.peek()? {
+                    // if an identifier is found, it becomes our alias
+                    alias = Some(alias_id.as_id());
                     self.next();
                 } else {
                     // if something other than an identifier is provided, this import is malformed
@@ -382,7 +382,7 @@ impl Parser {
             // gather arguments
             let mut arguments = vec![];
             while let Token::Identifier(arg) = self.peek()? {
-                arguments.push(*arg);
+                arguments.push(ID::new_sym(*arg));
                 self.next();
             }
 

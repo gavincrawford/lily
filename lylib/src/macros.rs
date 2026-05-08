@@ -185,7 +185,7 @@ macro_rules! node {
     (func $fn:tt($($arg:tt),*) => $body:expr) => {
         ASTNode::Function {
             id: crate::interpreter::ID::new_sym(intern!(stringify!($fn))),
-            arguments: vec![$(intern!(stringify!($arg))),*],
+            arguments: vec![$(stringify!($arg).as_id()),*],
             body: $body,
         }.into()
     };
@@ -203,7 +203,7 @@ macro_rules! node {
     // modules (`mod xyz => block!(..)`)
     (mod $id:tt => $body:expr) => {
         ASTNode::Module {
-            alias: Some(intern!(stringify!($id)).into()),
+            alias: Some(stringify!($id).as_id()),
             path: None,
             body: $body,
         }.into()

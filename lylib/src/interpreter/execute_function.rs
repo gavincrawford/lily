@@ -14,9 +14,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             // push arguments
             assert_eq!(call_args.len(), arguments.len());
             self.scope_id += 1;
-            for (idx, arg_sym) in arguments.iter().enumerate() {
+            for (idx, arg_id) in arguments.iter().enumerate() {
                 self.declare(
-                    &ID::new_sym(*arg_sym),
+                    arg_id,
                     Variable::Owned(ASTNode::inner_to_owned(&call_args[idx])),
                 )?;
             }

@@ -210,7 +210,7 @@ impl Display for SVTable {
                         .join("."),
                     arguments
                         .iter()
-                        .map(|id| resolve!(*id))
+                        .map(|id| format!("{id:?}"))
                         .collect::<Vec<String>>()
                         .join(", "),
                     prettify(body.clone())

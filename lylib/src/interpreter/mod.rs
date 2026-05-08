@@ -586,11 +586,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Module { path, alias, body } => {
                 let ctx = match alias {
                     // if alias exists, create named module and execute in its context
-                    Some(sym) => {
+                    Some(ID {
+                        id: IDKind::Symbol(sym),
+                    }) => {
                         let context = self.context.clone().unwrap_or(self.memory.clone());
                         let module = context.borrow_mut().add_module(*sym);
                         Some(module)
                     }
+
+                    // alias must be a symbol; reject other ID kinds
+                    Some(_) => bail!("module alias must be a symbol"),
 
                     // otherwise, run in anonymous (current) context
                     None => None,
@@ -598,8 +603,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 self.with_context(ctx, |interpreter| {
                     interpreter.execute(body.clone()).context(format!(
-                        "failed to evaluate module '{}' ({:?})",
-                        (*alias).unwrap_or(intern!("anonymous")),
+                        "failed to evaluate module '{:?}' ({:?})",
+                        alias.clone().unwrap_or(intern!("anonymous").as_id()),
                         path.clone().unwrap_or(PathBuf::default()),
                     ))
                 })?;

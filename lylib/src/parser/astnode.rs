@@ -1,8 +1,5 @@
 use super::*;
-use crate::{
-    interner::Symbol,
-    interpreter::{ID, IDKind, SVTable, Variable},
-};
+use crate::interpreter::{ID, IDKind, SVTable, Variable};
 use derivative::Derivative;
 use std::{cell::RefCell, fmt::Display};
 
@@ -15,7 +12,7 @@ pub enum ASTNode {
     Module {
         #[derivative(PartialEq = "ignore")]
         path: Option<PathBuf>,
-        alias: Option<Symbol>,
+        alias: Option<ID>,
         body: Rc<ASTNode>,
     },
 
@@ -37,7 +34,7 @@ pub enum ASTNode {
     },
     Function {
         id: ID,
-        arguments: Vec<Symbol>,
+        arguments: Vec<ID>,
         body: Rc<ASTNode>,
     },
     FunctionCall {

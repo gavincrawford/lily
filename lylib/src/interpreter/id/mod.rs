@@ -42,6 +42,12 @@ impl AsID for &'static str {
     }
 }
 
+impl AsID for usize {
+    fn as_id(&self) -> ID {
+        ID::new_sym(*self)
+    }
+}
+
 impl ID {
     /// Creates a new symbolic ID.
     pub(crate) fn new_sym(sym: Symbol) -> ID {
