@@ -226,3 +226,25 @@ test!(struct_deref_unary => (
     neg := -5,
     flipped := false
 ));
+
+test!(logical_ops => (
+    and_tt := true,
+    and_tf := false,
+    and_ft := false,
+    and_ff := false,
+    or_tt := true,
+    or_tf := true,
+    or_ft := true,
+    or_ff := false,
+    and_chain := false,
+    or_chain := true,
+    mixed := true,
+    mixed_b := true,
+    neg_and := true,
+    neg_or := false,
+    neg_group := true,
+    cmp := true,
+    cmp_b := true
+));
+
+test!(logical_ops_non_bool => panic);
