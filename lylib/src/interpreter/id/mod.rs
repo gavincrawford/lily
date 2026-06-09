@@ -25,7 +25,7 @@ pub enum IDKind {
 }
 
 /// This trait provides an easy way to convert strings to symbolic IDs.
-pub(crate) trait AsID {
+pub trait AsID {
     /// Converts into an `ID` type.
     fn as_id(&self) -> ID;
 }

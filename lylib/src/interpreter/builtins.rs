@@ -4,8 +4,7 @@ use anyhow::anyhow;
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Adds an arbitrary external function to this interpreter.
-    pub fn inject_extern(&mut self, id: impl Into<String>, closure: Rc<ExFn>) -> Result<()> {
-        let id = id.into();
+    pub fn inject_extern(&mut self, id: impl AsID, closure: Rc<ExFn>) -> Result<()> {
         self.declare(&id.as_id(), Variable::Extern(closure))
     }
 
