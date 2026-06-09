@@ -5,20 +5,18 @@
 /// Converts a string to an interned identifier.
 macro_rules! intern {
     ($id:expr) => {{
-        let mut i = crate::get_global_interner().unwrap();
-        let id = i.intern($id);
-        drop(i);
-        id
+        // evaluate the argument before borrowing the interner so a nested
+        // `intern!`/`resolve!` in `$id` can't trigger a double `RefCell` borrow
+        let arg = $id;
+        crate::with_global_interner(|i| i.intern(arg))
     }};
 }
 
 /// Resolves an interned identifier backwards to the original string.
 macro_rules! resolve {
     ($id:expr) => {{
-        let i = crate::get_global_interner().unwrap();
-        let id = i.resolve($id).to_owned();
-        drop(i);
-        id
+        let arg = $id;
+        crate::with_global_interner(|i| i.resolve(arg).to_owned())
     }};
 }
 

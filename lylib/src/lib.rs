@@ -29,31 +29,20 @@ pub mod lexer;
 pub mod parser;
 
 use crate::interner::StringInterner;
-use anyhow::Result;
-use std::sync::{Mutex, MutexGuard, OnceLock};
+use std::cell::RefCell;
 
-/// Global interner. Used just about everywhere to access interned values and their respective
-/// string counterparts.
-static GLOBAL_INTERNER: OnceLock<Mutex<StringInterner>> = OnceLock::new();
+thread_local! {
+    /// Global interner. Used just about everywhere to access interned values and their respective
+    /// string counterparts. Thread-local since the lexer, parser, and interpreter for a given
+    /// program all run on the same thread — this avoids the per-access atomic of a `Mutex` on the
+    /// single-threaded hot path.
+    static GLOBAL_INTERNER: RefCell<StringInterner> = RefCell::new(StringInterner::new());
+}
 
-/// Fetches a lock of the global string interner.
+/// Runs a closure with mutable access to the global string interner.
 ///
 /// The global interner is used throughout the library to deduplicate strings
 /// and provide fast identifier lookups using integer indices.
-///
-/// # Errors
-///
-/// Returns an error if the mutex lock cannot be acquired due to poisoning
-/// or other concurrency issues.
-fn get_global_interner() -> Result<MutexGuard<'static, StringInterner>> {
-    if let Ok(mutex_guard) = GLOBAL_INTERNER
-        .get_or_init(|| Mutex::new(StringInterner::new()))
-        .lock()
-    {
-        Ok(mutex_guard)
-    } else {
-        Err(anyhow::anyhow!(
-            "failed to lock interner due to conflicting usage"
-        ))
-    }
+fn with_global_interner<R>(f: impl FnOnce(&mut StringInterner) -> R) -> R {
+    GLOBAL_INTERNER.with(|cell| f(&mut cell.borrow_mut()))
 }
