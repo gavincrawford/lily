@@ -21,6 +21,7 @@ enum CaptureMode {
 /// The lexer operates in different capture modes to handle various language constructs
 /// such as numbers, strings, comments, and operators.
 pub struct Lexer {
+    mode: CaptureMode,
     number_register: String,
     keyword_register: String,
     string_register: String,
@@ -42,6 +43,7 @@ impl Lexer {
     /// Creates a new lexer.
     pub fn new() -> Self {
         Self {
+            mode: CaptureMode::General,
             number_register: String::new(),
             keyword_register: String::new(),
             string_register: String::new(),
@@ -62,7 +64,6 @@ impl Lexer {
         use Token::*;
         let mut chars = buf.chars().peekable();
         let mut tokens: Vec<SpannedToken> = vec![];
-        let mut mode = CaptureMode::General;
         let mut c = chars.next().context("source file empty")?;
 
         // start offset of an accumulating multi-char token (number/keyword/string/char)
@@ -72,7 +73,7 @@ impl Lexer {
 
         let res = (|| {
             loop {
-                match mode {
+                match self.mode {
                     CaptureMode::General => {
                         match c {
                             // TODO this should just get moved out to its own mode vvv
@@ -96,37 +97,37 @@ impl Lexer {
                             '=' => {
                                 self.equality_register = Some(Equal);
                                 equality_start = self.char_n;
-                                mode = CaptureMode::Equality;
+                                self.mode = CaptureMode::Equality;
                             }
                             '!' => {
                                 self.equality_register = Some(LogicalNot);
                                 equality_start = self.char_n;
-                                mode = CaptureMode::Equality;
+                                self.mode = CaptureMode::Equality;
                             }
                             '>' => {
                                 self.equality_register = Some(LogicalG);
                                 equality_start = self.char_n;
-                                mode = CaptureMode::Equality;
+                                self.mode = CaptureMode::Equality;
                             }
                             '<' => {
                                 self.equality_register = Some(LogicalL);
                                 equality_start = self.char_n;
-                                mode = CaptureMode::Equality;
+                                self.mode = CaptureMode::Equality;
                             }
                             '&' => {
                                 self.equality_register = Some(LogicalAnd);
                                 equality_start = self.char_n;
-                                mode = CaptureMode::Equality;
+                                self.mode = CaptureMode::Equality;
                             }
                             '|' => {
                                 self.equality_register = Some(LogicalOr);
                                 equality_start = self.char_n;
-                                mode = CaptureMode::Equality;
+                                self.mode = CaptureMode::Equality;
                             }
 
                             // numbers
                             c if c.is_numeric() && self.keyword_register.is_empty() => {
-                                mode = CaptureMode::Number;
+                                self.mode = CaptureMode::Number;
                                 token_start = self.char_n;
                                 self.number_register.push(c);
                             }
@@ -134,11 +135,11 @@ impl Lexer {
                             // quotes, for str & char
                             '\"' => {
                                 token_start = self.char_n;
-                                mode = CaptureMode::String;
+                                self.mode = CaptureMode::String;
                             }
                             '\'' => {
                                 token_start = self.char_n;
-                                mode = CaptureMode::Char;
+                                self.mode = CaptureMode::Char;
                             }
 
                             // keywords and identifiers
@@ -228,7 +229,7 @@ impl Lexer {
 
                             // comments
                             '#' => {
-                                mode = CaptureMode::Comment;
+                                self.mode = CaptureMode::Comment;
                             }
 
                             // other
@@ -242,7 +243,7 @@ impl Lexer {
                                 self.char_n,
                                 self.char_n + c.len_utf8(),
                             ));
-                            mode = CaptureMode::General;
+                            self.mode = CaptureMode::General;
                         }
                     }
                     CaptureMode::Equality => {
@@ -287,7 +288,7 @@ impl Lexer {
                                     // other bugs similar to this one that might need this workaround
                                     tokens.push(LogicalNot.at(self.line_n, equality_start, one));
                                     self.equality_register = None;
-                                    mode = CaptureMode::General;
+                                    self.mode = CaptureMode::General;
                                     continue;
                                 }
                                 _ => {
@@ -296,7 +297,7 @@ impl Lexer {
                             }
                         }
                         self.equality_register = None;
-                        mode = CaptureMode::General;
+                        self.mode = CaptureMode::General;
                     }
                     CaptureMode::Number => match c {
                         n if n.is_numeric() || n == '.' => {
@@ -317,7 +318,7 @@ impl Lexer {
                                 // number failed to parse, bail
                                 bail!("cannot coerce {} to number", self.number_register);
                             }
-                            mode = CaptureMode::General;
+                            self.mode = CaptureMode::General;
                             continue;
                         }
                     },
@@ -330,7 +331,7 @@ impl Lexer {
                                 self.char_n + c.len_utf8(),
                             ));
                             self.string_register.clear();
-                            mode = CaptureMode::General;
+                            self.mode = CaptureMode::General;
                         }
                         _ => {
                             self.string_register.push(c);
@@ -355,7 +356,7 @@ impl Lexer {
                                 self.char_n + c.len_utf8() + close_len,
                             ));
                             self.char_n += close_len;
-                            mode = CaptureMode::General;
+                            self.mode = CaptureMode::General;
                         } else {
                             // if no char is found, this is an EOF
                             bail!("expected char, found EOF");
