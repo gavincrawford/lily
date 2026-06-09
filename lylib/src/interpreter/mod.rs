@@ -101,7 +101,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
     /// Executes an individual expression.
     fn execute_expr(&mut self, statement: &Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
-        let statement = statement.clone();
         match statement.as_ref() {
             ASTNode::Literal(Token::Identifier(sym)) => {
                 // resolve variable and return literal value
@@ -113,7 +112,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             ASTNode::Literal(_) | ASTNode::Instance { .. } => {
                 // return raw literal without resolving
-                Ok(Some(statement))
+                Ok(Some(statement.clone()))
             }
             ASTNode::List(items) => {
                 // deeply-clone list
@@ -488,7 +487,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 self.drop_scope();
                 Ok(None)
             }
-            ASTNode::Break => Ok(Some(statement)),
+            ASTNode::Break => Ok(Some(statement.clone())),
             ASTNode::Index { target, index } => {
                 // get index as a usize
                 let usize_idx = self
