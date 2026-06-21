@@ -1,4 +1,5 @@
-# Deref on a function call result
+# Tests deref on a function call result
+
 struct Point
   func Point a b do
     x = a

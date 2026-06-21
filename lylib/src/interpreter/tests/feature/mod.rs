@@ -217,14 +217,14 @@ test!(unary => (
     complex_not_c := false
 ));
 
-test!(struct_deref_func => (
-    px := 10,
-    py := 20
-));
-
-test!(struct_deref_unary => (
+test!(unary_call_deref => (
     neg := -5,
     flipped := false
+));
+
+test!(call_deref => (
+    px := 10,
+    py := 20
 ));
 
 test!(logical_ops => (
