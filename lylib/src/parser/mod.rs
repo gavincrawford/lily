@@ -146,7 +146,7 @@ impl Parser {
                 Ok(self.parse_operator(Self::get_precedence(peek))?)
             }
             Token::ParenOpen => Ok(self.parse_expr(Some(Token::ParenClose))?),
-            _ => Err(anyhow::anyhow!("expected statement, found {:?}", peek).into()),
+            _ => Err(anyhow::anyhow!("expected statement, found {peek:?}").into()),
         }
     }
 
