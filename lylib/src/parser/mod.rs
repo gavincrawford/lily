@@ -274,7 +274,7 @@ impl Parser {
 
         // expect an identifier after the dot
         let child = match self.next() {
-            Some(Token::Identifier(id)) => ASTNode::Literal(Token::Identifier(id)).into(),
+            Some(Token::Identifier(id)) => ASTNode::Identifier(ID::new_sym(id)).into(),
             Some(token) => bail!("expected identifier after '.', found {token:?}"),
             None => bail!("unexpected EOF after '.'"),
         };
@@ -330,18 +330,16 @@ impl Parser {
                         // if the member is a structure variable, add an owned value
                         ASTNode::Declare { target, value } => {
                             // if this field is literal, add it, bail otherwise
-                            let ASTNode::Literal(Token::Identifier(variable)) = &**target else {
+                            let ASTNode::Identifier(id) = &**target else {
                                 bail!("invalid default field '{target:?}'");
                             };
-                            default_fields.push((
-                                ID::new_sym(*variable),
-                                Variable::Owned(ASTNode::inner_to_owned(value)),
-                            ));
+                            default_fields
+                                .push((id, Variable::Owned(ASTNode::inner_to_owned(value))));
                         }
 
                         // if the member is a function, add a reference to it
                         ASTNode::Function { id, .. } => {
-                            default_fields.push((id.clone(), Variable::Function(node.clone())))
+                            default_fields.push((id, Variable::Function(node.clone())))
                         }
 
                         other => {
@@ -621,6 +619,13 @@ impl Parser {
             // Literals
             t if t.is_literal() => {
                 Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
+            }
+
+            // Identifiers
+            Token::Identifier(sym) => {
+                let id = ID::new_sym(*sym);
+                self.next().context("expected identifier, found EOF")?;
+                Ok(ASTNode::Identifier(id).into())
             }
 
             // Unaries (!, ++, --)

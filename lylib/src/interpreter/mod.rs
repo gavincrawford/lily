@@ -102,17 +102,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Executes an individual expression.
     fn execute_expr(&mut self, statement: &Rc<ASTNode>) -> Result<Option<Rc<ASTNode>>> {
         match statement.as_ref() {
-            ASTNode::Literal(Token::Identifier(sym)) => {
-                // resolve variable and return literal value
-                match self.get(&ID::new_sym(*sym))? {
+            ASTNode::Literal(_) | ASTNode::Instance { .. } => Ok(Some(statement.clone())),
+            ASTNode::Identifier(id) => {
+                // resolve the identifier to its stored value
+                match self.get(id)? {
                     Variable::Owned(var) => Ok(Some(var.into())),
                     Variable::Function(func) => Ok(Some(func.clone())),
                     _ => Ok(None),
                 }
-            }
-            ASTNode::Literal(_) | ASTNode::Instance { .. } => {
-                // return raw literal without resolving
-                Ok(Some(statement.clone()))
             }
             ASTNode::List(items) => {
                 // deeply-clone list
@@ -169,7 +166,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     (match $op:expr, $lhs:expr, $rhs:expr => $locallhs:pat, $localrhs:pat if $($pat:pat => $res:expr),*) => {
                         match ($op, $lhs, $rhs) {
                             $(($pat, ASTNode::Literal($locallhs), ASTNode::Literal($localrhs)) => {
-                                return Ok(Some(Rc::new(ASTNode::Literal($res))))
+                                return Ok(Some(lit!($res)));
                             })*
                             _ => {},
                         }
@@ -242,19 +239,17 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Token::Increment | Token::Decrement => {
                     // TODO: increment/decrement currently only works with simple identifiers,
                     // not dot notation (e.g., obj.field++) or index access (list[0]++)
-                    if let ASTNode::Literal(Token::Identifier(sym)) = target.as_ref() {
+                    // * RECHECK AFTER IDENTIFIER SPLIT
+                    if let ASTNode::Identifier(id) = target.as_ref() {
                         // get variable
-                        let id = ID::new_sym(*sym);
-                        if let Variable::Owned(ASTNode::Literal(Token::Number(n))) =
-                            self.get(&id)?
-                        {
+                        if let Variable::Owned(ASTNode::Literal(Token::Number(n))) = self.get(id)? {
                             // get new assignment value
                             let new_value = match op {
                                 Token::Increment => Token::Number(n + 1.0),
                                 Token::Decrement => Token::Number(n - 1.0),
                                 _ => unreachable!(),
                             };
-                            self.assign(&id, Variable::Owned(ASTNode::Literal(new_value)))?;
+                            self.assign(id, Variable::Owned(ASTNode::Literal(new_value)))?;
                         }
                     } else {
                         bail!("invalid increment/decrement target: {target:?}");
@@ -290,9 +285,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::FunctionCall { target, arguments } => {
                 // get target variable and check if we need to set instance context
                 let (variable, instance_context) = match target.as_ref() {
-                    ASTNode::Literal(Token::Identifier(sym)) => {
-                        (self.get(&ID::new_sym(*sym))?, None)
-                    }
+                    ASTNode::Identifier(id) => (self.get(id)?, None),
                     ASTNode::Deref { parent, child } => {
                         // try to convert to ID for simple derefs (`a.b`)
                         if let Ok(id) = self.node_to_id(target.clone()) {
@@ -300,11 +293,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                             // check if this is an instance method call
                             let instance_context = match &**parent {
-                                ASTNode::Literal(Token::Identifier(parent_sym)) => {
+                                ASTNode::Identifier(parent_id) => {
                                     // try to get the parent variable, but don't fail if it doesn't exist
                                     // this is because we only need to expose contexts for some
                                     // nodes, others apply to global context
-                                    if let Ok(parent_var) = self.get(&ID::new_sym(*parent_sym)) {
+                                    if let Ok(parent_var) = self.get(parent_id) {
                                         match (&parent_var, &variable) {
                                             (
                                                 Variable::Owned(ASTNode::Instance { .. }),
@@ -327,9 +320,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .context("deref parent cannot be undefined")?;
 
                             // get the child identifier
-                            let ASTNode::Literal(Token::Identifier(member_id)) = child.as_ref()
-                            else {
+                            let ASTNode::Identifier(member) = child.as_ref() else {
                                 bail!("deref child must be an identifier")
+                            };
+                            let IDKind::Symbol(member_id) = member.get_kind_ref() else {
+                                bail!("deref child must contain a symbol")
                             };
 
                             // get the variable from the parent value
@@ -552,8 +547,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // this should basically only happen in the case of instance derefs
 
                     // deref child & pull value from svt
-                    let ASTNode::Literal(Token::Identifier(member_id)) = child.as_ref() else {
+                    let ASTNode::Identifier(member) = child.as_ref() else {
                         bail!("deref child must be an identifier")
+                    };
+                    let IDKind::Symbol(member_id) = member.get_kind_ref() else {
+                        bail!("deref child must contain a symbol")
                     };
                     match resolved_parent.as_ref() {
                         ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_id)?,

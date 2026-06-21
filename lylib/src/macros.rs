@@ -33,11 +33,11 @@ macro_rules! lit {
     };
 }
 
-/// Shorthand for creating a literal identifier. Used for testing.
+/// Shorthand for creating an identifier node. Used for testing.
 #[cfg(test)]
 macro_rules! ident {
     ($id:expr) => {
-        lit!(Token::Identifier(intern!($id)))
+        ASTNode::Identifier(ID::new_sym(intern!($id))).into()
     };
 }
 

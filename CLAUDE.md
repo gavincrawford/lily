@@ -83,7 +83,7 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 - **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens; exposes `lex` (raw tokens) and `lex_spanned` (tokens with line + byte-offset span)
 - **lylib/src/lexer/token/mod.rs**: `Token` enum and `SpannedToken` (token + line + byte-offset span `[start, end)`); `Token::at(line, start, end)` produces a `SpannedToken`
 - **lylib/src/parser/mod.rs**: Parser implementation, consumes `Vec<SpannedToken>` into a syntax tree (uses `VecDeque` internally; `peek_line` attaches line context to errors)
-- **lylib/src/parser/astnode.rs**: AST node variant definitions (includes `Break`, `UnaryOp`, etc.)
+- **lylib/src/parser/astnode.rs**: AST node variant definitions (includes `Break`, `UnaryOp`, `Identifier`, etc.). `Identifier(ID)` is distinct from `Literal(Token)`: the parser and interpreter treat identifiers and literals as separate node kinds.
 - **lylib/src/execute.rs**: `LyConfig` factory — configures and runs the interpreter (debug toggles, includes/imports)
 - **ly/src/main.rs**: CLI entry point
 - **ly/src/execute.rs**: CLI-side execution glue
@@ -98,7 +98,7 @@ The project uses an extensive macro system (`lylib/src/macros.rs`) to simplify A
 - **`intern!()`** - Converts string to interned identifier: `intern!("variable_name")`
 - **`resolve!()`** - Resolves interned identifier back to string: `resolve!(id)`
 - **`lit!()`** - Creates literal AST nodes: `lit!(42)`, `lit!(Token::Str("hello"))`
-- **`ident!()`** - Creates identifier literals: `ident!("variable_name")`
+- **`ident!()`** - Creates identifier nodes (`ASTNode::Identifier`): `ident!("variable_name")`
 - **`block!()`** - Creates block AST nodes: `block!(node1, node2, node3)`
 - **`node!()`** - Comprehensive AST node creation with multiple patterns:
   - Operations: `node!(op lhs, Token::Add, rhs)`

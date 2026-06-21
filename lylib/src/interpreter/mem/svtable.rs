@@ -176,7 +176,7 @@ impl Display for SVTable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         fn prettify(node: Rc<ASTNode>) -> String {
             match &*node {
-                ASTNode::Literal(Token::Identifier(id)) => resolve!(*id),
+                ASTNode::Identifier(id) => format!("{id:#?}"),
                 ASTNode::Literal(token) => format!("{token:#?}"),
                 ASTNode::Op { lhs, op, rhs } => format!(
                     "{} {:#?} {}",
