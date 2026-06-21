@@ -131,7 +131,8 @@ impl Parser {
     /// remaining branches (expressions, breaks, prefix `++`/`--`) propagate their `anyhow::Error`
     /// directly since they have no statement-level decoration to add.
     fn parse_statement(&mut self) -> Result<Rc<ASTNode>, ParserError> {
-        match self.peek()? {
+        let peek = self.peek()?;
+        match peek {
             Token::Import => self.parse_import().map_err(ParserError::Import),
             Token::Let => self.parse_decl_var().map_err(ParserError::Declaration),
             Token::If => self.parse_cond().map_err(ParserError::Conditional),
@@ -142,11 +143,10 @@ impl Parser {
             Token::Return => self.parse_return().map_err(ParserError::Return),
             Token::Break => Ok(self.parse_break()?),
             Token::Increment | Token::Decrement => {
-                // safety: destructuring
-                Ok(self.parse_operator(Self::get_precedence(self.peek().unwrap()))?)
+                Ok(self.parse_operator(Self::get_precedence(peek))?)
             }
             Token::ParenOpen => Ok(self.parse_expr(Some(Token::ParenClose))?),
-            _ => Err(anyhow::anyhow!("expected statement, found {:?}", self.peek()).into()),
+            _ => Err(anyhow::anyhow!("expected statement, found {:?}", peek).into()),
         }
     }
 
