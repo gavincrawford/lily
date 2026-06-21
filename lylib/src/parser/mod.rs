@@ -623,40 +623,17 @@ impl Parser {
                 Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
             }
 
-            // Identifiers
-            Token::Identifier(_) => {
-                Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
-            }
-
             // Unaries (!, ++, --)
-            Token::LogicalNot => {
-                // consumes the `!` and creates a unary operator
-                self.next();
+            Token::LogicalNot | Token::Increment | Token::Decrement => {
+                // consume unary prefix & take ownership
+                let op = self.next().context("expected unary operator, found EOF")?;
+                let precedence = Self::get_precedence(&op);
+
                 Ok(ASTNode::UnaryOp {
                     target: self
-                        .parse_operator(Self::get_precedence(&Token::LogicalNot))
-                        .context("failed to parse logical not expression")?,
-                    op: Token::LogicalNot,
-                }
-                .into())
-            }
-            Token::Increment => {
-                self.next();
-                Ok(ASTNode::UnaryOp {
-                    target: self
-                        .parse_operator(Self::get_precedence(&Token::Increment))
-                        .context("failed to parse increment expression")?,
-                    op: Token::Increment,
-                }
-                .into())
-            }
-            Token::Decrement => {
-                self.next();
-                Ok(ASTNode::UnaryOp {
-                    target: self
-                        .parse_operator(Self::get_precedence(&Token::Decrement))
-                        .context("failed to parse decrement expression")?,
-                    op: Token::Decrement,
+                        .parse_operator(precedence)
+                        .context("failed to parse unary operator")?,
+                    op,
                 }
                 .into())
             }

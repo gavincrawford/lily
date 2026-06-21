@@ -141,11 +141,18 @@ impl Token {
     }
 
     /// Returns true if `self` is a literal.
-    /// Numbers, strings, chars, and booleans are all literal.
+    /// Numbers, strings, chars, identifiers, and booleans are all literal.
+    // NOTE: Categorically, identifiers *shouldn't* be literal, but they are grouped as equals
+    // throughout the parser and interpreter. A more logical split would separate the two types so
+    // that they don't ever convene
     pub(crate) fn is_literal(&self) -> bool {
         matches!(
             self,
-            Token::Number(_) | Token::Str(_) | Token::Char(_) | Token::Bool(_)
+            Token::Identifier(_)
+                | Token::Number(_)
+                | Token::Str(_)
+                | Token::Char(_)
+                | Token::Bool(_)
         )
     }
 
