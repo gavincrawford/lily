@@ -197,13 +197,13 @@ impl Display for SVTable {
                     body,
                 } => format!(
                     "{}({}) => {}",
-                    id.to_path_kinds()
+                    id.to_path()
                         .iter()
                         .map(|kind| match kind {
-                            IDKind::Symbol(sym) => resolve!(*sym),
-                            IDKind::Literal(val) => val.to_string(),
-                            IDKind::Member { .. } => {
-                                unreachable!("member should be flattened by to_path_kinds")
+                            ID::Symbol(sym) => resolve!(*sym),
+                            ID::Literal(val) => val.to_string(),
+                            ID::Member { .. } => {
+                                unreachable!("member should be flattened by to_path")
                             }
                         })
                         .collect::<Vec<String>>()

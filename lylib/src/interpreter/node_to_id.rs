@@ -6,16 +6,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         match &*node {
             ASTNode::Identifier(id) | ASTNode::Function { id, .. } => Ok(id.clone()),
             ASTNode::Index { target, index } => {
-                let parent = self.node_to_id(target.clone())?.get_kind().into();
+                let parent = self.node_to_id(target.clone())?.into();
                 let index = self
                     .execute_expr(index)?
                     .context("index cannot be undefined")?
                     .as_index()?;
-                Ok(ID {
-                    id: IDKind::Member {
-                        parent,
-                        member: IDKind::Literal(index).into(),
-                    },
+                Ok(ID::Member {
+                    parent,
+                    member: ID::Literal(index).into(),
                 })
             }
             ASTNode::Deref { parent, child } => {
@@ -25,14 +23,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // get the child identifier
                 if let ASTNode::Identifier(child_id) = &**child {
                     // construct a member access ID
-                    let parent_kind = Rc::new(parent_id.get_kind());
-                    let child_kind = Rc::new(child_id.get_kind());
-
-                    Ok(ID {
-                        id: IDKind::Member {
-                            parent: parent_kind,
-                            member: child_kind,
-                        },
+                    Ok(ID::Member {
+                        parent: Rc::new(parent_id),
+                        member: Rc::new(child_id.clone()),
                     })
                 } else {
                     bail!("deref child must be an identifier, found {child:#?}");

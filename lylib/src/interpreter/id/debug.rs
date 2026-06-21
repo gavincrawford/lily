@@ -3,16 +3,12 @@ use std::fmt::Debug;
 
 impl Debug for ID {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "ID({:#?})", self.get_kind())
-    }
-}
-
-impl Debug for IDKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ID(")?;
         match self {
-            IDKind::Symbol(sym) => write!(f, "{}", resolve!(*sym)),
-            IDKind::Literal(val) => write!(f, "{val}"),
-            IDKind::Member { parent, member } => write!(f, "{parent:#?} -> {member:#?}"),
-        }
+            ID::Symbol(sym) => write!(f, "{}", resolve!(*sym)),
+            ID::Literal(val) => write!(f, "{val}"),
+            ID::Member { parent, member } => write!(f, "{parent:#?} -> {member:#?}"),
+        }?;
+        write!(f, ")")
     }
 }

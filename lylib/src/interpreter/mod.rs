@@ -320,17 +320,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 .context("deref parent cannot be undefined")?;
 
                             // get the child identifier
-                            let ASTNode::Identifier(member) = child.as_ref() else {
+                            let ASTNode::Identifier(ID::Symbol(member_sym)) = child.as_ref() else {
                                 bail!("deref child must be an identifier")
-                            };
-                            let IDKind::Symbol(member_id) = member.get_kind_ref() else {
-                                bail!("deref child must contain a symbol")
                             };
 
                             // get the variable from the parent value
                             let variable = match parent_value.as_ref() {
                                 ASTNode::Instance { svt, .. } => {
-                                    svt.borrow().get_owned(*member_id)?
+                                    svt.borrow().get_owned(*member_sym)?
                                 }
                                 _ => bail!("cannot dereference member of {parent_value:#?}"),
                             };
@@ -547,14 +544,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     // this should basically only happen in the case of instance derefs
 
                     // deref child & pull value from svt
-                    let ASTNode::Identifier(member) = child.as_ref() else {
+                    let ASTNode::Identifier(ID::Symbol(member_sym)) = child.as_ref() else {
                         bail!("deref child must be an identifier")
                     };
-                    let IDKind::Symbol(member_id) = member.get_kind_ref() else {
-                        bail!("deref child must contain a symbol")
-                    };
                     match resolved_parent.as_ref() {
-                        ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_id)?,
+                        ASTNode::Instance { svt, .. } => svt.borrow().get_owned(*member_sym)?,
                         _ => bail!("cannot dereference member of {parent:#?}"),
                     }
                 };
@@ -583,9 +577,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             ASTNode::Module { path, alias, body } => {
                 let ctx = match alias {
                     // if alias exists, create named module and execute in its context
-                    Some(ID {
-                        id: IDKind::Symbol(sym),
-                    }) => {
+                    Some(ID::Symbol(sym)) => {
                         let context = self.context.clone().unwrap_or(self.memory.clone());
                         let module = context.borrow_mut().add_module(*sym);
                         Some(module)

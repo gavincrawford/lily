@@ -1,5 +1,5 @@
 use super::*;
-use crate::interpreter::{ID, IDKind, SVTable, Variable};
+use crate::interpreter::{ID, SVTable, Variable};
 use derivative::Derivative;
 use std::{cell::RefCell, fmt::Display};
 
@@ -86,8 +86,7 @@ impl ASTNode {
         };
 
         // find constructor function in struct body
-        if let (ASTNode::Block(nodes), IDKind::Symbol(struct_name)) = (body.as_ref(), id.get_kind())
-        {
+        if let (ASTNode::Block(nodes), ID::Symbol(struct_name)) = (body.as_ref(), id) {
             for node in nodes {
                 // check if this is a function with the same name as the struct (constructor)
                 let ASTNode::Function { id, .. } = node.as_ref() else {
@@ -95,7 +94,7 @@ impl ASTNode {
                 };
 
                 // functions with an identical name to the structure are constructors
-                if let IDKind::Symbol(name) = id.get_kind()
+                if let ID::Symbol(name) = id
                     && name == struct_name
                 {
                     return Some(node.clone());

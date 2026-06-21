@@ -1,7 +1,7 @@
 //! ID structure that allows for many kinds of identifiers.
 //! These types include symbols, literals, and member access.
 
-/// Debug implementations for `ID` & `IDKind`.
+/// Debug implementation for `ID`.
 mod debug;
 
 use crate::interner::Symbol;
@@ -10,18 +10,10 @@ use std::rc::Rc;
 /// Lily's internal identifier.
 /// This is used at run-time as a stored token to track where things live.
 #[derive(PartialEq, Eq, Hash, Clone)]
-pub struct ID {
-    pub(crate) id: IDKind,
-}
-
-#[derive(PartialEq, Eq, Hash, Clone)]
-pub enum IDKind {
+pub enum ID {
     Symbol(Symbol),
     Literal(Symbol),
-    Member {
-        parent: Rc<IDKind>,
-        member: Rc<IDKind>,
-    },
+    Member { parent: Rc<ID>, member: Rc<ID> },
 }
 
 /// This trait provides an easy way to convert strings to symbolic IDs.
@@ -51,59 +43,49 @@ impl AsID for usize {
 impl ID {
     /// Creates a new symbolic ID.
     pub(crate) fn new_sym(sym: Symbol) -> ID {
-        ID {
-            id: IDKind::Symbol(sym),
-        }
+        ID::Symbol(sym)
     }
 
-    /// Gets the inner `IDKind` of this identifier.
-    pub fn get_kind(&self) -> IDKind {
-        self.id.to_owned()
-    }
-
-    /// Gets the inner `IDKind` of this identifier as a reference.
-    pub fn get_kind_ref(&self) -> &IDKind {
-        &self.id
-    }
-
-    /// Converts an `ID` into a vector of `IDKind` components, preserving type information.
-    pub fn to_path_kinds(&self) -> Vec<IDKind> {
+    /// Flattens an `ID`, resolving all children to form a flat path from the first to last
+    /// identifier in the chain.
+    pub fn to_path(&self) -> Vec<ID> {
         let mut path = Vec::new();
-        collect_path_kinds(&self.id, &mut path);
+        collect_path_ids(self, &mut path);
         path
     }
 
-    /// Converts an `ID` into a vector of interned identifiers.
+    /// Flattens an `ID`, resolving all children to form a flat path from the first to last
+    /// symbolic identifier in the chain.
     ///
-    /// Note: This method loses type information about whether components are symbols or literals.
-    /// Use `to_path_kinds()` when you need to distinguish between them.
-    pub fn to_path(&self) -> Vec<Symbol> {
+    /// Note: This method discards contextual information each ID, in favor of interned symbols
+    /// *only*.
+    pub fn to_path_symbolic(&self) -> Vec<Symbol> {
         let mut path = Vec::new();
-        collect_path_interned(&self.id, &mut path);
+        collect_path_symbolic(self, &mut path);
         path
     }
 }
 
-/// Helper function to recursively collect path components with type information.
-fn collect_path_kinds(kind: &IDKind, path: &mut Vec<IDKind>) {
-    match kind {
-        IDKind::Symbol(sym) => path.push(IDKind::Symbol(*sym)),
-        IDKind::Literal(val) => path.push(IDKind::Literal(*val)),
-        IDKind::Member { parent, member } => {
-            collect_path_kinds(parent, path);
-            collect_path_kinds(member, path);
+// -------- Helpers --------
+
+/// Helper function to recursively collect path identifiers.
+fn collect_path_ids(id: &ID, path: &mut Vec<ID>) {
+    match id {
+        ID::Member { parent, member } => {
+            collect_path_ids(parent, path);
+            collect_path_ids(member, path);
         }
+        leaf => path.push(leaf.clone()),
     }
 }
 
-/// Helper function to recursively collect interned path components.
-fn collect_path_interned(kind: &IDKind, path: &mut Vec<Symbol>) {
-    match kind {
-        IDKind::Symbol(sym) => path.push(*sym),
-        IDKind::Literal(val) => path.push(*val),
-        IDKind::Member { parent, member } => {
-            collect_path_interned(parent, path);
-            collect_path_interned(member, path);
+/// Helper function to recursively collect symbolic path components.
+fn collect_path_symbolic(id: &ID, path: &mut Vec<Symbol>) {
+    match id {
+        ID::Symbol(sym) | ID::Literal(sym) => path.push(*sym),
+        ID::Member { parent, member } => {
+            collect_path_symbolic(parent, path);
+            collect_path_symbolic(member, path);
         }
     }
 }

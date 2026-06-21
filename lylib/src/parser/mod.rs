@@ -352,7 +352,7 @@ impl Parser {
                 let mut template = SVTable::default();
                 for (target, value) in default_fields {
                     // get the first value in the interned path
-                    let id = *target.to_path().first().unwrap();
+                    let id = *target.to_path_symbolic().first().unwrap();
 
                     // add it to the table
                     template.declare(id, value, 0)?;
