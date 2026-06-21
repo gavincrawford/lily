@@ -101,17 +101,13 @@ fn comparisons() {
         let c = 200 > 100;
         let d = 200 >= 100;
         let e = true && false;
-        let f = true || false;
-        a++;
-        a--;";
+        let f = true || false;";
         node!(declare a => node!(op 100, LogicalL, 200)),
         node!(declare b => node!(op 100, LogicalLe, 200)),
         node!(declare c => node!(op 200, LogicalG, 100)),
         node!(declare d => node!(op 200, LogicalGe, 100)),
         node!(declare e => node!(op true, LogicalAnd, false)),
-        node!(declare f => node!(op true, LogicalOr, false)),
-        node!(unary Increment, ident!("a")),
-        node!(unary Decrement, ident!("a"))
+        node!(declare f => node!(op true, LogicalOr, false))
     );
 }
 
@@ -125,6 +121,22 @@ fn unary() {
         node!(declare b => node!(unary LogicalNot, node!(unary LogicalNot, lit!(true)))),
         node!(declare c => node!(unary LogicalNot, node!(unary LogicalNot, node!(unary LogicalNot, lit!(true)))))
     )
+}
+
+#[test]
+fn unary_inc_dec() {
+    parse_eq!(
+        "a++;
+        a--;
+        (a + b)++;
+        fxn()++;
+        x.y.z++;";
+        node!(unary Increment, ident!("a")),
+        node!(unary Decrement, ident!("a")),
+        node!(unary Increment, node!(op ident!("a"), Add, ident!("b"))),
+        node!(unary Increment, node!(fxn())),
+        node!(unary Increment, node!(x.y.z))
+    );
 }
 
 #[test]
