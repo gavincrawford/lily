@@ -9,10 +9,14 @@ use std::rc::Rc;
 
 /// Lily's internal identifier.
 /// This is used at run-time as a stored token to track where things live.
+///
+/// Symbols are standard variable names. Indices name list elements, which are stored as a table
+/// keyed by symbol ("1", "2", and so on), so they behave identically to symbols. Members represent
+/// indirect access, as in a dereferencing expression.
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum ID {
     Symbol(Symbol),
-    Literal(Symbol),
+    Index(Symbol),
     Member { parent: Rc<ID>, member: Rc<ID> },
 }
 
@@ -82,7 +86,7 @@ fn collect_path_ids(id: &ID, path: &mut Vec<ID>) {
 /// Helper function to recursively collect symbolic path components.
 fn collect_path_symbolic(id: &ID, path: &mut Vec<Symbol>) {
     match id {
-        ID::Symbol(sym) | ID::Literal(sym) => path.push(*sym),
+        ID::Symbol(sym) | ID::Index(sym) => path.push(*sym),
         ID::Member { parent, member } => {
             collect_path_symbolic(parent, path);
             collect_path_symbolic(member, path);

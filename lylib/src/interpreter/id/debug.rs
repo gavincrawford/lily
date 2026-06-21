@@ -6,7 +6,7 @@ impl Debug for ID {
         write!(f, "ID(")?;
         match self {
             ID::Symbol(sym) => write!(f, "{}", resolve!(*sym)),
-            ID::Literal(val) => write!(f, "{val}"),
+            ID::Index(val) => write!(f, "{val}"),
             ID::Member { parent, member } => write!(f, "{parent:#?} -> {member:#?}"),
         }?;
         write!(f, ")")

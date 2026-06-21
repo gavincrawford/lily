@@ -13,7 +13,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     .as_index()?;
                 Ok(ID::Member {
                     parent,
-                    member: ID::Literal(index).into(),
+                    member: ID::Index(index).into(),
                 })
             }
             ASTNode::Deref { parent, child } => {

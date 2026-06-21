@@ -34,7 +34,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         // get variable id, stepping down if required
         let id = match id {
             ID::Symbol(sym) => *sym,
-            ID::Literal(val) => *val,
+            ID::Index(val) => *val,
             ID::Member { .. } => {
                 let path = id.to_path_symbolic();
                 for &item in &path[0..(path.len() - 1)] {

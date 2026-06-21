@@ -201,7 +201,7 @@ impl Display for SVTable {
                         .iter()
                         .map(|kind| match kind {
                             ID::Symbol(sym) => resolve!(*sym),
-                            ID::Literal(val) => val.to_string(),
+                            ID::Index(val) => val.to_string(),
                             ID::Member { .. } => {
                                 unreachable!("member should be flattened by to_path")
                             }
