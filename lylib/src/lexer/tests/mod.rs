@@ -92,11 +92,11 @@ fn math() {
 #[test]
 fn unary() {
     lex_eq!("var++; var--; !var; !!var;" =>
+        Identifier(intern!("var")),
         Increment,
-        Identifier(intern!("var")),
         Endl,
-        Decrement,
         Identifier(intern!("var")),
+        Decrement,
         Endl,
         LogicalNot,
         Identifier(intern!("var")),

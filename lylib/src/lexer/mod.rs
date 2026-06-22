@@ -79,14 +79,30 @@ impl Lexer {
                             // TODO this should just get moved out to its own mode vvv
 
                             // operators
-                            '+' => self.long_op(&mut chars, &mut tokens, '+', Increment, Add),
-                            '-' => self.long_op(&mut chars, &mut tokens, '-', Decrement, Sub),
+                            '+' => self.long_op(
+                                &mut chars,
+                                &mut tokens,
+                                token_start,
+                                '+',
+                                Increment,
+                                Add,
+                            ),
+                            '-' => self.long_op(
+                                &mut chars,
+                                &mut tokens,
+                                token_start,
+                                '-',
+                                Decrement,
+                                Sub,
+                            ),
                             '*' => tokens.push(Mul.at(
                                 self.line_n,
                                 self.char_n,
                                 self.char_n + c.len_utf8(),
                             )),
-                            '/' => self.long_op(&mut chars, &mut tokens, '/', Floor, Div),
+                            '/' => {
+                                self.long_op(&mut chars, &mut tokens, token_start, '/', Floor, Div)
+                            }
                             '^' => tokens.push(Pow.at(
                                 self.line_n,
                                 self.char_n,
@@ -398,18 +414,20 @@ impl Lexer {
         }
     }
 
-    /// Handles double-character operators like `++`, `--`, `//`.
-    ///
-    /// `pos` is bumped by 1 if the second character is consumed, so the caller's running byte
-    /// position stays in lockstep with the char iterator.
+    /// Handles long operators, such as `++`, `--`, & `//`.
     fn long_op(
         &mut self,
         chars: &mut std::iter::Peekable<std::str::Chars>,
         tokens: &mut Vec<SpannedToken>,
+        token_start: usize,
         expected_char: char,
         double_token: Token,
         single_token: Token,
     ) {
+        // flush any pending identifier/keyword so it is emitted *before* this operator
+        // (e.x., `a++` lexes as `[Identifier(a), Increment]`, not the reverse)
+        self.flush_keyword(tokens, token_start);
+
         let start = self.char_n;
         if let Some(peek_char) = chars.peek() {
             if *peek_char == expected_char {
@@ -423,5 +441,25 @@ impl Lexer {
         } else {
             tokens.push(single_token.at(self.line_n, start, start + 1));
         }
+    }
+
+    /// Handles double-character operators like `++`, `--`, `//`. Used to forcefully emit keywords
+    /// for use cases such as postfix unaries.
+    ///
+    /// Flushes the pending keyword register into `tokens` as a keyword (if it matches one) or an
+    /// identifier, then clears the register. A no-op if the register is empty.
+    fn flush_keyword(&mut self, tokens: &mut Vec<SpannedToken>, token_start: usize) {
+        if let Some(token) = self.keyword_from_register() {
+            tokens.push(token.at(self.line_n, token_start, self.char_n));
+        } else if !self.keyword_register.is_empty() {
+            tokens.push(
+                Token::Identifier(intern!(self.keyword_register.clone())).at(
+                    self.line_n,
+                    token_start,
+                    self.char_n,
+                ),
+            );
+        }
+        self.keyword_register.clear();
     }
 }

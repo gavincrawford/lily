@@ -128,7 +128,7 @@ impl Parser {
     ///
     /// Branches that correspond to a distinct statement kind wrap their failure in a
     /// `ParserError` variant, which preserves the underlying `anyhow::Error` as a source. The
-    /// remaining branches (expressions, breaks, prefix `++`/`--`) propagate their `anyhow::Error`
+    /// remaining branches (expressions, breaks) propagate their `anyhow::Error`
     /// directly since they have no statement-level decoration to add.
     fn parse_statement(&mut self) -> Result<Rc<ASTNode>, ParserError> {
         let peek = self.peek()?;
@@ -142,10 +142,7 @@ impl Parser {
             Token::Identifier(_) => Ok(self.parse_expr(None)?),
             Token::Return => self.parse_return().map_err(ParserError::Return),
             Token::Break => Ok(self.parse_break()?),
-            Token::Increment | Token::Decrement => {
-                Ok(self.parse_operator(Self::get_precedence(peek))?)
-            }
-            Token::ParenOpen => Ok(self.parse_expr(Some(Token::ParenClose))?),
+            Token::ParenOpen => Ok(self.parse_expr(None)?),
             _ => Err(anyhow::anyhow!("expected statement, found {peek:?}").into()),
         }
     }
@@ -508,6 +505,17 @@ impl Parser {
                 // assignments
                 Ok(Token::Equal) => self.parse_assignment(primary)?,
 
+                // postfix increment/decrement (x++)
+                // other unaries are handled in `parse_primary`
+                Ok(Token::Increment) | Ok(Token::Decrement) => {
+                    let op = self.next().unwrap(); // safety: peek
+                    ASTNode::UnaryOp {
+                        target: primary,
+                        op,
+                    }
+                    .into()
+                }
+
                 // break for all others
                 Ok(Token::Endl) | Ok(Token::BlockStart) => {
                     self.next();
@@ -536,7 +544,8 @@ impl Parser {
                 .context("failed to parse left operand")?,
         };
 
-        // Handle high precedence operations like deref, function calls, and indexing
+        // Handle high precedence operations
+        // (Such as deref, function calls, inc/dec, and indexing)
         loop {
             match self.peek()? {
                 Token::Dot => {
@@ -547,6 +556,10 @@ impl Parser {
                 }
                 Token::BracketOpen => {
                     left = self.parse_index(left)?;
+                }
+                Token::Increment | Token::Decrement => {
+                    let op = self.next().unwrap(); // safety: peek
+                    left = ASTNode::UnaryOp { target: left, op }.into();
                 }
                 _ => break,
             }
@@ -628,8 +641,9 @@ impl Parser {
                 Ok(ASTNode::Identifier(id).into())
             }
 
-            // Unaries (!, ++, --)
-            Token::LogicalNot | Token::Increment | Token::Decrement => {
+            // Prefix unary (`!`)
+            // Increment/decrement are postfix only, handled in `parse_expr`.
+            Token::LogicalNot => {
                 // consume unary prefix & take ownership
                 let op = self.next().context("expected unary operator, found EOF")?;
                 let precedence = Self::get_precedence(&op);
