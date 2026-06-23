@@ -16,3 +16,8 @@ func greater_than lhs rhs do
 end
 let c = greater_than(2, 1)
 
+# multi-line call: arguments split across lines
+let d = add(
+  100,
+  200
+)

@@ -94,7 +94,8 @@ test!(comparison_truthy => (
 test!(functions => (
     a := 10,
     b := 20,
-    c := true
+    c := true,
+    d := 300
 ));
 
 test!(functions_by_ref => (

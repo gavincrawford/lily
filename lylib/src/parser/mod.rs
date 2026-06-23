@@ -397,25 +397,11 @@ impl Parser {
 
     /// Parses a function call.
     fn parse_call_fn(&mut self, target: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
-        // parse arguments
+        // parse arguments until the closing paren
         self.expect(Token::ParenOpen)?;
-        let mut args = vec![];
-        loop {
-            match self.peek()? {
-                // If this is a close paren, arguments are over
-                Token::ParenClose => {
-                    self.next();
-                    break;
-                }
-                // Otherwise, evaluate this argument and add it to the list
-                _ => {
-                    args.push(
-                        self.parse_expr(Some(Token::Comma))
-                            .context("failed to parse argument")?,
-                    );
-                }
-            }
-        }
+        let args = self
+            .parse_delimited(Token::ParenClose)
+            .context("failed to parse arguments")?;
 
         Ok(ASTNode::FunctionCall {
             target,
@@ -673,34 +659,41 @@ impl Parser {
         // consume open bracket
         self.expect(Token::BracketOpen)?;
 
-        // parse items individually
+        // parse items individually, then convert nodes to owned variables
+        let items = self
+            .parse_delimited(Token::BracketClose)
+            .context("failed to parse list")?
+            .iter()
+            .map(|item| Variable::Owned(ASTNode::inner_to_owned(item)).into())
+            .collect();
+
+        Ok(ASTNode::List(items).into())
+    }
+
+    /// Parses comma-separated expressions until `close` is consumed.
+    /// Bare endlines are skipped, allowing for multi-line lists and calls.
+    /// Shared by list and function-call parsing.
+    fn parse_delimited(&mut self, close: Token) -> Result<Vec<Rc<ASTNode>>> {
         let mut items = vec![];
         loop {
-            // check for exceptions
             match self.peek()? {
-                Token::BracketClose => {
-                    // break on bracket close, indicating list end
+                // break on the closing token, indicating the sequence is over
+                token if *token == close => {
                     self.next();
                     break;
                 }
+                // skip endlines that interrupt the sequence
                 Token::Endl => {
-                    // continue if list is interrupted by endline
                     self.next();
                     continue;
                 }
-                _ => {}
+                // otherwise, parse and collect this item
+                _ => items.push(
+                    self.parse_expr(Some(Token::Comma))
+                        .context("failed to parse item")?,
+                ),
             }
-
-            // get resolved item
-            let item = self
-                .parse_expr(Some(Token::Comma))
-                .context("failed to parse list item")
-                .context(format!("in list: {items:?}"))?;
-
-            // add item to the list
-            items.push(Variable::Owned(ASTNode::inner_to_owned(&item)).into())
         }
-
-        Ok(ASTNode::List(items).into())
+        Ok(items)
     }
 }
