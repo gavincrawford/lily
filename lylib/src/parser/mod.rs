@@ -596,11 +596,13 @@ impl Parser {
         match self.peek()? {
             // process negative expressions
             Token::Sub => {
-                match *self.peek_n(1)? {
+                // Consume negative operator
+                self.next();
+
+                match *self.peek()? {
                     // This is a literal negative
                     Token::Number(value) => {
-                        // Consume both value and negative operator
-                        self.next();
+                        // Consume value
                         self.next();
 
                         Ok(ASTNode::Literal(Token::Number(-value)).into())
@@ -608,8 +610,6 @@ impl Parser {
 
                     // This is a unary negative expression
                     _ => {
-                        // Consume negative, evaluate target
-                        self.next();
                         let target = self
                             .parse_operator(0)
                             .context("failed to parse unary operand")?;
