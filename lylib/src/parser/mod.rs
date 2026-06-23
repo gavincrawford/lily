@@ -573,12 +573,6 @@ impl Parser {
                 break;
             }
 
-            // Check for non-operator tokens that should break the precedence parsing
-            match next {
-                Token::Equal | Token::Endl | Token::BlockStart => break,
-                _ => {}
-            }
-
             // Evaluate right side recursively, iterating precedence each time. This effectively
             // groups higher precedence operations that are *after* this one.
             let op = self.next().unwrap();
