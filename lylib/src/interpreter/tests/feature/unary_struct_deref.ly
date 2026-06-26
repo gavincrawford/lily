@@ -11,3 +11,4 @@ let after_inc = c.val
 c.val--
 c.val--
 let after_dec = c.val
+let negate = -c.val

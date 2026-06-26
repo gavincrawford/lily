@@ -9,3 +9,6 @@ let no_match = split(no_delim, ',')
 
 let multi_char = "one::two::three"
 let by_double_colon = split(multi_char, "::")
+
+let stuff = "stuff"
+let by_nothing = split(stuff, ",")

@@ -106,6 +106,11 @@ test!(functions_truthy => (
     is_truthy := true
 ));
 
+test!(functions_zero_args => (
+    result := "hello",
+    num := 42
+));
+
 test!(loops => (
     x := 25
 ));
@@ -210,6 +215,10 @@ test!(struct_functions => (
     last := 0
 ));
 
+test!(struct_zero_fields => (
+    value := 99
+));
+
 test!(unary => (
     v := true,
     not_v := false,
@@ -224,12 +233,14 @@ test!(unary_call_deref => (
 ));
 
 test!(unary_list_deref => (
-    list == node!([lit!(2), lit!(0)])
+    list == node!([lit!(2), lit!(0), lit!(1)]),
+    negate := -1
 ));
 
 test!(unary_struct_deref => (
     after_inc := 6,
-    after_dec := 4
+    after_dec := 4,
+    negate := -4
 ));
 
 test!(call_deref => (
