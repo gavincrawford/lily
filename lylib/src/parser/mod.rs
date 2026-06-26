@@ -42,14 +42,6 @@ impl Parser {
             .context("unexpected EOF")
     }
 
-    /// Peek `n` positions ahead. Returns `Err` on EOF.
-    fn peek_n(&self, n: usize) -> Result<&Token> {
-        self.tokens
-            .get(n)
-            .map(SpannedToken::kind)
-            .context("unexpected EOF")
-    }
-
     /// Peek at the line number of the next token. Returns `Err` on EOF.
     fn peek_line(&self) -> Result<usize> {
         self.tokens
