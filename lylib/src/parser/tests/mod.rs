@@ -128,14 +128,10 @@ fn unary_inc_dec() {
     parse_eq!(
         "a++;
         a--;
-        (a + b)++;
-        fxn()++;
         x.y.z++;";
-        node!(unary Increment, ident!("a")),
-        node!(unary Decrement, ident!("a")),
-        node!(unary Increment, node!(op ident!("a"), Add, ident!("b"))),
-        node!(unary Increment, node!(fxn())),
-        node!(unary Increment, node!(x.y.z))
+        node!(assign a => node!(op ident!("a"), Add, lit!(1))),
+        node!(assign a => node!(op ident!("a"), Sub, lit!(1))),
+        node!(assign node!(x.y.z) => node!(op node!(x.y.z), Add, lit!(1)))
     );
 }
 
@@ -326,7 +322,7 @@ fn loops() {
         ),
         node!(
             loop node!(op ident!("x"), LogicalL, lit!(10)) =>
-                block!(node!(unary Increment, ident!("x")));
+                block!(node!(assign x => node!(op ident!("x"), Add, lit!(1))));
         ),
         node!(
             loop node!(op node!(op 1, Add, 1), LogicalG, lit!(0)) =>

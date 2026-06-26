@@ -234,47 +234,21 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // no match, fail
                 bail!("operator not implemented ({a} {op:#?} {b})")
             }
-            ASTNode::UnaryOp { target, op } => match op {
-                // increment/decrement operations need special handling
-                Token::Increment | Token::Decrement => {
-                    // TODO: increment/decrement currently only works with simple identifiers,
-                    // not dot notation (e.g., obj.field++) or index access (list[0]++)
-                    // * RECHECK AFTER IDENTIFIER SPLIT
-                    if let ASTNode::Identifier(id) = target.as_ref() {
-                        // get variable
-                        if let Variable::Owned(ASTNode::Literal(Token::Number(n))) = self.get(id)? {
-                            // get new assignment value
-                            let new_value = match op {
-                                Token::Increment => Token::Number(n + 1.0),
-                                Token::Decrement => Token::Number(n - 1.0),
-                                _ => unreachable!(),
-                            };
-                            self.assign(id, Variable::Owned(ASTNode::Literal(new_value)))?;
-                        }
-                    } else {
-                        bail!("invalid increment/decrement target: {target:?}");
+            ASTNode::UnaryOp { target, op } => {
+                let Ok(Some(target_result)) = self.execute_expr(target) else {
+                    bail!("failed to evaluate unary operand");
+                };
+                match (op, target_result.as_ref()) {
+                    // negative numbers
+                    (Token::Sub, ASTNode::Literal(Token::Number(n))) => {
+                        Ok(Some(Rc::new(ASTNode::Literal(Token::Number(-n)))))
                     }
-                    Ok(None)
-                }
-
-                // other unary operations need the target to be evaluated first
-                _ => {
-                    let Ok(Some(target_result)) = self.execute_expr(target) else {
-                        bail!("failed to evaluate unary operand");
-                    };
-                    match (op, target_result.as_ref()) {
-                        // negative numbers
-                        (Token::Sub, ASTNode::Literal(Token::Number(n))) => {
-                            Ok(Some(Rc::new(ASTNode::Literal(Token::Number(-n)))))
-                        }
-                        // logical not
-                        (Token::LogicalNot, ASTNode::Literal(Token::Bool(b))) => {
-                            Ok(Some(Rc::new(ASTNode::Literal(Token::Bool(!b)))))
-                        }
-                        // bail for others
-                        _ => {
-                            bail!("unsupported unary operation: {op:?} on {target_result:?}");
-                        }
+                    // logical not
+                    (Token::LogicalNot, ASTNode::Literal(Token::Bool(b))) => {
+                        Ok(Some(Rc::new(ASTNode::Literal(Token::Bool(!b)))))
+                    }
+                    _ => {
+                        bail!("unsupported unary operation: {op:?} on {target_result:?}");
                     }
                 }
             },

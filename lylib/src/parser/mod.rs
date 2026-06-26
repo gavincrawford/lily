@@ -486,10 +486,22 @@ impl Parser {
                 // postfix increment/decrement (x++)
                 // other unaries are handled in `parse_primary`
                 Ok(Token::Increment) | Ok(Token::Decrement) => {
-                    let op = self.next().unwrap(); // safety: peek
-                    ASTNode::UnaryOp {
-                        target: primary,
-                        op,
+                    // Inc/Dec unaries are reduced to simple `x = x +/- 1`
+
+                    // Safety: peek
+                    let op = match self.next().unwrap() {
+                        Token::Increment => Token::Add,
+                        Token::Decrement => Token::Sub,
+                        _ => unreachable!(),
+                    };
+                    ASTNode::Assign {
+                        target: primary.clone(),
+                        value: ASTNode::Op {
+                            lhs: primary,
+                            op,
+                            rhs: lit!(1),
+                        }
+                        .into(),
                     }
                     .into()
                 }
@@ -536,8 +548,7 @@ impl Parser {
                     left = self.parse_index(left)?;
                 }
                 Token::Increment | Token::Decrement => {
-                    let op = self.next().unwrap(); // safety: peek
-                    left = ASTNode::UnaryOp { target: left, op }.into();
+                    left = self.parse_expr(None)?;
                 }
                 _ => break,
             }

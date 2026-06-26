@@ -223,6 +223,15 @@ test!(unary_call_deref => (
     flipped := false
 ));
 
+test!(unary_list_deref => (
+    list == node!([lit!(2), lit!(0)])
+));
+
+test!(unary_struct_deref => (
+    after_inc := 6,
+    after_dec := 4
+));
+
 test!(call_deref => (
     px := 10,
     py := 20
