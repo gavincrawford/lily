@@ -38,8 +38,8 @@ x = 100             # assignment
 | `/` | Divide | `10 / 2` |
 | `^` | Power | `2 ^ 3` |
 | `//` | Floor divide | `7 // 2` → `3` |
-| `++` | Increment | `x++` |
-| `--` | Decrement | `x--` |
+| `++` | Increment | `x++`, `list[0]++`, `obj.field++` |
+| `--` | Decrement | `x--`, `list[0]--`, `obj.field--` |
 | `-` | Negate | `-x` |
 
 ### Comparison
