@@ -11,19 +11,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         // remove out of scope variables
         if let Some(mod_pointer) = &self.context {
             let mut module = mod_pointer.borrow_mut();
-            let mut scope_n = 0;
-            module.inner_mut().retain(|_| {
-                let in_scope = scope_n <= self.scope_id;
-                scope_n += 1;
-                in_scope
-            });
+            module.inner_mut().truncate(self.scope_id + 1);
         } else {
-            let mut scope_n = 0;
-            self.memory.borrow_mut().inner_mut().retain(|_| {
-                let in_scope = scope_n <= self.scope_id;
-                scope_n += 1;
-                in_scope
-            });
+            self.memory
+                .borrow_mut()
+                .inner_mut()
+                .truncate(self.scope_id + 1);
         }
     }
 
