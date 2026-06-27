@@ -37,7 +37,10 @@ impl<T: PartialEq> FlatRcMap<T> {
 
     /// Returns whether an item exists at this identifier.
     pub(crate) fn contains(&self, id: Symbol) -> bool {
-        self.get(id).is_some()
+        self.map
+            .get(id)
+            .map(|value| value.is_some())
+            .unwrap_or(false)
     }
 
     /// Gets a value by its identifier, cloning the inner `Rc`.
