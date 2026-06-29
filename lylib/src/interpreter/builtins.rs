@@ -118,6 +118,26 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         });
         external!(assert);
 
+        // ================= MATH =================
+
+        let cos: Rc<ExFn> = Rc::new(|_stdout, _stdin, args| {
+            unpack!(args => n);
+            match &**n {
+                ASTNode::Literal(Token::Number(n)) => Ok(Some(lit!(Token::Number(n.cos())))),
+                _ => Err(anyhow!("cannot call cosine on: {n:#?}")),
+            }
+        });
+        external!(cos);
+
+        let sin: Rc<ExFn> = Rc::new(|_stdout, _stdin, args| {
+            unpack!(args => n);
+            match &**n {
+                ASTNode::Literal(Token::Number(n)) => Ok(Some(lit!(Token::Number(n.sin())))),
+                _ => Err(anyhow!("cannot call sine on: {n:#?}")),
+            }
+        });
+        external!(sin);
+
         Ok(())
     }
 }

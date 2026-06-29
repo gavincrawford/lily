@@ -46,3 +46,9 @@ test!(split => (
 ));
 
 test!(split_non_number => panic);
+
+test!(sin => (zero := 0));
+test!(sin_non_number => panic);
+
+test!(cos => (zero := 1));
+test!(cos_non_number => panic);
