@@ -251,7 +251,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         bail!("unsupported unary operation: {op:?} on {target_result:?}");
                     }
                 }
-            },
+            }
             ASTNode::Function { id, .. } => {
                 self.declare(id, Variable::Function(statement.clone()))?;
                 Ok(None)
@@ -458,7 +458,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // get index as a usize
                 let usize_idx = self
                     .execute_expr(index)
-                    .context(format!("failed to evaluate index value ({index})"))?
+                    .with_context(|| format!("failed to evaluate index value ({index})"))?
                     .context("index cannot be undefined")?
                     .as_index()?;
 
@@ -482,9 +482,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     }
                     ASTNode::Literal(Token::Str(string)) => {
                         // get the char at the provided index, bail if it is not found
-                        let ch = string.chars().nth(usize_idx).context(format!(
-                            "no character exists at {usize_idx} in string '{string}'"
-                        ))?;
+                        let ch = string.chars().nth(usize_idx).with_context(|| {
+                            format!("no character exists at {usize_idx} in string '{string}'")
+                        })?;
 
                         // return the cloned character
                         Ok(Some(lit!(Token::Char(ch))))
@@ -565,11 +565,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 };
 
                 self.with_context(ctx, |interpreter| {
-                    interpreter.execute(body.clone()).context(format!(
-                        "failed to evaluate module '{:?}' ({:?})",
-                        alias.clone().unwrap_or(intern!("anonymous").as_id()),
-                        path.clone().unwrap_or(PathBuf::default()),
-                    ))
+                    interpreter.execute(body.clone()).with_context(|| {
+                        format!(
+                            "failed to evaluate module '{:?}' ({:?})",
+                            alias.clone().unwrap_or(intern!("anonymous").as_id()),
+                            path.clone().unwrap_or(PathBuf::default()),
+                        )
+                    })
                 })?;
                 Ok(None)
             }
