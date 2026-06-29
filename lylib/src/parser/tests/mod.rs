@@ -5,6 +5,13 @@ use crate::{interpreter::AsID, lexer::Token::*, parser::*, *};
 /// Shorthand for creating and executing the parser, and comparing its output to an expression.
 #[macro_export]
 macro_rules! parse_eq {
+    // Error tests
+    ($code:expr) => {{
+        let result = Parser::new(Lexer::default().lex_spanned($code.into()).unwrap()).unwrap().parse();
+        assert!(result.is_ok(), "Parser failed: {:?}", result);
+    }};
+
+    // All other tests
     ($code:expr; $($block:expr),*) => {{
         let result = Parser::new(Lexer::default().lex_spanned($code.into()).unwrap()).unwrap().parse();
         assert!(result.is_ok(), "Parser failed: {:?}", result);
@@ -34,6 +41,12 @@ fn decl() {
         node!(declare number => lit!(-1)),
         node!(declare boolean => lit!(true))
     );
+}
+
+#[test]
+#[should_panic]
+fn decl_incomplete() {
+    parse_eq!("let var = ;");
 }
 
 #[test]
@@ -112,6 +125,24 @@ fn comparisons() {
 }
 
 #[test]
+#[should_panic]
+fn comparison_incomplete() {
+    parse_eq!("let res = 100 < ;");
+}
+
+#[test]
+#[should_panic]
+fn unclosed_paren() {
+    parse_eq!("let value = (1 + ;");
+}
+
+#[test]
+#[should_panic]
+fn unclosed_bracket() {
+    parse_eq!("let list = [1, 2, 3, ;");
+}
+
+#[test]
 fn unary() {
     parse_eq!(
         "let a = !true;
@@ -179,6 +210,12 @@ fn nested_imports() {
         node!(declare ten_mod1 => node!(mod1.add1(lit!(5), lit!(5)))),
         node!(declare ten_mod2 => node!(mod1.mod2.add2(lit!(5), lit!(5))))
     );
+}
+
+#[test]
+#[should_panic]
+fn missing_import() {
+    parse_eq!("import \"./does_not_exist.ly\";");
 }
 
 #[test]
