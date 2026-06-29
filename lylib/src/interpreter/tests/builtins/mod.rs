@@ -44,3 +44,5 @@ test!(split => (
     by_double_colon == node!([lit!("one"), lit!("two"), lit!("three")]),
     by_nothing == node!([lit!("stuff")])
 ));
+
+test!(split_non_number => panic);

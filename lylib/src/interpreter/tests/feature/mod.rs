@@ -153,6 +153,8 @@ test!(indices_nested => (
 
 test!(indices_out_of_range => panic);
 
+test!(indices_wrong_type => panic);
+
 test!(lists => (
     empty == node!([]),
     nested_empty == node!([node!([node!([node!([])])])]),
@@ -171,6 +173,8 @@ test!(lists_concat => (
     chained == node!([lit!(1), lit!(2), lit!(3)])
 ));
 
+test!(lists_concat_non_list => panic);
+
 test!(lists_with_indices => (
     source == node!([lit!(10), lit!(20), lit!(30)]),
     with_index == node!([lit!(20)]),
@@ -188,6 +192,8 @@ test!(string_index => (
     head := '0',
     tail := '5'
 ));
+
+test!(string_index_out_of_range => panic);
 
 test!(string_concat => (
     str_concat := "abcd",
