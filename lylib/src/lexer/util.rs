@@ -36,16 +36,13 @@ impl Lexer {
         self.flush_keyword();
 
         let start = self.char;
-        if let Some(peek_char) = self.chars.get(self.char + 1) {
-            if *peek_char == expected_char {
-                // both the leading and trailing chars here are ASCII, so 1+1 byte span
-                self.tokens
-                    .push(double_token.at(self.line, start, start + 2));
-                self.char += 1;
-            } else {
-                self.tokens
-                    .push(single_token.at(self.line, start, start + 1));
-            }
+        if let Some(peek_char) = self.chars.get(self.char + 1)
+            && *peek_char == expected_char
+        {
+            // both the leading and trailing chars here are ASCII, so 1+1 byte span
+            self.tokens
+                .push(double_token.at(self.line, start, start + 2));
+            self.char += 1;
         } else {
             self.tokens
                 .push(single_token.at(self.line, start, start + 1));
