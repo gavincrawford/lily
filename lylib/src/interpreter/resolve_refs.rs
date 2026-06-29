@@ -21,12 +21,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     let resolved_refs = self.resolve_refs(value.to_owned())?;
                     *handle = Variable::Owned(ASTNode::inner_to_owned(&resolved_refs));
                 }
+
                 // skip simple literals (already resolved)
-                Variable::Owned(ASTNode::Literal(Token::Number(_)))
-                | Variable::Owned(ASTNode::Literal(Token::Str(_)))
-                | Variable::Owned(ASTNode::Literal(Token::Char(_)))
-                | Variable::Owned(ASTNode::Literal(Token::Bool(_)))
-                | Variable::Owned(ASTNode::Literal(Token::Undefined)) => {}
+                Variable::Owned(ASTNode::Literal(tok)) if !tok.is_literal() => {}
+
                 // evaluate any other expression (identifiers, indices, ops, calls, etc.)
                 Variable::Owned(value) => {
                     let resolved_item = self
@@ -35,6 +33,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         .unwrap();
                     *handle = Variable::Owned(ASTNode::inner_to_owned(&resolved_item));
                 }
+
                 _ => {}
             }
         }
