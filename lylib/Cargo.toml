@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 anyhow = "1.0"
 derivative = "2.2"
+mimalloc = { version = "*", default-features = false }
 rustc-hash = "2.1"
 thiserror = "2.0.18"
 
