@@ -118,6 +118,48 @@ pub enum Token {
 }
 
 impl Token {
+    /// Maps a keyword string to its token, or `None` if unrecognized.
+    pub(crate) fn from_keyword(s: &str) -> Option<Self> {
+        match s {
+            "let" => Some(Self::Let),
+            "new" => Some(Self::New),
+            "func" => Some(Self::Function),
+            "struct" => Some(Self::Struct),
+            "return" => Some(Self::Return),
+            "if" => Some(Self::If),
+            "else" => Some(Self::Else),
+            "while" => Some(Self::While),
+            "break" => Some(Self::Break),
+            "do" => Some(Self::BlockStart),
+            "end" => Some(Self::BlockEnd),
+            "true" => Some(Self::Bool(true)),
+            "false" => Some(Self::Bool(false)),
+            "import" => Some(Self::Import),
+            "as" => Some(Self::As),
+            _ => None,
+        }
+    }
+
+    /// Maps a single character to its token, or `None` if unrecognized.
+    /// This is used to convert equality operators and punctuation characters to their token
+    /// equivalents.
+    pub(crate) fn from_char(c: char) -> Option<Self> {
+        match c {
+            '=' => Some(Self::Equal),
+            '!' => Some(Self::LogicalNot),
+            '<' => Some(Self::LogicalL),
+            '>' => Some(Self::LogicalG),
+            '&' => Some(Self::LogicalAnd),
+            '|' => Some(Self::LogicalOr),
+            '(' => Some(Self::ParenOpen),
+            ')' => Some(Self::ParenClose),
+            '[' => Some(Self::BracketOpen),
+            ']' => Some(Self::BracketClose),
+            ',' => Some(Self::Comma),
+            _ => None,
+        }
+    }
+
     /// Returns true if `self` is an operator.
     /// Returns true for both numeric and logical operators.
     pub(crate) fn is_operator(&self) -> bool {
