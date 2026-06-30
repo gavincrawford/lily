@@ -1,5 +1,6 @@
 //! Shared error types used throughout the library.
 
+use crate::lexer::Token;
 use thiserror::Error;
 
 /// Encapsulates errors related to calling external functions.
@@ -34,6 +35,7 @@ pub(crate) enum MemoryError {
 /// `From<anyhow::Error>` impl so `?` can be used freely inside parser functions.
 #[derive(Error, Debug)]
 pub(crate) enum ParserError {
+    // Generic error wrappers
     #[error("failed to parse import")]
     Import(#[source] anyhow::Error),
     #[error("failed to parse declaration")]
@@ -50,6 +52,16 @@ pub(crate) enum ParserError {
     Return(#[source] anyhow::Error),
     #[error(transparent)]
     Other(anyhow::Error),
+
+    // Expect-type errors
+    /// Thrown when EOF is encountered in the middle of an ongoing expression.
+    #[error("found unexpected EOF")]
+    UnexpectedEOF,
+    /// Errors resembling: "expected {0}, found {1}"
+    /// The first field describes what was expected (e.g. a concrete token's `Debug` rendering,
+    /// or a category like "identifier"); the second is the token that was actually found.
+    #[error("expected {0}, found {1:?}")]
+    Expected(String, Token),
 }
 
 impl From<anyhow::Error> for ParserError {

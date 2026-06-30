@@ -35,38 +35,38 @@ impl Parser {
     }
 
     /// Peek at the next token. Returns `Err` on EOF.
-    fn peek(&self) -> Result<&Token> {
+    fn peek(&self) -> Result<&Token, ParserError> {
         self.tokens
             .front()
             .map(SpannedToken::kind)
-            .context("unexpected EOF")
+            .ok_or(ParserError::UnexpectedEOF)
     }
 
     /// Peek at the line number of the next token. Returns `Err` on EOF.
-    fn peek_line(&self) -> Result<usize> {
+    fn peek_line(&self) -> Result<usize, ParserError> {
         self.tokens
             .front()
             .map(SpannedToken::line)
-            .context("unexpected EOF")
+            .ok_or(ParserError::UnexpectedEOF)
     }
 
-    /// Get and return the next token.
-    fn next(&mut self) -> Option<Token> {
-        self.tokens.pop_front().map(Token::from)
+    /// Get and return the next token. Returns `Err` on EOF.
+    fn next(&mut self) -> Result<Token, ParserError> {
+        self.tokens
+            .pop_front()
+            .map(Token::from)
+            .ok_or(ParserError::UnexpectedEOF)
     }
 
     /// Throws an error if the next token is not `expected`.
     /// Line attribution is handled by the statement-level context wrap in `parse_with_imports`,
     /// so the bail message itself does not need to repeat the line.
-    fn expect(&mut self, expected: Token) -> Result<()> {
-        match self.next() {
-            Some(token) if token == expected => Ok(()),
-            Some(token) => {
-                bail!("found {token:?}, expected {expected:?}");
-            }
-            _ => {
-                bail!("unexpected EOF")
-            }
+    fn expect(&mut self, expected: Token) -> Result<(), ParserError> {
+        let token = self.next()?;
+        if token == expected {
+            Ok(())
+        } else {
+            Err(ParserError::Expected(format!("{expected:?}"), token))
         }
     }
 
@@ -97,7 +97,7 @@ impl Parser {
         while let Ok(token) = self.peek() {
             if *token == Token::BlockEnd {
                 // consume block ends and expect endline
-                self.next();
+                self.next()?;
                 self.expect(Token::Endl)?;
                 break;
             } else if *token == Token::Else {
@@ -105,7 +105,7 @@ impl Parser {
                 break;
             } else if *token == Token::Endl {
                 // consume endlines
-                self.next();
+                self.next()?;
             } else {
                 // capture line at statement boundary so all parser errors get a line
                 // attached uniformly via context, regardless of which inner bail fires
@@ -135,7 +135,7 @@ impl Parser {
             Token::Return => self.parse_return().map_err(ParserError::Return),
             Token::Break => Ok(self.parse_break()?),
             Token::ParenOpen => Ok(self.parse_expr(None)?),
-            _ => Err(anyhow::anyhow!("expected statement, found {peek:?}").into()),
+            _ => Err(ParserError::Expected("statement".to_string(), peek.clone())),
         }
     }
 
@@ -179,46 +179,48 @@ impl Parser {
     /// Parses import statements.
     fn parse_import(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Import)?;
-        if let Some(Token::Str(path)) = self.next() {
-            // get full path
-            let path = self.path.join(PathBuf::from(path));
-            if !path.exists() {
-                bail!("module not found ({})", path.display());
-            }
+        let token = self.next()?;
+        let Token::Str(path) = token else {
+            return Err(ParserError::Expected("path".to_string(), token).into());
+        };
 
-            // check if alias is provided
-            let mut alias = None;
-            if let Token::As = self.peek()? {
-                // consume keyword
-                self.next();
-
-                // attempt to find alias as an identifier
-                if let Token::Identifier(alias_id) = self.peek()? {
-                    // if an identifier is found, it becomes our alias
-                    alias = Some(alias_id.as_id());
-                    self.next();
-                } else {
-                    // if something other than an identifier is provided, this import is malformed
-                    bail!("expected identifier as alias, found {:?}", self.peek());
-                }
-            }
-
-            // parse file & get AST
-            let body = self
-                .parse_module(path.clone())
-                .with_context(|| format!("parsing import '{}'", path.display()))?;
-
-            // TODO: more extensive import tests. will require *lots* of files, though
-
-            Ok(ASTNode::Module {
-                alias,
-                path: Some(path),
-                body,
-            }
-            .into())
-        } else {
-            bail!("expected path after import");
+        // get full path
+        let path = self.path.join(PathBuf::from(path));
+        if !path.exists() {
+            bail!("module not found ({})", path.display());
         }
+
+        // check if alias is provided
+        let mut alias = None;
+        if let Token::As = self.peek()? {
+            // consume keyword
+            self.next()?;
+
+            // attempt to find alias as an identifier
+            if let Token::Identifier(alias_id) = self.peek()? {
+                // if an identifier is found, it becomes our alias
+                alias = Some(alias_id.as_id());
+                self.next()?;
+            } else {
+                // if something other than an identifier is provided, this import is malformed
+                let found = self.peek()?.clone();
+                return Err(ParserError::Expected("identifier".to_string(), found).into());
+            }
+        }
+
+        // parse file & get AST
+        let body = self
+            .parse_module(path.clone())
+            .with_context(|| format!("parsing import '{}'", path.display()))?;
+
+        // TODO: more extensive import tests. will require *lots* of files, though
+
+        Ok(ASTNode::Module {
+            alias,
+            path: Some(path),
+            body,
+        }
+        .into())
     }
 
     /// Parses a conditional expression.
@@ -233,7 +235,7 @@ impl Parser {
         // process else body block, if present
         let mut else_body = ASTNode::Block(vec![]).into();
         if let Ok(Token::Else) = self.peek() {
-            self.next();
+            self.next()?;
             else_body = self.parse().context("failed to parse else-body")?;
         }
 
@@ -261,11 +263,9 @@ impl Parser {
     fn parse_deref(&mut self, parent: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
         self.expect(Token::Dot)?;
 
-        // expect an identifier after the dot
-        let child_id = match self.next() {
-            Some(Token::Identifier(id)) => ID::new_sym(id),
-            Some(token) => bail!("expected identifier after '.', found {token:?}"),
-            None => bail!("unexpected EOF after '.'"),
+        let child_id = match self.next()? {
+            Token::Identifier(id) => ID::new_sym(id),
+            other => bail!(ParserError::Expected("identifier".to_string(), other)),
         };
 
         // if parent is itself a plain identifier, or previously-folded chain, the access chain is
@@ -316,8 +316,8 @@ impl Parser {
     /// Parses a structure declaration.
     fn parse_decl_struct(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Struct)?;
-        match self.next() {
-            Some(Token::Identifier(sym)) => {
+        match self.next()? {
+            Token::Identifier(sym) => {
                 // expect endl before struct body
                 self.expect(Token::Endl)?;
 
@@ -371,22 +371,20 @@ impl Parser {
                 };
                 Ok(node.into())
             }
-            other => {
-                bail!("expected identifier, found {other:?}")
-            }
+            other => Err(ParserError::Expected("identifier".to_string(), other))?,
         }
     }
 
     /// Parses a function declaration.
     fn parse_decl_fn(&mut self) -> Result<Rc<ASTNode>> {
         self.expect(Token::Function)?;
-        let next = self.next();
-        if let Some(Token::Identifier(sym)) = next {
+        let next = self.next()?;
+        if let Token::Identifier(sym) = next {
             // gather arguments
             let mut arguments = vec![];
             while let Token::Identifier(arg) = self.peek()? {
                 arguments.push(ID::new_sym(*arg));
-                self.next();
+                self.next()?;
             }
 
             // consume block start
@@ -399,7 +397,7 @@ impl Parser {
             }
             .into())
         } else {
-            bail!("expected identifier, found {next:?}");
+            Err(ParserError::Expected("identifier".to_string(), next))?
         }
     }
 
@@ -450,13 +448,11 @@ impl Parser {
         // evaluate primary value
         let mut primary = match self.peek()? {
             Token::ParenOpen => {
-                self.next();
+                self.next()?;
                 self.parse_expr(Some(Token::ParenClose))
                     .context("failed to parse parenthesised expression")?
             }
-            _ => self
-                .parse_primary()
-                .context("failed to parse primary expression")?,
+            _ => self.parse_primary()?,
         };
 
         // keep looping until we've found the largest possible primary
@@ -475,7 +471,7 @@ impl Parser {
             primary = match self.peek() {
                 // operators
                 Ok(token) if token.is_operator() => {
-                    let op = self.next().unwrap(); // safety: peek
+                    let op = self.next()?; // safety: peek
                     let rhs = self
                         .parse_operator(Self::get_precedence(&op))
                         .with_context(|| format!("failed to parse operator: '{op}'"))?;
@@ -509,7 +505,7 @@ impl Parser {
 
                 // break for all others
                 Ok(Token::Endl) | Ok(Token::BlockStart) => {
-                    self.next();
+                    self.next()?;
                     break;
                 }
                 _ => {
@@ -526,7 +522,7 @@ impl Parser {
         // Expand left-hand side first
         let mut left = match self.peek()? {
             Token::ParenOpen => {
-                self.next();
+                self.next()?;
                 self.parse_expr(Some(Token::ParenClose))
                     .context("failed to parse parenthesised expression")?
             }
@@ -565,7 +561,7 @@ impl Parser {
 
             // Evaluate right side recursively, iterating precedence each time. This effectively
             // groups higher precedence operations that are *after* this one.
-            let op = self.next().unwrap();
+            let op = self.next()?;
             let right = self
                 .parse_operator(Self::get_precedence(&op) + 1)
                 .context("failed to parse right operand")?;
@@ -631,13 +627,13 @@ impl Parser {
             // process negative expressions
             Token::Sub => {
                 // Consume negative operator
-                self.next();
+                self.next()?;
 
                 match *self.peek()? {
                     // This is a literal negative
                     Token::Number(value) => {
                         // Consume value
-                        self.next();
+                        self.next()?;
 
                         Ok(ASTNode::Literal(Token::Number(-value)).into())
                     }
@@ -658,14 +654,12 @@ impl Parser {
             }
 
             // Literals
-            t if t.is_literal() => {
-                Ok(ASTNode::Literal(self.next().context("expected literal, found EOF")?).into())
-            }
+            t if t.is_literal() => Ok(ASTNode::Literal(self.next()?).into()),
 
             // Identifiers
             Token::Identifier(sym) => {
                 let id = ID::new_sym(*sym);
-                self.next().context("expected identifier, found EOF")?;
+                self.next()?;
                 Ok(ASTNode::Identifier(id).into())
             }
 
@@ -673,7 +667,7 @@ impl Parser {
             // Increment/decrement are postfix only, handled in `parse_expr`.
             Token::LogicalNot => {
                 // consume unary prefix & take ownership
-                let op = self.next().context("expected unary operator, found EOF")?;
+                let op = self.next()?;
                 let precedence = Self::get_precedence(&op);
 
                 Ok(ASTNode::UnaryOp {
@@ -727,12 +721,12 @@ impl Parser {
             match self.peek()? {
                 // break on the closing token, indicating the sequence is over
                 token if *token == close => {
-                    self.next();
+                    self.next()?;
                     break;
                 }
                 // skip endlines that interrupt the sequence
                 Token::Endl => {
-                    self.next();
+                    self.next()?;
                     continue;
                 }
                 // otherwise, parse and collect this item
