@@ -338,11 +338,6 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 }
 
                 match variable {
-                    // this branch should trigger on external functions
-                    Variable::Extern(closure) => {
-                        // call closure with i/o handles
-                        closure(&mut self.output, &mut self.input, &resolved_args)
-                    }
                     Variable::Builtin(n) => {
                         if let Some((_, closure)) = self.builtins.closures.get(n) {
                             // call closure with i/o handles

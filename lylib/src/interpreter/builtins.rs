@@ -163,9 +163,18 @@ impl Builtins {
 }
 
 impl<Out: Write, In: Read> Interpreter<Out, In> {
-    /// Adds an arbitrary external function to this interpreter.
-    pub fn inject_extern(&mut self, id: impl AsID, closure: Rc<ExFn>) -> Result<()> {
-        self.declare(&id.as_id(), Variable::Extern(closure))
+    /// Adds an arbitrary external function to this interpreter. Inserts at base scope.
+    pub fn inject_builtin(&mut self, id: impl AsID, closure: Box<ExFn>) -> Result<()> {
+        let id = id.as_id();
+        let ID::Symbol(sym) = id else {
+            bail!("invalid function identifier: {id:?}")
+        };
+
+        // Add closure
+        self.builtins.closures.push((sym, closure));
+
+        // Declare variable binding
+        self.declare(&id, Variable::Builtin(self.builtins.closures.len() - 1))
     }
 
     /// Declares all builtin closures into the base scope. Should only be called from `Interpreter::new`.

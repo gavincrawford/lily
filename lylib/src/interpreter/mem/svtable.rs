@@ -233,7 +233,7 @@ impl Display for SVTable {
                 let dbg_ln = match &*value.borrow() {
                     Variable::Owned(node) => prettify(node.to_owned().into()).to_string(),
                     Variable::Function(reference) => format!("&{}", prettify(reference.clone())),
-                    Variable::Extern(_) | Variable::Builtin(_) => "EXTERN".to_string(),
+                    Variable::Builtin(_) => "EXTERN".to_string(),
                     Variable::Type(instance) => format!("struct {}", prettify(instance.clone())),
                 };
 

@@ -54,7 +54,7 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 - **Variable System**: Supports scoped variables, modules, and function execution contexts
 - **Source position tracking**: The lexer produces `Vec<SpannedToken>` via `Lexer::lex_spanned` — each token carries its source line plus a byte-offset span `[start, end)` into the source buffer. The parser consumes spanned tokens directly and uses `peek_line` to attach line numbers to errors via `anyhow::Context`; byte offsets are stored but not yet surfaced in error messages (planned for the upcoming `LilyError` redesign). The position info is stripped at the AST construction boundary, so runtime values never carry parse-time position data.
 - **Structured errors**: `lylib/src/errors.rs` defines `thiserror`-based enums (`MemoryError`, `ExternalFunctionError`) used internally; these bubble up into `anyhow::Result` at the public API boundary.
-- **Built-ins**: Standard functions in `interpreter/builtins.rs`:
+- **Built-ins**: The `Builtins` struct (`interpreter/builtins.rs`) owns a `Vec<(Symbol, Box<ExFn>)>` of all builtin closures, built once in `Builtins::new()`. `Interpreter::register_builtins` (called from `Interpreter::new`) declares each closure into the base scope as `Variable::Builtin(index)`, where `index` points into that vec. Calling a builtin looks up the closure by `index` at call time rather than storing an `Rc<ExFn>` per variable. External consumers add their own closures via `Interpreter::inject_builtin`, which pushes onto the same vec. Standard functions:
   - `print` - Outputs values to stdout
   - `len` - Returns length of lists or strings
   - `sort` - Sorts lists of numbers or strings (validates type consistency; errors on mixed types)
@@ -74,7 +74,7 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 - **lylib/src/interpreter/mem/**: Memory management subsystem with variable tracking and scope tables
 - **lylib/src/interpreter/mem/svtable.rs**: `SVTable` (scoped variable table) — vec of `FlatRcMap<Variable>` scope frames + module map; implements the `MemoryInterface` trait
 - **lylib/src/interpreter/mem/flatrcmap.rs**: `FlatRcMap<T>` — generic `Vec`-backed map indexed by interned `usize` IDs, used for scope frames; supports `shallow_clone` for COW
-- **lylib/src/interpreter/mem/variable.rs**: `Variable` enum (`Owned`/`Function`/`Extern`/`Type`)
+- **lylib/src/interpreter/mem/variable.rs**: `Variable` enum (`Owned`/`Function`/`Builtin`/`Type`); `Builtin(index)` references a closure by index into `Interpreter`'s `Builtins` vec rather than holding an `Rc<ExFn>` directly
 - **lylib/src/interpreter/mem/drop.rs**: Custom `Drop` glue for memory cleanup
 - **lylib/src/interpreter/id/**: Identifier class declaration and associated functions
 - **lylib/src/interpreter/tests/**: Extensive test suite organized by feature/builtin/implementation categories
