@@ -1,16 +1,31 @@
 #![cfg(test)]
 
-use crate::{interpreter::AsID, lexer::Token::*, parser::*};
+use crate::{errors::ParserError, interpreter::AsID, lexer::Token::*, parser::*};
 
 /// Shorthand for creating and executing the parser, and comparing its output to an expression.
 macro_rules! parse_test {
-    // Panic variant
-    ($test:tt => $code:expr; panic) => {
+    // Error variant: asserts parsing fails with a `ParserError` matching the given pattern
+    // *somewhere* in the `anyhow::Error` cause chain.
+    ($test:tt => $code:expr; error $pat:pat) => {
         #[test]
-        #[should_panic]
         fn $test() {
             let result = Parser::new(Lexer::default().lex_spanned($code.into()).unwrap()).unwrap().parse();
-            assert!(result.is_ok(), "Parser failed: {:?}", result);
+            match result {
+                Ok(ast) => panic!(
+                    "expected parser error matching `{}`, but parsing succeeded: {:#?}",
+                    stringify!($pat),
+                    ast
+                ),
+                Err(e) => {
+                    let found = e.chain().any(|cause| matches!(cause.downcast_ref::<ParserError>(), Some($pat)));
+                    assert!(
+                        found,
+                        "expected error matching `{}` in chain, got: {:?}",
+                        stringify!($pat),
+                        e
+                    );
+                }
+            }
         }
     };
 
@@ -65,7 +80,7 @@ parse_test!(decl => "let number = -1; let boolean = true;";
     node!(declare boolean => lit!(true))
 );
 
-parse_test!(decl_incomplete => "let var = ;"; panic);
+parse_test!(decl_incomplete => "let var = ;"; error ParserError::Declaration(_));
 
 parse_test!(derefs => "a.b; a().b; a().b().c;";
     node!(a.b),
@@ -115,11 +130,11 @@ parse_test!(comparisons =>
     node!(declare f => node!(op true, LogicalOr, false))
 );
 
-parse_test!(comparison_incomplete => "let res = 100 < ;"; panic);
+parse_test!(comparison_incomplete => "let res = 100 < ;"; error ParserError::Declaration(_));
 
-parse_test!(unclosed_paren => "let value = (1 + ;"; panic);
+parse_test!(unclosed_paren => "let value = (1 + ;"; error ParserError::Declaration(_));
 
-parse_test!(unclosed_bracket => "let list = [1, 2, 3, ;"; panic);
+parse_test!(unclosed_bracket => "let list = [1, 2, 3, ;"; error ParserError::UnexpectedEOF);
 
 parse_test!(unary =>
     "let a = !true;
@@ -182,7 +197,7 @@ parse_test!(nested_imports ("src/parser/tests/nested_imports") =>
     node!(declare ten_mod2 => node!(mod1.mod2.add2(lit!(5), lit!(5))))
 );
 
-parse_test!(missing_import => "import \"./does_not_exist.ly\";"; panic);
+parse_test!(missing_import => "import \"./does_not_exist.ly\";"; error ParserError::Import(_));
 
 parse_test!(precedence =>
     "let a = 1 + 1 == 4 / 2;
