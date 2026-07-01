@@ -569,6 +569,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     Some(ID::Symbol(sym)) => {
                         let context = self.context.clone().unwrap_or(self.memory.clone());
                         let module = context.borrow_mut().add_module(*sym);
+                        self.register_builtins_into(&module)
+                            .context("failed to register builtins into module")?;
                         Some(module)
                     }
 

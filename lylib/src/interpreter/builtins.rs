@@ -185,4 +185,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         }
         Ok(())
     }
+
+    /// Declares all builtin closures into the base scope (scope 0) of an arbitrary SVTable.
+    /// Used so that modules can resolve builtins (e.g. `cos`, `print`) without having to fall
+    /// back to the interpreter's base memory.
+    pub(super) fn register_builtins_into(&self, svt: &Rc<RefCell<SVTable>>) -> Result<()> {
+        let mut table = svt.borrow_mut();
+        for n in 0..self.builtins.closures.len() {
+            let sym = self.builtins.closures[n].0;
+            table.declare(sym, Variable::Builtin(n), 0)?;
+        }
+        Ok(())
+    }
 }
