@@ -10,6 +10,7 @@ mod tests;
 
 use crate::{lexer::Token, parser::ASTNode, *};
 use anyhow::{Context, Result, bail};
+use builtins::*;
 use std::{
     cell::RefCell,
     io::{Read, Write},
@@ -31,6 +32,8 @@ pub struct Interpreter<Out: Write, In: Read> {
     context: Option<Rc<RefCell<SVTable>>>,
     /// Scope level.
     scope_id: usize,
+    /// Builtin functions. Manages the creation and execution of external function closures.
+    builtins: Builtins,
     /// Output buffer. Typically `stdout`.
     output: Out,
     /// Input buffer. Typically `stdin`.
@@ -43,11 +46,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             memory: Rc::new(RefCell::new(SVTable::default())),
             context: None,
             scope_id: 0,
+            builtins: Builtins::new(),
             output,
             input,
         };
-        i.inject_builtins()
-            .context("failed to add builtins")
+        i.register_builtins()
+            .context("failed to register builtins")
             .unwrap();
         i
     }
@@ -338,6 +342,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     Variable::Extern(closure) => {
                         // call closure with i/o handles
                         closure(&mut self.output, &mut self.input, &resolved_args)
+                    }
+                    Variable::Builtin(n) => {
+                        if let Some((_, closure)) = self.builtins.closures.get(n) {
+                            // call closure with i/o handles
+                            closure(&mut self.output, &mut self.input, &resolved_args)
+                        } else {
+                            unreachable!("couldn't find previously registered builtin");
+                        }
                     }
 
                     // this branch should trigger on raw, local functions

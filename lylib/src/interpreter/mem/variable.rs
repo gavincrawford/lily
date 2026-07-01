@@ -17,6 +17,10 @@ pub enum Variable {
     Function(Rc<ASTNode>),
     /// For external functions.
     Extern(Rc<ExFn>),
+    /// For builtin functions.
+    /// The attached usize is *not* a symbol in this case, but rather an index over the list of
+    /// static function closures that are built at the beginning of run-time.
+    Builtin(usize),
     /// For non-standard types, such as structures.
     Type(Rc<ASTNode>),
 }
@@ -55,6 +59,7 @@ impl Clone for Variable {
             Variable::Owned(node) => Variable::Owned(node.clone()),
             Variable::Function(node) => Variable::Function(node.clone()),
             Variable::Extern(func) => Variable::Extern(func.clone()),
+            Variable::Builtin(n) => Variable::Builtin(*n),
             Variable::Type(node) => Variable::Type(node.clone()),
         }
     }
@@ -65,7 +70,7 @@ impl Debug for Variable {
         match self {
             Variable::Owned(node) => write!(f, "{node:#?}"),
             Variable::Function(node) | Variable::Type(node) => write!(f, "&{node:#?}"),
-            Variable::Extern(_) => write!(f, "EXTERN"),
+            Variable::Extern(_) | Variable::Builtin(_) => write!(f, "EXTERN"),
         }
     }
 }
