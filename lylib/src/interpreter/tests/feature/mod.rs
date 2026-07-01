@@ -185,7 +185,8 @@ test!(lists_with_indices => (
 test!(imports => (
     get_res := 4,
     assign_res := "reassignment value",
-    decl_res := "declaration value"
+    decl_res := "declaration value",
+    outer_res := true
 ));
 
 test!(string_index => (

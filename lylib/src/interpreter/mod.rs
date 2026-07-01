@@ -261,36 +261,48 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 Ok(None)
             }
             ASTNode::FunctionCall { target, arguments } => {
-                // get target variable and check if we need to set instance context
-                let (variable, instance_context) = match target.as_ref() {
+                // get target variable and check if we need to set a call context (instance
+                // methods run against their instance's SVT, module functions run against their
+                // module's SVT)
+                let (variable, call_context) = match target.as_ref() {
                     ASTNode::Identifier(id) => (self.get(id)?, None),
                     ASTNode::Deref { parent, child } => {
                         // try to convert to ID for simple derefs (`a.b`)
                         if let Ok(id) = self.node_to_id(target.clone()) {
                             let variable = self.get(&id)?;
 
-                            // check if this is an instance method call
-                            let instance_context = match &**parent {
+                            // check if this is an instance method or module function call
+                            let call_context = match &**parent {
                                 ASTNode::Identifier(parent_id) => {
                                     // try to get the parent variable, but don't fail if it doesn't exist
                                     // this is because we only need to expose contexts for some
                                     // nodes, others apply to global context
-                                    if let Ok(parent_var) = self.get(parent_id) {
+                                    let instance_ctx = if let Ok(parent_var) = self.get(parent_id) {
                                         match (&parent_var, &variable) {
                                             (
-                                                Variable::Owned(ASTNode::Instance { .. }),
+                                                Variable::Owned(ASTNode::Instance { svt, .. }),
                                                 Variable::Function(_),
-                                            ) => Some(parent_var),
+                                            ) => Some(svt.clone()),
                                             _ => None,
                                         }
                                     } else {
                                         None
-                                    }
+                                    };
+
+                                    // parent isn't an instance-- check if it's a module instead
+                                    instance_ctx.or_else(|| {
+                                        let ID::Symbol(sym) = parent_id else {
+                                            return None;
+                                        };
+                                        // fetch from current context first, base context otherwise
+                                        let current = self.context.as_ref().unwrap_or(&self.memory);
+                                        current.borrow().get_module(*sym).ok()
+                                    })
                                 }
                                 _ => None,
                             };
 
-                            (variable, instance_context)
+                            (variable, call_context)
                         } else {
                             // for complex derefs (like `parent().child`), evaluate the parent in-place
                             let parent_value = self
@@ -310,15 +322,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                                 _ => bail!("cannot dereference member of {parent_value:#?}"),
                             };
 
-                            // set instance context to the parent value (the instance we're calling the method on)
-                            let instance_context = match parent_value.as_ref() {
-                                ASTNode::Instance { .. } => {
-                                    Some(Variable::Owned(ASTNode::inner_to_owned(&parent_value)))
-                                }
+                            // set call context to the parent instance's SVT
+                            let call_context = match parent_value.as_ref() {
+                                ASTNode::Instance { svt, .. } => Some(svt.clone()),
                                 _ => None,
                             };
 
-                            (variable, instance_context)
+                            (variable, call_context)
                         }
                     }
                     other => bail!("cannot call {other:#?}"),
@@ -363,10 +373,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         };
 
                         // execute it in context
-                        if let Some(Variable::Owned(ASTNode::Instance { svt, .. })) =
-                            instance_context
-                        {
-                            // if we found a valid instance context, use it as memory space
+                        if let Some(svt) = call_context {
+                            // if we found a valid instance/module context, use it as memory space
                             self.with_context(Some(svt), |interpreter| {
                                 interpreter.execute_function(&resolved_args, function)
                             })
