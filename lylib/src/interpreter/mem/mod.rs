@@ -3,7 +3,7 @@
 
 use super::*;
 use crate::{errors::MemoryError, interner::Symbol};
-use anyhow::Result;
+use anyhow::{Context, Result};
 
 pub mod drop;
 pub mod flatrcmap;
@@ -74,38 +74,44 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     #[inline]
     pub(crate) fn get(&self, id: &ID) -> Result<Variable> {
         // get absolute module and ID
-        let (module, id) = self.resolve_access_target(id)?;
+        let (module, resolved_id) = self.resolve_access_target(id)?;
 
         // borrow statically to read value
         let handle = module.borrow();
 
         // return value
-        Ok(handle.get_owned(id)?)
+        handle
+            .get_owned(resolved_id)
+            .with_context(|| format!("failed to read {id:?}"))
     }
 
     /// Declares a new variable.
     #[inline]
     pub(crate) fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get absolute module and ID
-        let (module, id) = self.resolve_access_target(id)?;
+        let (module, resolved_id) = self.resolve_access_target(id)?;
 
         // borrow module mutably to make changes
         let mut module = module.borrow_mut();
 
         // declare value
-        Ok(module.declare(id, value, self.scope_id)?)
+        module
+            .declare(resolved_id, value, self.scope_id)
+            .with_context(|| format!("failed to declare {id:?}"))
     }
 
     /// Assigns to an existing variable.
     #[inline]
     pub(crate) fn assign(&mut self, id: &ID, value: Variable) -> Result<()> {
         // get absolute module and ID
-        let (module, id) = self.resolve_access_target(id)?;
+        let (module, resolved_id) = self.resolve_access_target(id)?;
 
         // borrow module mutably to make changes
         let mut module = module.borrow_mut();
 
         // assign value
-        Ok(module.assign(id, value, self.scope_id)?)
+        module
+            .assign(resolved_id, value, self.scope_id)
+            .with_context(|| format!("failed to assign {id:?}"))
     }
 }
