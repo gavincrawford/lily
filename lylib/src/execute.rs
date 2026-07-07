@@ -140,3 +140,28 @@ impl LyConfig {
         Ok(interpreter)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::LyConfig;
+
+    #[test]
+    fn execute() {
+        use std::io::{stdin, stdout};
+        let res = LyConfig::default()
+            .debug_parser(false)
+            .debug_lexer(false)
+            .execute("let result = 1 + 1;", stdout(), stdin());
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    fn empty() {
+        use std::io::{stdin, stdout};
+        let res = LyConfig::default()
+            .debug_parser(false)
+            .debug_lexer(false)
+            .execute("", stdout(), stdin());
+        assert!(res.is_ok());
+    }
+}
