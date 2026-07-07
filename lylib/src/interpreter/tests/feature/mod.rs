@@ -200,12 +200,12 @@ test!(string_index_out_of_range => panic);
 
 test!(string_concat => (
     str_concat := "abcd",
+    str_chain := "abcd",
     num_concat := "123",
     num_concat_reverse := "123",
     char_concat := "xyz",
     char_concat_reverse := "xyz",
-    unicode_str := "🔥",
-    unicode_len := 4
+    unicode_str := "🔥🔥"
 ));
 
 test!(nested_imports => (
