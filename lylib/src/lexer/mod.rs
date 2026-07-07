@@ -120,17 +120,8 @@ impl Lexer {
 
                         // keywords and identifiers
                         '(' | ')' | '[' | ']' | ',' | ' ' => {
-                            if let Some(token) = Token::from_keyword(&self.keyword_register) {
-                                // if the register contains a keyword, that takes priority
-                                self.push_token(token, self.char);
-                            } else if !self.keyword_register.is_empty() {
-                                // otherwise, it'd be an identifier
-                                self.push_token(
-                                    Identifier(intern!(self.keyword_register.clone())),
-                                    self.char,
-                                );
-                            }
-                            self.keyword_register.clear();
+                            // flush pending keyword
+                            self.flush_keyword();
 
                             // match delimiters
                             if let Some(token) = Token::from_char(c) {
