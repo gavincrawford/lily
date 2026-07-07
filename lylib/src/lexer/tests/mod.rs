@@ -149,6 +149,54 @@ fn logic() {
 }
 
 #[test]
+fn operators_no_space() {
+    lex_eq!("a=1;" =>
+        Identifier(intern!("a")), Equal, Number(1.), Endl
+    );
+
+    lex_eq!("a!=1;" =>
+        Identifier(intern!("a")), LogicalNeq, Number(1.), Endl
+    );
+
+    lex_eq!("1>2;" =>
+        Number(1.), LogicalG, Number(2.), Endl
+    );
+
+    lex_eq!("1<2;" =>
+        Number(1.), LogicalL, Number(2.), Endl
+    );
+
+    lex_eq!("a+1;" =>
+        Identifier(intern!("a")), Add, Number(1.), Endl
+    );
+
+    lex_eq!("a-1;" =>
+        Identifier(intern!("a")), Sub, Number(1.), Endl
+    );
+
+    lex_eq!("a++;a--;" =>
+        Identifier(intern!("a")), Increment, Endl,
+        Identifier(intern!("a")), Decrement, Endl
+    );
+
+    lex_eq!("a*2;" =>
+        Identifier(intern!("a")), Mul, Number(2.), Endl
+    );
+
+    lex_eq!("a/2;" =>
+        Identifier(intern!("a")), Div, Number(2.), Endl
+    );
+
+    lex_eq!("a//2;" =>
+        Identifier(intern!("a")), Floor, Number(2.), Endl
+    );
+
+    lex_eq!("a^2;" =>
+        Identifier(intern!("a")), Pow, Number(2.), Endl
+    );
+}
+
+#[test]
 fn conditionals() {
     lex_eq!("if 1 > 2 do end;" =>
         If,

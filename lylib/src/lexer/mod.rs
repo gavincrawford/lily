@@ -13,7 +13,7 @@ pub use token::{SpannedToken, Token};
 enum CaptureMode {
     General,
     Number,
-    Equality,
+    Operator,
     String,
     Char,
     Comment,
@@ -31,7 +31,7 @@ pub struct Lexer {
     number_register: String,
     keyword_register: String,
     string_register: String,
-    equality_register: Option<Token>,
+    operator_register: Option<Token>,
 
     // Output buffer; drained into the caller via `mem::take`.
     tokens: Vec<SpannedToken>,
@@ -44,8 +44,9 @@ pub struct Lexer {
     char: usize,
     /// Start offset of an accumulating multi-char token (number/keyword/string/char)
     token_start: usize,
-    /// Start offset of an in-progress equality-mode operator (`=`, `<`, `>`, `!`, `&`, `|`)
-    equality_start: usize,
+    /// Start offset of an in-progress operator-mode token (`=`, `<`, `>`, `!`, `&`, `|`, `+`, `-`,
+    /// `*`, `/`, `^`)
+    operator_start: usize,
 }
 
 impl Default for Lexer {
@@ -62,13 +63,13 @@ impl Lexer {
             number_register: String::new(),
             keyword_register: String::new(),
             string_register: String::new(),
-            equality_register: None,
+            operator_register: None,
             tokens: vec![],
             chars: vec![],
             line: 1,
             char: 0,
             token_start: 0,
-            equality_start: 0,
+            operator_start: 0,
         }
     }
 
@@ -100,17 +101,6 @@ impl Lexer {
             match self.mode {
                 CaptureMode::General => {
                     match c {
-                        // operators
-                        '+' => self.long_op('+', Increment, Add),
-                        '-' => self.long_op('-', Decrement, Sub),
-                        '*' => self
-                            .tokens
-                            .push(Mul.at(self.line, self.char, self.char + 1)),
-                        '/' => self.long_op('/', Floor, Div),
-                        '^' => self
-                            .tokens
-                            .push(Pow.at(self.line, self.char, self.char + 1)),
-
                         // numbers
                         c if c.is_numeric() && self.keyword_register.is_empty() => {
                             self.mode = CaptureMode::Number;
@@ -149,11 +139,14 @@ impl Lexer {
                             }
                         }
 
-                        // equalities
+                        // operators (=, <, >, !, &, |, +, -, *, /, ^); punctuation is matched
+                        // above and never reaches this guard
                         c if Token::from_char(c).is_some() => {
-                            self.equality_register = Token::from_char(c);
-                            self.equality_start = self.char;
-                            self.mode = CaptureMode::Equality;
+                            // flush any pending identifier/keyword so it is emitted before this op
+                            self.flush_keyword();
+                            self.operator_register = Token::from_char(c);
+                            self.operator_start = self.char;
+                            self.mode = CaptureMode::Operator;
                         }
 
                         c if c.is_alphanumeric() || c == '_' => {
@@ -211,37 +204,44 @@ impl Lexer {
                         self.mode = CaptureMode::General;
                     }
                 }
-                CaptureMode::Equality => {
-                    if let Some(token) = &self.equality_register {
-                        // 2-char operators span [equality_start, self.char + 1);
-                        // 1-char fallbacks span [equality_start, equality_start + 1).
+                CaptureMode::Operator => {
+                    if let Some(token) = &self.operator_register {
+                        // 2-char operators span [operator_start, self.char + 1);
+                        // 1-char fallbacks span [operator_start, operator_start + 1).
                         let two = self.char + 1;
-                        let one = self.equality_start + 1;
+                        let one = self.operator_start + 1;
                         match (token, c) {
-                            (Equal, '=') => self.push_equality(LogicalEq, two),
-                            (Equal, _) => self.push_equality(Equal, one),
-                            (LogicalL, '=') => self.push_equality(LogicalLe, two),
-                            (LogicalL, _) => self.push_equality(LogicalL, one),
-                            (LogicalG, '=') => self.push_equality(LogicalGe, two),
-                            (LogicalG, _) => self.push_equality(LogicalG, one),
-                            (LogicalAnd, '&') => self.push_equality(LogicalAnd, two),
-                            (LogicalOr, '|') => self.push_equality(LogicalOr, two),
-                            (LogicalNot, '=') => self.push_equality(LogicalNeq, two),
-                            (LogicalNot, _) => {
-                                // NOTE:
-                                // this bit is required to skip the character advancement that
-                                // occurs for all of the other branches here. this specifically
-                                // fixes double negatives (`!!true`). it's likely that there's
-                                // other bugs similar to this one that might need this workaround
-                                self.push_equality(LogicalNot, one);
-                                self.equality_register = None;
+                            (Equal, '=') => self.push_operator(LogicalEq, two),
+                            (LogicalL, '=') => self.push_operator(LogicalLe, two),
+                            (LogicalG, '=') => self.push_operator(LogicalGe, two),
+                            (LogicalAnd, '&') => self.push_operator(LogicalAnd, two),
+                            (LogicalOr, '|') => self.push_operator(LogicalOr, two),
+                            (LogicalNot, '=') => self.push_operator(LogicalNeq, two),
+                            (Add, '+') => self.push_operator(Increment, two),
+                            (Sub, '-') => self.push_operator(Decrement, two),
+                            (Div, '/') => self.push_operator(Floor, two),
+
+                            // single-char fallbacks, these operators are valid standalone
+                            (Equal, _)
+                            | (LogicalL, _)
+                            | (LogicalG, _)
+                            | (LogicalNot, _)
+                            | (Add, _)
+                            | (Sub, _)
+                            | (Mul, _)
+                            | (Div, _)
+                            | (Pow, _) => {
+                                self.push_operator(token.clone(), one);
+                                self.operator_register = None;
                                 self.mode = CaptureMode::General;
+                                // current char belongs to the next token, so `continue` skips back to
+                                // `General` mode without skipping it
                                 continue;
                             }
                             _ => unreachable!(),
                         }
                     }
-                    self.equality_register = None;
+                    self.operator_register = None;
                     self.mode = CaptureMode::General;
                 }
                 CaptureMode::Number => match c {

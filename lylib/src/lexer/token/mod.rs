@@ -141,8 +141,7 @@ impl Token {
     }
 
     /// Maps a single character to its token, or `None` if unrecognized.
-    /// This is used to convert equality operators and punctuation characters to their token
-    /// equivalents.
+    /// This is used to convert operator and punctuation characters to their token equivalents.
     pub(crate) fn from_char(c: char) -> Option<Self> {
         match c {
             '=' => Some(Self::Equal),
@@ -151,6 +150,11 @@ impl Token {
             '>' => Some(Self::LogicalG),
             '&' => Some(Self::LogicalAnd),
             '|' => Some(Self::LogicalOr),
+            '+' => Some(Self::Add),
+            '-' => Some(Self::Sub),
+            '*' => Some(Self::Mul),
+            '/' => Some(Self::Div),
+            '^' => Some(Self::Pow),
             '(' => Some(Self::ParenOpen),
             ')' => Some(Self::ParenClose),
             '[' => Some(Self::BracketOpen),
