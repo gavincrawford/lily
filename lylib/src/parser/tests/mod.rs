@@ -124,6 +124,13 @@ parse_test!(unary_inc_dec =>
     node!(assign node!(x.y.z) => node!(op node!(x.y.z), Add, lit!(1)))
 );
 
+parse_test!(unary_inc_dec_in_expr =>
+    "let y = 2 + x++;
+    let z = x-- * 3;";
+    node!(declare y => node!(op lit!(2), Add, node!(assign x => node!(op ident!("x"), Add, lit!(1))))),
+    node!(declare z => node!(op node!(assign x => node!(op ident!("x"), Sub, lit!(1))), Mul, lit!(3)))
+);
+
 parse_test!(unary_complex =>
     "let a = -(1 + 2);
     let b = -x;

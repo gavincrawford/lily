@@ -485,26 +485,7 @@ impl Parser {
 
                 // postfix increment/decrement (x++)
                 // other unaries are handled in `parse_primary`
-                Ok(Token::Increment) | Ok(Token::Decrement) => {
-                    // Inc/Dec unaries are reduced to simple `x = x +/- 1`
-
-                    // Safety: peek
-                    let op = match self.next().unwrap() {
-                        Token::Increment => Token::Add,
-                        Token::Decrement => Token::Sub,
-                        _ => unreachable!(),
-                    };
-                    ASTNode::Assign {
-                        target: primary.clone(),
-                        value: ASTNode::Op {
-                            lhs: primary,
-                            op,
-                            rhs: lit!(1),
-                        }
-                        .into(),
-                    }
-                    .into()
-                }
+                Ok(Token::Increment) | Ok(Token::Decrement) => self.parse_postfix(primary)?,
 
                 // break for all others
                 Ok(Token::Endl) | Ok(Token::BlockStart) => {
@@ -548,7 +529,7 @@ impl Parser {
                     left = self.parse_index(left)?;
                 }
                 Token::Increment | Token::Decrement => {
-                    left = self.parse_expr(None)?;
+                    left = self.parse_postfix(left)?;
                 }
                 _ => break,
             }
@@ -578,6 +559,27 @@ impl Parser {
         }
 
         Ok(left)
+    }
+
+    /// Desugars a postfix `++`/`--` on `target` into `target = target +/- 1`.
+    /// Consumes the `Increment`/`Decrement` token.
+    fn parse_postfix(&mut self, target: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
+        // Safety: peek
+        let op = match self.next().unwrap() {
+            Token::Increment => Token::Add,
+            Token::Decrement => Token::Sub,
+            _ => unreachable!(),
+        };
+        Ok(ASTNode::Assign {
+            target: target.clone(),
+            value: ASTNode::Op {
+                lhs: target,
+                op,
+                rhs: lit!(1),
+            }
+            .into(),
+        }
+        .into())
     }
 
     /// Parses literal primaries.
