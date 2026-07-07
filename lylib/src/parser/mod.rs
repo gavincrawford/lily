@@ -206,7 +206,7 @@ impl Parser {
             // parse file & get AST
             let body = self
                 .parse_module(path.clone())
-                .context(format!("parsing import '{}'", path.display()))?;
+                .with_context(|| format!("parsing import '{}'", path.display()))?;
 
             // TODO: more extensive import tests. will require *lots* of files, though
 
@@ -462,7 +462,7 @@ impl Parser {
                     let op = self.next().unwrap(); // safety: peek
                     let rhs = self
                         .parse_operator(Self::get_precedence(&op))
-                        .context(format!("failed to parse operator: '{op}'"))?;
+                        .with_context(|| format!("failed to parse operator: '{op}'"))?;
                     ASTNode::Op {
                         lhs: primary,
                         op,

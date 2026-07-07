@@ -121,7 +121,7 @@ impl ASTNode {
 
     /// Returns `Err` if this index is out of bounds. Otherwise, returns `Ok(idx)`.
     /// Technically applies to all literal numbers, but should be used to check if an index value
-    /// is within `0 < n < usize::MAX`.
+    /// is within `0 <= n <= usize::MAX`.
     pub(crate) fn as_index(&self) -> Result<usize> {
         if let ASTNode::Literal(Token::Number(n)) = self {
             if *n < 0. {

@@ -109,7 +109,7 @@ fn unary() {
 }
 
 #[test]
-fn unary_assign() {
+fn compound_assign() {
     lex_eq!("var += 1; var -= 1;" =>
         Identifier(intern!("var")),
         AddAssign,

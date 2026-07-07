@@ -10,9 +10,9 @@ use std::rc::Rc;
 /// Lily's internal identifier.
 /// This is used at run-time as a stored token to track where things live.
 ///
-/// Symbols are standard variable names. Indices name list elements, which are stored as a table
-/// keyed by symbol ("1", "2", and so on), so they behave identically to symbols. Members represent
-/// indirect access, as in a dereferencing expression.
+/// Symbols are standard variable names, produced by the string interner. Indices name list
+/// elements: the raw `usize` position is reused as a `Symbol` value directly, without ever going
+/// through the interner, since list storage is a plain `Vec` indexed by position.
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub enum ID {
     Symbol(Symbol),

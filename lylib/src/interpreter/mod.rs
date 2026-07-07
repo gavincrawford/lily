@@ -204,6 +204,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 );
 
                 // bi-directional string concatenation
+                // concatenates `Str` with all other types
                 opmatch!(
                     match op, a, b => Str(l), r if
                     Add => Str(format!("{l}{r}"))

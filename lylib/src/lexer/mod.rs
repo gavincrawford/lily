@@ -82,7 +82,7 @@ impl Lexer {
     /// Lexes the provided file into spanned tokens, preserving line and byte-span information.
     pub fn lex_spanned(&mut self, buf: String) -> Result<Vec<SpannedToken>> {
         self.lex_internal(buf)
-            .context(format!("on line {}", self.line))?;
+            .with_context(|| format!("on line {}", self.line))?;
         Ok(take(&mut self.tokens))
     }
 

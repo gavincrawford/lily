@@ -2,7 +2,7 @@ use super::*;
 use std::{cmp::Ordering, fmt::Debug, mem::discriminant};
 
 /// External function signature.
-/// The first two arguments are the input and output handles. The third contains arguments.
+/// The first two arguments are the output and input handles. The third contains arguments.
 pub type ExFn = dyn for<'a> Fn(
     &'a mut dyn Write,
     &'a mut dyn Read,
