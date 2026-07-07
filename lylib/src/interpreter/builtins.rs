@@ -49,10 +49,10 @@ impl Builtins {
                         unpack!(args => item);
                         match &**item {
                             ASTNode::List(items) => {
-                                Ok(Some(lit!(Token::Number(items.len() as f32))))
+                                Ok(Some(lit!(Token::Number(items.len() as f64))))
                             }
                             ASTNode::Literal(Token::Str(string)) => {
-                                Ok(Some(lit!(Token::Number(string.len() as f32))))
+                                Ok(Some(lit!(Token::Number(string.len() as f64))))
                             }
                             _ => bail!("cannot take length of {:?}", &**item),
                         }

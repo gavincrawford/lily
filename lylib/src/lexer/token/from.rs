@@ -4,12 +4,12 @@ use super::Token;
 
 impl From<isize> for Token {
     fn from(value: isize) -> Self {
-        Token::Number(value as f32)
+        Token::Number(value as f64)
     }
 }
 
-impl From<f32> for Token {
-    fn from(value: f32) -> Self {
+impl From<f64> for Token {
+    fn from(value: f64) -> Self {
         Token::Number(value)
     }
 }

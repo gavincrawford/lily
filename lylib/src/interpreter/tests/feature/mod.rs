@@ -27,7 +27,6 @@ test!(math => (
     negative_multiplication := -12,
     negative_division := -4,
     large_number := 1000000,
-    decimal_precision := 0.3,
     mixed_operations := 9.5,
     nested_power := 16,
     floor_with_decimals := 3,

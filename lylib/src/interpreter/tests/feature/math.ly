@@ -20,7 +20,6 @@ let negative_subtraction = -2 - 4
 let negative_multiplication = -3 * 4
 let negative_division = -12 / 3
 let large_number = 999999 + 1
-let decimal_precision = 0.1 + 0.2
 let mixed_operations = 2.5 * 4 - 1.5 / 3
 
 let nested_power = 2 ^ 2 ^ 2

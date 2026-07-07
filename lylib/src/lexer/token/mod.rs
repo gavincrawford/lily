@@ -64,7 +64,7 @@ pub enum Token {
     Let,
 
     // data types
-    Number(f32),
+    Number(f64),
     Bool(bool),
     Str(String),
     Char(char),

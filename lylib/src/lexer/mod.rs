@@ -251,7 +251,7 @@ impl Lexer {
                         self.number_register.push(n);
                     }
                     _ => {
-                        if let Ok(number) = self.number_register.parse::<f32>() {
+                        if let Ok(number) = self.number_register.parse::<f64>() {
                             // number parsed ok-- push token. `self.char` is the offset of the
                             // delimiter that ended the number, which is one-past-end of
                             // the literal.

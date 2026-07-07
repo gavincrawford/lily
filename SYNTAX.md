@@ -13,7 +13,7 @@ Quick reference for the Lily programming language (`.ly` files).
 
 | Type | Example | Notes |
 |------|---------|-------|
-| Number | `42`, `3.14`, `-5` | 32-bit float internally |
+| Number | `42`, `3.14`, `-5` | 64-bit float internally |
 | String | `"hello"` | Double quotes |
 | Char | `'c'` | Single quotes |
 | Boolean | `true`, `false` | |

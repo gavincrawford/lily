@@ -126,7 +126,7 @@ impl ASTNode {
         if let ASTNode::Literal(Token::Number(n)) = self {
             if *n < 0. {
                 bail!("index values must be non-negative");
-            } else if *n > usize::MAX as f32 {
+            } else if *n > usize::MAX as f64 {
                 bail!("index value larger than {}", usize::MAX);
             }
             return Ok(*n as usize);
