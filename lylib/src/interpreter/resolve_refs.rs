@@ -30,7 +30,9 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     let resolved_item = self
                         .execute_expr(&value.clone().into())
                         .context("failed to resolve expression in list")?
-                        .unwrap();
+                        .context(
+                            "list item must evaluate to a value, but expression produced none",
+                        )?;
                     *handle = Variable::Owned(ASTNode::inner_to_owned(&resolved_item));
                 }
 
