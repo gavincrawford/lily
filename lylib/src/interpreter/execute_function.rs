@@ -8,7 +8,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         function: Rc<ASTNode>,
     ) -> Result<Option<Rc<ASTNode>>> {
         if let ASTNode::Function {
-            arguments, body, ..
+            id,
+            arguments,
+            body,
+            ..
         } = &*function
         {
             // make sure all builtins are available in execution scope
@@ -18,7 +21,17 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
 
             // push arguments
-            assert_eq!(call_args.len(), arguments.len());
+            if call_args.len() != arguments.len() {
+                let name = match id {
+                    ID::Symbol(sym) => resolve!(*sym),
+                    other => format!("{other:?}"),
+                };
+                bail!(
+                    "function '{name}' expects {} argument(s), got {}",
+                    arguments.len(),
+                    call_args.len()
+                );
+            }
             self.scope_id += 1;
             for (idx, arg_id) in arguments.iter().enumerate() {
                 self.declare(
