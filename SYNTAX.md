@@ -136,11 +136,24 @@ let combined = [1, 2] + [3, 4]
 
 ## Modules
 
-```lily !skip
-import "./math.ly" as math
+Import your own `.ly` files as modules:
 
-let result = math.add(1, 2)
-let value = math.pi
+```lily !skip
+import "./shapes.ly" as shapes
+
+let area = shapes.circle_area(2)
+```
+
+The CLI also auto-includes two bundled standard-library modules on every run (skip with `--no-std`), so no `import` is needed for these:
+
+- `math` - constants `PI`, `E`, `TAU`, `PHI`; functions `max`, `min`, `abs`, `trunc`, `exp`, `acos`, `asin`, `cosh`, `sinh`
+- `complex` - a `Complex` struct (`re`, `im` fields) with `add`, `sub`, `mul`, `div`, `as_string`, `mag`
+
+```lily !skip
+print(math.PI)
+print(math.max(3, 5))
+let c = new complex.Complex(1, 2)
+print(c.as_string())
 ```
 
 ## Built-in Functions
@@ -153,6 +166,8 @@ let value = math.pi
 | `chars(string)` | Convert string to char list |
 | `split(string, delimiter)` | Split string by a given character or string delimiter, returns list |
 | `assert(condition)` | Error if false |
+| `sin(n)` | Sine of `n` (radians) |
+| `cos(n)` | Cosine of `n` (radians) |
 
 ## String Operations
 

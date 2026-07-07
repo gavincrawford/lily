@@ -35,7 +35,7 @@ cargo bench                    # Run all benchmarks (criterion-based)
 cargo run -- <file.ly>                 # Run a Lily program
 cargo run -- <file.ly> --no-std        # Run without standard library
 cargo run -- <file.ly> --debug-parser  # Debug mode - prints AST during execution
-cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execution
+cargo run -- <file.ly> --debug-lexer   # Debug mode - prints tokens during execution
 ```
 
 ## Architecture
@@ -53,7 +53,7 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 - **String Interning**: Global `StringInterner` deduplicates strings, using `usize` indices for fast lookups
 - **Variable System**: Supports scoped variables, modules, and function execution contexts
 - **Source position tracking**: The lexer produces `Vec<SpannedToken>` via `Lexer::lex_spanned` — each token carries its source line plus a byte-offset span `[start, end)` into the source buffer. The parser consumes spanned tokens directly and uses `peek_line` to attach line numbers to errors via `anyhow::Context`; byte offsets are stored but not yet surfaced in error messages (planned for the upcoming `LilyError` redesign). The position info is stripped at the AST construction boundary, so runtime values never carry parse-time position data.
-- **Structured errors**: `lylib/src/errors.rs` defines `thiserror`-based enums (`MemoryError`, `ExternalFunctionError`) used internally; these bubble up into `anyhow::Result` at the public API boundary.
+- **Structured errors**: `lylib/src/errors.rs` defines `thiserror`-based enums (`MemoryError`, `ExternalFunctionError`, `ParserError`) used internally; these bubble up into `anyhow::Result` at the public API boundary. `ParserError` wraps each parser-statement kind (`Import`, `Declaration`, `Conditional`, `FunctionDecl`, `StructDecl`, `While`, `Return`) around the underlying `anyhow::Error` as a `#[source]`, plus an `Other` catchall with a `From<anyhow::Error>` impl so `?` keeps working inside parser functions.
 - **Built-ins**: The `Builtins` struct (`interpreter/builtins.rs`) owns a `Vec<(Symbol, Box<ExFn>)>` of all builtin closures, built once in `Builtins::new()`. `Interpreter::register_builtins` (called from `Interpreter::new`) declares each closure into the base scope as `Variable::Builtin(index)`, where `index` points into that vec. Calling a builtin looks up the closure by `index` at call time rather than storing an `Rc<ExFn>` per variable. External consumers add their own closures via `Interpreter::inject_builtin`, which pushes onto the same vec. Standard functions:
   - `print` - Outputs values to stdout
   - `len` - Returns length of lists or strings
@@ -61,7 +61,8 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
   - `split` - Splits a string by a `char` or `str` delimiter into a list of strings
   - `chars` - Converts strings to character lists
   - `assert` - Validates conditions, errors if false
-- **Standard Library**: Located in `ly/src/std/` (currently only contains `math.ly`)
+  - `sin` / `cos` - Trigonometric sine/cosine of a number (radians)
+- **Standard Library**: Located in `ly/src/std/` — `math.ly` (constants `PI`/`E`/`TAU`/`PHI`; functions `max`/`min`/`abs`/`trunc`/`exp`/`acos`/`asin`/`cosh`/`sinh`) and `complex.ly` (`Complex` struct with `add`/`sub`/`mul`/`div`/`as_string`/`mag`). The CLI (`ly/src/execute.rs`) auto-includes both as modules `math` and `complex` on every run unless `--no-std` is passed, so no explicit `import` is needed to use them.
 - **Rust edition**: `lylib` is on the 2024 edition. Notable deps: `anyhow`, `thiserror`, `derivative` (used to derive `PartialEq`/`Debug` on `ASTNode` while `#[derivative(PartialEq = "ignore")]`-ing fields like struct templates and module paths), and `rustc-hash` (`FxHashMap`).
 
 ### Module Structure
@@ -78,7 +79,7 @@ cargo run -- <file.ly> --debug-tokens  # Debug mode - prints tokens during execu
 - **lylib/src/interpreter/mem/drop.rs**: Custom `Drop` glue for memory cleanup
 - **lylib/src/interpreter/id/**: Identifier class declaration and associated functions
 - **lylib/src/interpreter/tests/**: Extensive test suite organized by feature/builtin/implementation categories
-- **lylib/src/errors.rs**: Shared `thiserror`-derived error enums (`MemoryError`, `ExternalFunctionError`)
+- **lylib/src/errors.rs**: Shared `thiserror`-derived error enums (`MemoryError`, `ExternalFunctionError`, `ParserError`)
 - **lylib/src/interner.rs**: String interning system for memory optimization
 - **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens; exposes `lex` (raw tokens) and `lex_spanned` (tokens with line + byte-offset span)
 - **lylib/src/lexer/token/mod.rs**: `Token` enum and `SpannedToken` (token + line + byte-offset span `[start, end)`); `Token::at(line, start, end)` produces a `SpannedToken`
@@ -118,16 +119,18 @@ The project uses an extensive macro system (`lylib/src/macros.rs`) to simplify A
 
 ### Testing Macros
 
-- **`parse_eq!()`** - Tests parser output against expected AST
-- **`interpret!()`** - Executes `.ly` files and captures output for testing
-- **`test!()`** - Comprehensive test macro with three modes:
+- **`parse_test!()`** (`lylib/src/parser/tests/mod.rs`) - Generates a full parser `#[test]` function comparing parser output against an expected AST, with three modes:
+  - Expect-AST: `parse_test!(name => code; block1, block2, ...)`
+  - Expect-panic: `parse_test!(name => code; panic)`
+  - Modified parser path (for import-relative tests): `parse_test!(name (path) => code; block1, ...)`
+- **`test!()`** (`lylib/src/interpreter/tests/mod.rs`) - Comprehensive interpreter test macro that reads and executes a `.ly` file named after the test, with three modes:
   - Variable equality: `test!(filename => (var := expected_value))`
   - Output testing: `test!(filename => "expected output")`
   - Panic/error testing: `test!(filename => panic)` - expects the test to fail
 
-### Built-in Function Macro
+### Built-in Function Helper
 
-- **`exfn!()`** - Defines external/built-in functions in `interpreter/builtins.rs`
+- **`unpack!()`** - Local macro in `interpreter/builtins.rs` that destructures a builtin's `&Vec<Rc<ASTNode>>` argument slice into named bindings (e.g. `unpack!(args => a, b)`), returning `ExternalFunctionError::InvalidArguments` on arity mismatch. Builtin closures are added directly as `(Symbol, Box<ExFn>)` entries in `Builtins::new()`'s vec, not via a dedicated declaration macro.
 
 ### Operator Matching Macro
 
@@ -141,6 +144,8 @@ Tests are organized into three categories:
 - **Implementation tests**: Complex algorithms (fibonacci, binary search, etc.)
 
 All tests use `.ly` files executed by the interpreter to verify correctness. The macro system enables concise test definitions that automatically handle parsing, execution, and result comparison. All tests are organized by prefix-- for example, testing list indices that dangle should be labeled as `indices_dangling.ly`.
+
+A dedicated test (`interpreter::tests::syntax` in `lylib/src/interpreter/tests/mod.rs`) runs every ` ```lily ` code block in `SYNTAX.md` through a bare `Interpreter` (no bundled stdlib included), failing the build if any block fails to lex, parse, or execute. Mark a block ` ```lily !skip ` to exclude it from this check — use this for illustrative snippets that reference files that don't exist or that rely on the CLI's auto-included `math`/`complex` modules, which the bare interpreter used by this test doesn't have.
 
 ## Code Commenting Conventions
 
