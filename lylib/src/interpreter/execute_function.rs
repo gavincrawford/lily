@@ -11,6 +11,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             arguments, body, ..
         } = &*function
         {
+            // make sure all builtins are available in execution scope
+            if let Some(ctx) = self.context.clone() {
+                self.register_builtins_into(&ctx)
+                    .context("failed to register builtins into call context")?;
+            }
+
             // push arguments
             assert_eq!(call_args.len(), arguments.len());
             self.scope_id += 1;

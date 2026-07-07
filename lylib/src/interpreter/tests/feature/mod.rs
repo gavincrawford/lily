@@ -228,6 +228,11 @@ test!(struct_zero_fields => (
     value := 99
 ));
 
+test!(struct_builtins => (
+    result := 3,
+    method_result := 3
+));
+
 test!(unary => (
     v := true,
     not_v := false,
