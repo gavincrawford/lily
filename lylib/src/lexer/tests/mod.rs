@@ -109,6 +109,20 @@ fn unary() {
 }
 
 #[test]
+fn unary_assign() {
+    lex_eq!("var += 1; var -= 1;" =>
+        Identifier(intern!("var")),
+        AddAssign,
+        Number(1.),
+        Endl,
+        Identifier(intern!("var")),
+        SubAssign,
+        Number(1.),
+        Endl
+    );
+}
+
+#[test]
 fn logic() {
     lex_eq!("1 == 2; 1 != 2;" =>
         Number(1.),

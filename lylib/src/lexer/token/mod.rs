@@ -105,6 +105,8 @@ pub enum Token {
     Floor,
     Increment,
     Decrement,
+    AddAssign,
+    SubAssign,
 
     // modules
     Import,

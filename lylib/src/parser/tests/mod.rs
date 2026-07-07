@@ -45,6 +45,17 @@ macro_rules! parse_test {
     };
 }
 
+parse_test!(compound_assign =>
+    "a += 1;
+    a -= 1;
+    x.y.z += 2;
+    a += 1 + 2;";
+    node!(assign a => node!(op ident!("a"), Add, lit!(1))),
+    node!(assign a => node!(op ident!("a"), Sub, lit!(1))),
+    node!(assign node!(x.y.z) => node!(op node!(x.y.z), Add, lit!(2))),
+    node!(assign a => node!(op ident!("a"), Add, node!(op 1, Add, 2)))
+);
+
 parse_test!(decl => "let number = -1; let boolean = true;";
     node!(declare number => lit!(-1)),
     node!(declare boolean => lit!(true))

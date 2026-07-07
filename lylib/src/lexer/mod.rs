@@ -218,7 +218,9 @@ impl Lexer {
                             (LogicalOr, '|') => self.push_operator(LogicalOr, two),
                             (LogicalNot, '=') => self.push_operator(LogicalNeq, two),
                             (Add, '+') => self.push_operator(Increment, two),
+                            (Add, '=') => self.push_operator(AddAssign, two),
                             (Sub, '-') => self.push_operator(Decrement, two),
+                            (Sub, '=') => self.push_operator(SubAssign, two),
                             (Div, '/') => self.push_operator(Floor, two),
 
                             // single-char fallbacks, these operators are valid standalone

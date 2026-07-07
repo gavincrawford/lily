@@ -40,6 +40,8 @@ x = 100             # assignment
 | `//` | Floor divide | `7 // 2` → `3` |
 | `++` | Increment | `x++`, `list[0]++`, `obj.field++` |
 | `--` | Decrement | `x--`, `list[0]--`, `obj.field--` |
+| `+=` | Add & assign | `x += 1`, `list[0] += 2`, `obj.field += 3` |
+| `-=` | Subtract & assign | `x -= 1`, `list[0] -= 2`, `obj.field -= 3` |
 | `-` | Negate | `-x` |
 
 ### Comparison

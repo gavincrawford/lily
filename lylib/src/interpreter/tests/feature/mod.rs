@@ -91,6 +91,13 @@ test!(comparison_truthy => (
     a := 4
 ));
 
+test!(compound_assign => (
+    n_add := 5,
+    n_sub := 7,
+    n_expr := 6,
+    n_deref := 10
+));
+
 test!(functions => (
     a := 10,
     b := 20,
