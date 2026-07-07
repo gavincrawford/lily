@@ -481,7 +481,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let target = self
                     .execute_expr(target)
                     .context("failed to evaluate index target")?
-                    .unwrap();
+                    .context("index target cannot be undefined")?;
 
                 // find item if applicable, bail otherwise
                 match target.as_ref() {

@@ -155,6 +155,8 @@ test!(indices_out_of_range => panic);
 
 test!(indices_wrong_type => panic);
 
+test!(indices_undefined_target => panic);
+
 test!(lists => (
     empty == node!([]),
     nested_empty == node!([node!([node!([node!([])])])]),
