@@ -104,6 +104,11 @@ test!(functions => (
     d := 300
 ));
 
+test!(functions_arg_copy => (
+    x := 5,
+    modified := 105
+));
+
 test!(functions_by_ref => (
     res := 2
 ));

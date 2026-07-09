@@ -4,7 +4,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Executes a given function with the given arguments.
     pub(crate) fn execute_function(
         &mut self,
-        call_args: &[Rc<ASTNode>],
+        call_args: Vec<Rc<ASTNode>>,
         function: Rc<ASTNode>,
     ) -> Result<Option<Rc<ASTNode>>> {
         if let ASTNode::Function {
@@ -33,11 +33,10 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 );
             }
             self.scope_id += 1;
-            for (idx, arg_id) in arguments.iter().enumerate() {
-                self.declare(
-                    arg_id,
-                    Variable::Owned(ASTNode::inner_to_owned(&call_args[idx])),
-                )?;
+            for (arg_id, arg) in arguments.iter().zip(call_args) {
+                // avoid a full clone of the argument when this call owns the only reference to it
+                let owned = Rc::try_unwrap(arg).unwrap_or_else(|arg| (*arg).clone());
+                self.declare(arg_id, Variable::Owned(owned))?;
             }
 
             // get result and clear scoped vars

@@ -343,8 +343,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     resolved_args.push(
                         self.execute_expr(arg)
                             .context("failed to evaluate argument in extern")?
-                            .unwrap_or(lit!(Token::Undefined))
-                            .clone(),
+                            .unwrap_or(lit!(Token::Undefined)),
                     );
                 }
 
@@ -376,12 +375,12 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         // execute it in context
                         if let Some(svt) = call_context {
                             // if we found a valid instance/module context, use it as memory space
-                            self.with_context(Some(svt), |interpreter| {
-                                interpreter.execute_function(&resolved_args, function)
+                            self.with_context(Some(svt), move |interpreter| {
+                                interpreter.execute_function(resolved_args, function)
                             })
                         } else {
                             // otherwise, use previously set memory space
-                            self.execute_function(&resolved_args, function)
+                            self.execute_function(resolved_args, function)
                         }
                     }
 
@@ -396,8 +395,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                         // if there is a defined constructor, run it
                         if let Some(v) = structure.constructor() {
-                            self.with_context(Some(svt.clone()), |interpreter| {
-                                interpreter.execute_function(&resolved_args, v)
+                            self.with_context(Some(svt.clone()), move |interpreter| {
+                                interpreter.execute_function(resolved_args, v)
                             })?;
                         }
 
