@@ -34,9 +34,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             }
             self.scope_id += 1;
             for (arg_id, arg) in arguments.iter().zip(call_args) {
-                // avoid a full clone of the argument when this call owns the only reference to it
-                let owned = Rc::try_unwrap(arg).unwrap_or_else(|arg| (*arg).clone());
-                self.declare(arg_id, Variable::Owned(owned))?;
+                self.declare(arg_id, Variable::Owned(ASTNode::try_inner(arg)))?;
             }
 
             // get result and clear scoped vars

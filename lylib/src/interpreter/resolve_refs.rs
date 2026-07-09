@@ -19,7 +19,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // recursively resolve nested lists
                 Variable::Owned(value) if matches!(value, ASTNode::List(_)) => {
                     let resolved_refs = self.resolve_refs(value.to_owned())?;
-                    *handle = Variable::Owned(ASTNode::inner_to_owned(&resolved_refs));
+                    *handle = Variable::Owned(ASTNode::try_inner(resolved_refs));
                 }
 
                 // skip simple literals (already resolved)
@@ -33,7 +33,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                         .context(
                             "list item must evaluate to a value, but expression produced none",
                         )?;
-                    *handle = Variable::Owned(ASTNode::inner_to_owned(&resolved_item));
+                    *handle = Variable::Owned(ASTNode::try_inner(resolved_item));
                 }
 
                 _ => {}

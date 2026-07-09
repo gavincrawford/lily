@@ -695,8 +695,8 @@ impl Parser {
         let items = self
             .parse_delimited(Token::BracketClose)
             .context("failed to parse list")?
-            .iter()
-            .map(|item| Variable::Owned(ASTNode::inner_to_owned(item)).into())
+            .into_iter()
+            .map(|item| Variable::Owned(ASTNode::try_inner(item)).into())
             .collect();
 
         Ok(ASTNode::List(items).into())

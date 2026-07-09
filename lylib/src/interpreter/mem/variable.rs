@@ -37,7 +37,7 @@ impl From<ASTNode> for Variable {
 
 impl From<Rc<ASTNode>> for Variable {
     fn from(value: Rc<ASTNode>) -> Self {
-        Self::Owned(ASTNode::inner_to_owned(&value))
+        Self::Owned(ASTNode::try_inner(value))
     }
 }
 

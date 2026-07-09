@@ -143,7 +143,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // assign variable
                 self.assign(
                     resolved_target,
-                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                    Variable::Owned(ASTNode::try_inner(resolved_expr)),
                 )?;
                 Ok(None)
             }
@@ -160,7 +160,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // declare variable
                 self.declare(
                     resolved_target,
-                    Variable::Owned(ASTNode::inner_to_owned(&resolved_expr)),
+                    Variable::Owned(ASTNode::try_inner(resolved_expr)),
                 )?;
                 Ok(None)
             }
@@ -558,7 +558,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 // if there are references, flatten them
                 let expr = self
-                    .resolve_refs(ASTNode::inner_to_owned(&expr))
+                    .resolve_refs(ASTNode::try_inner(expr))
                     .context("could not flatten references")?;
 
                 Ok(Some(expr))
