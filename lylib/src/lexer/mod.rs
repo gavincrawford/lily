@@ -212,7 +212,9 @@ impl Lexer {
                             (Add, '=') => self.push_operator(AddAssign, two),
                             (Sub, '-') => self.push_operator(Decrement, two),
                             (Sub, '=') => self.push_operator(SubAssign, two),
+                            (Mul, '=') => self.push_operator(MulAssign, two),
                             (Div, '/') => self.push_operator(Floor, two),
+                            (Div, '=') => self.push_operator(DivAssign, two),
 
                             // single-char fallbacks, these operators are valid standalone
                             (Equal, _)

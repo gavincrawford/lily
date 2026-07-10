@@ -107,6 +107,8 @@ pub enum Token {
     Decrement,
     AddAssign,
     SubAssign,
+    MulAssign,
+    DivAssign,
 
     // modules
     Import,

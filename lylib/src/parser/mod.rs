@@ -487,10 +487,9 @@ impl Parser {
                 // other unaries are handled in `parse_primary`
                 Ok(Token::Increment) | Ok(Token::Decrement) => self.parse_postfix(primary)?,
 
-                // desugar compound assign: `+=` & `-=`
-                Ok(Token::AddAssign) | Ok(Token::SubAssign) => {
-                    self.parse_compound_assign(primary)?
-                }
+                // desugar compound assign: `+=`, `-=`, `*=` & `/=`
+                Ok(Token::AddAssign) | Ok(Token::SubAssign) | Ok(Token::MulAssign)
+                | Ok(Token::DivAssign) => self.parse_compound_assign(primary)?,
 
                 // break for all others
                 Ok(Token::Endl) | Ok(Token::BlockStart) => {
@@ -587,13 +586,14 @@ impl Parser {
         .into())
     }
 
-    /// Desugars a compound assignment (`target += value` / `target -= value`) into
-    /// `target = target +/- value`.
+    /// Desugars a compound assignment (+=, -=, *=, /=)
     fn parse_compound_assign(&mut self, target: Rc<ASTNode>) -> Result<Rc<ASTNode>> {
         // Safety: peek
         let op = match self.next().unwrap() {
             Token::AddAssign => Token::Add,
             Token::SubAssign => Token::Sub,
+            Token::MulAssign => Token::Mul,
+            Token::DivAssign => Token::Div,
             _ => unreachable!(),
         };
         let value = self.parse_expr(None)?;

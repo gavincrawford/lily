@@ -110,13 +110,21 @@ fn unary() {
 
 #[test]
 fn compound_assign() {
-    lex_eq!("var += 1; var -= 1;" =>
+    lex_eq!("var += 1; var -= 1; var *= 1; var /= 1;" =>
         Identifier(intern!("var")),
         AddAssign,
         Number(1.),
         Endl,
         Identifier(intern!("var")),
         SubAssign,
+        Number(1.),
+        Endl,
+        Identifier(intern!("var")),
+        MulAssign,
+        Number(1.),
+        Endl,
+        Identifier(intern!("var")),
+        DivAssign,
         Number(1.),
         Endl
     );

@@ -93,6 +93,8 @@ test!(comparison_truthy => (
 test!(compound_assign => (
     n_add := 5,
     n_sub := 7,
+    n_mul := 12,
+    n_div := 5,
     n_expr := 6,
     n_deref := 10
 ));

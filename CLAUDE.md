@@ -83,7 +83,7 @@ cargo run -- <file.ly> --debug-lexer   # Debug mode - prints tokens during execu
 - **lylib/src/interner.rs**: String interning system for memory optimization
 - **lylib/src/lexer/mod.rs**: Lexer implementation, converts a buffer into tokens; exposes `lex` (raw tokens) and `lex_spanned` (tokens with line + byte-offset span)
 - **lylib/src/lexer/token/mod.rs**: `Token` enum and `SpannedToken` (token + line + byte-offset span `[start, end)`); `Token::at(line, start, end)` produces a `SpannedToken`
-- **lylib/src/parser/mod.rs**: Parser implementation, consumes `Vec<SpannedToken>` into a syntax tree (uses `VecDeque` internally; `peek_line` attaches line context to errors). Postfix `++`/`--` are desugared at parse time into `ASTNode::Assign { target, value: Op(target, +/-, 1) }`, so they work on any valid assignment target (simple identifiers, index expressions, deref chains). Compound assignment `+=`/`-=` desugars the same way via `parse_compound_assign` (`ASTNode::Assign { target, value: Op(target, +/-, rhs) }`), with `rhs` parsed as a full expression.
+- **lylib/src/parser/mod.rs**: Parser implementation, consumes `Vec<SpannedToken>` into a syntax tree (uses `VecDeque` internally; `peek_line` attaches line context to errors). Postfix `++`/`--` are desugared at parse time into `ASTNode::Assign { target, value: Op(target, +/-, 1) }`, so they work on any valid assignment target (simple identifiers, index expressions, deref chains). Compound assignment `+=`/`-=`/`*=`/`/=` desugars the same way via `parse_compound_assign` (`ASTNode::Assign { target, value: Op(target, +/-/*//, rhs) }`), with `rhs` parsed as a full expression.
 - **lylib/src/parser/astnode.rs**: AST node variant definitions (includes `Break`, `UnaryOp`, `Identifier`, etc.). `Identifier(ID)` is distinct from `Literal(Token)`: the parser and interpreter treat identifiers and literals as separate node kinds.
 - **lylib/src/execute.rs**: `LyConfig` factory — configures and runs the interpreter (debug toggles, includes/imports)
 - **ly/src/main.rs**: CLI entry point
@@ -103,7 +103,7 @@ The project uses an extensive macro system (`lylib/src/macros.rs`) to simplify A
 - **`block!()`** - Creates block AST nodes: `block!(node1, node2, node3)`
 - **`node!()`** - Comprehensive AST node creation with multiple patterns:
   - Operations: `node!(op lhs, Token::Add, rhs)`
-  - Unary operations: `node!(unary Token::Sub, ident!("x"))` (for `-x`/`!x`; postfix `++`/`--` and compound `+=`/`-=` desugar to `Assign` at parse time)
+  - Unary operations: `node!(unary Token::Sub, ident!("x"))` (for `-x`/`!x`; postfix `++`/`--` and compound `+=`/`-=`/`*=`/`/=` desugar to `Assign` at parse time)
   - Declarations: `node!(declare x => lit!(42))`
   - Assignments: `node!(assign x => lit!(100))`
   - Functions: `node!(func foo(a, b) => body)`

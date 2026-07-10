@@ -44,6 +44,16 @@ fn operator_spans() {
     let spanned = Lexer::default().lex_spanned(src.into()).unwrap();
     let token = spanned.iter().find(|t| *t.kind() == SubAssign).unwrap();
     assert_eq!(&src[token.start()..token.end()], "-=");
+
+    let src = "a *= 1;";
+    let spanned = Lexer::default().lex_spanned(src.into()).unwrap();
+    let token = spanned.iter().find(|t| *t.kind() == MulAssign).unwrap();
+    assert_eq!(&src[token.start()..token.end()], "*=");
+
+    let src = "a /= 1;";
+    let spanned = Lexer::default().lex_spanned(src.into()).unwrap();
+    let token = spanned.iter().find(|t| *t.kind() == DivAssign).unwrap();
+    assert_eq!(&src[token.start()..token.end()], "/=");
 }
 
 #[test]

@@ -42,6 +42,8 @@ x = 100             # assignment
 | `--` | Decrement | `x--`, `list[0]--`, `obj.field--` |
 | `+=` | Add & assign | `x += 1`, `list[0] += 2`, `obj.field += 3` |
 | `-=` | Subtract & assign | `x -= 1`, `list[0] -= 2`, `obj.field -= 3` |
+| `*=` | Multiply & assign | `x *= 2`, `list[0] *= 2`, `obj.field *= 2` |
+| `/=` | Divide & assign | `x /= 2`, `list[0] /= 2`, `obj.field /= 2` |
 | `-` | Negate | `-x` |
 
 ### Comparison
