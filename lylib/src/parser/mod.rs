@@ -262,13 +262,28 @@ impl Parser {
         self.expect(Token::Dot)?;
 
         // expect an identifier after the dot
-        let child = match self.next() {
-            Some(Token::Identifier(id)) => ASTNode::Identifier(ID::new_sym(id)).into(),
+        let child_id = match self.next() {
+            Some(Token::Identifier(id)) => ID::new_sym(id),
             Some(token) => bail!("expected identifier after '.', found {token:?}"),
             None => bail!("unexpected EOF after '.'"),
         };
 
-        Ok(ASTNode::Deref { parent, child }.into())
+        // if parent is itself a plain identifier, or previously-folded chain, the access chain is
+        // resolvable at parse-time. in this case, we can return an `ID::Member` directly instead of
+        // an entire `ASTNode::Deref`
+        if let ASTNode::Identifier(parent_id) = &*parent {
+            return Ok(ASTNode::Identifier(ID::Member {
+                parent: Rc::new(parent_id.clone()),
+                member: Rc::new(child_id),
+            })
+            .into());
+        }
+
+        Ok(ASTNode::Deref {
+            parent,
+            child: ASTNode::Identifier(child_id).into(),
+        }
+        .into())
     }
 
     /// Parses a while loop.

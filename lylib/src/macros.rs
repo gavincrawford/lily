@@ -265,13 +265,13 @@ macro_rules! node {
         }.into()
     }};
     ($first:tt $(. $rest:tt)+) => {{ // implied derefs (`a.b.c`)
-        let mut current = ident!(stringify!($first));
+        let mut current = crate::interpreter::ID::new_sym(intern!(stringify!($first)));
         $(
-            current = ASTNode::Deref {
-                parent: current,
-                child: ident!(stringify!($rest)),
-            }.into();
+            current = crate::interpreter::ID::Member {
+                parent: std::rc::Rc::new(current),
+                member: std::rc::Rc::new(crate::interpreter::ID::new_sym(intern!(stringify!($rest)))),
+            };
         )+
-        current
+        ASTNode::Identifier(current).into()
     }};
 }

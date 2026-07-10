@@ -266,44 +266,46 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 // methods run against their instance's SVT, module functions run against their
                 // module's SVT)
                 let (variable, call_context) = match target.as_ref() {
-                    ASTNode::Identifier(id) => (self.get(id)?, None),
-                    ASTNode::Deref { parent, child } => {
-                        // try to convert to ID for simple derefs (`a.b`)
-                        if let Ok(id) = self.node_to_id(target.clone()) {
-                            let variable = self.get(&id)?;
+                    ASTNode::Identifier(id) => {
+                        let variable = self.get(id)?;
 
-                            // check if this is an instance method or module function call
-                            let call_context = match &**parent {
-                                ASTNode::Identifier(parent_id) => {
-                                    // try to get the parent variable, but don't fail if it doesn't exist
-                                    // this is because we only need to expose contexts for some
-                                    // nodes, others apply to global context
-                                    let instance_ctx = if let Ok(parent_var) = self.get(parent_id) {
-                                        match (&parent_var, &variable) {
-                                            (
-                                                Variable::Owned(ASTNode::Instance { svt, .. }),
-                                                Variable::Function(_),
-                                            ) => Some(svt.clone()),
-                                            _ => None,
-                                        }
-                                    } else {
-                                        None
+                        // check if this is an instance method or module function call
+                        let call_context = match id {
+                            ID::Member { parent, .. } => {
+                                // try to get the parent variable, but don't fail if it doesn't
+                                // exist-- this is because we only need to expose contexts for
+                                // some nodes, others apply to global context
+                                let instance_ctx = if let Ok(parent_var) = self.get(parent) {
+                                    match (&parent_var, &variable) {
+                                        (
+                                            Variable::Owned(ASTNode::Instance { svt, .. }),
+                                            Variable::Function(_),
+                                        ) => Some(svt.clone()),
+                                        _ => None,
+                                    }
+                                } else {
+                                    None
+                                };
+
+                                // parent isn't an instance-- check if it's a module instead
+                                instance_ctx.or_else(|| {
+                                    let ID::Symbol(sym) = &**parent else {
+                                        return None;
                                     };
+                                    // fetch from current context first, base context otherwise
+                                    let current = self.context.as_ref().unwrap_or(&self.memory);
+                                    current.borrow().get_module(*sym).ok()
+                                })
+                            }
+                            _ => None,
+                        };
 
-                                    // parent isn't an instance-- check if it's a module instead
-                                    instance_ctx.or_else(|| {
-                                        let ID::Symbol(sym) = parent_id else {
-                                            return None;
-                                        };
-                                        // fetch from current context first, base context otherwise
-                                        let current = self.context.as_ref().unwrap_or(&self.memory);
-                                        current.borrow().get_module(*sym).ok()
-                                    })
-                                }
-                                _ => None,
-                            };
-
-                            (variable, call_context)
+                        (variable, call_context)
+                    }
+                    ASTNode::Deref { parent, child } => {
+                        // try to convert to ID directly
+                        if let Ok(id) = self.node_to_id(target.clone()) {
+                            (self.get(&id)?, None)
                         } else {
                             // for complex derefs (like `parent().child`), evaluate the parent in-place
                             let parent_value = self
