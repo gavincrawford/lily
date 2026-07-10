@@ -27,7 +27,7 @@ macro_rules! var_eq {
 /// Shorthand for comparing a variable with an owned literal.
 macro_rules! var_eq_literal {
     ($interpreter:expr, $id:tt, $token:expr) => {
-        var_eq!($interpreter, $id, ASTNode::inner_to_owned(&lit!($token)));
+        var_eq!($interpreter, $id, ASTNode::try_inner(lit!($token)));
     };
 }
 

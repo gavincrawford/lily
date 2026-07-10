@@ -52,8 +52,11 @@ mod tests {
     #[test]
     fn resolve_literal_unchanged() {
         let mut interpreter = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
-        let literal = ASTNode::inner_to_owned(&lit!(42));
-        assert_eq!(*interpreter.resolve_refs(literal.clone()).unwrap(), literal);
+        let literal = lit!(42);
+        assert_eq!(
+            *interpreter.resolve_refs(literal.as_ref().clone()).unwrap(),
+            literal.as_ref().clone()
+        );
     }
 
     #[test]

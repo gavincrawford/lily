@@ -337,8 +337,9 @@ impl Parser {
                             let ASTNode::Identifier(id) = &**target else {
                                 bail!("invalid default field '{target:?}'");
                             };
-                            default_fields
-                                .push((id, Variable::Owned(ASTNode::inner_to_owned(value))));
+
+                            // deep-clone `value`, instead of just cloning it's containing `Rc`
+                            default_fields.push((id, Variable::Owned(value.as_ref().clone())));
                         }
 
                         // if the member is a function, add a reference to it

@@ -142,13 +142,6 @@ impl ASTNode {
         bail!("cannot create template of non-structure value: {self:?}");
     }
 
-    /// Clones a borrowed `Rc<ASTNode>`'s inner value. Use when you only have `&Rc<ASTNode>`
-    /// and can't move it. Prefer `try_inner` when possible.
-    // NOTE: only two uses remaining. worth noting, removal/inlining might be more pragmatic
-    pub(crate) fn inner_to_owned(rc: &Rc<ASTNode>) -> ASTNode {
-        (**rc).clone()
-    }
-
     /// Converts an owned `Rc<ASTNode>` into an owned `ASTNode`, avoiding a clone of the inner
     /// value if `rc` is the sole owner of it.
     pub(crate) fn try_inner(rc: Rc<ASTNode>) -> ASTNode {
