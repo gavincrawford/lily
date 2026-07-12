@@ -238,9 +238,10 @@ test!(struct_functions => (
 ));
 
 test!(struct_nested_method_call => (
-    first := 42,
-    second := 43,
-    val := 43
+    inc1 := 42,
+    val1 := 42,
+    inc2 := 43,
+    val2 := 43
 ));
 
 test!(struct_zero_fields => (
