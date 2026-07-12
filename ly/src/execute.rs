@@ -6,19 +6,27 @@ use lylib::{
 use std::{
     fs,
     io::{stdin, stdout},
+    path::Path,
 };
 
 /// Executes a file.
 pub fn execute(args: Args) -> Result<()> {
     // read file to buffer
-    let buf = fs::read_to_string(args.buffer).context("failed to open file")?;
+    let buf = fs::read_to_string(&args.buffer).context("failed to open file")?;
 
-    // create lily config & execute file
+    // create lily config
     let mut cfg = LyConfig::default();
     if !args.no_std {
         cfg.include_as("math", include_str!("./std/math.ly").to_string());
         cfg.include_as("complex", include_str!("./std/complex.ly").to_string());
     }
+
+    // set cwd to buffer's enclosing directory
+    if let Some(dir) = Path::new(&args.buffer).parent() {
+        cfg.set_cwd(dir.to_path_buf());
+    }
+
+    // run file
     let interp = cfg
         .debug_parser(args.debug_parser)
         .debug_lexer(args.debug_lexer)
