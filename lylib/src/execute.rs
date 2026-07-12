@@ -36,6 +36,8 @@ pub struct LyConfig {
     dbg_tokens: bool,
     /// If true, debug parser output.
     dbg_ast: bool,
+    /// Working directory.
+    cwd: Option<PathBuf>,
 }
 
 impl Default for LyConfig {
@@ -51,7 +53,14 @@ impl LyConfig {
             include: vec![],
             dbg_ast: false,
             dbg_tokens: false,
+            cwd: None,
         }
+    }
+
+    /// Sets the working directory. This is used as the basis for module imports.
+    pub fn set_cwd(&mut self, cwd: PathBuf) -> &mut Self {
+        self.cwd = Some(cwd);
+        self
     }
 
     /// Adds a file to be included at base scope.
@@ -121,8 +130,13 @@ impl LyConfig {
             })
             .collect::<Result<Vec<Rc<ASTNode>>>>()?;
 
-        // Parse file
+        // Create parser, and set the CWD if applicable
         let mut parser = Parser::new(tokens)?;
+        if let Some(path) = &self.cwd {
+            parser.set_cwd(path.clone());
+        }
+
+        // Parse file
         let ast = parser
             .parse_with_imports(includes)
             .context("failed to parse buffer")?;

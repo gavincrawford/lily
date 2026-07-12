@@ -65,7 +65,7 @@ macro_rules! test {
         use std::io::Cursor;
         let mut i = Interpreter::new(Cursor::new(vec![]), Cursor::new(vec![]));
         let mut p = Parser::new(Lexer::default().lex_spanned(include_str!($path).to_string()).unwrap()).unwrap();
-        p.set_pwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
+        p.set_cwd(std::path::PathBuf::from("src/interpreter/tests/feature/"));
         let ast = p.parse().unwrap();
         i.execute(ast).unwrap();
 

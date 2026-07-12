@@ -19,7 +19,7 @@ macro_rules! parse_test {
         #[test]
         fn $test() {
             let mut parser = Parser::new(Lexer::default().lex_spanned($code.into()).unwrap()).unwrap();
-            parser.set_pwd($path.into());
+            parser.set_cwd($path.into());
             let result = parser.parse();
             assert!(result.is_ok(), "Parser failed: {:?}", result);
             let result = result.unwrap(); // safety ^^^

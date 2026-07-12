@@ -30,7 +30,7 @@ impl Parser {
     }
 
     /// Sets the current working directory, used to set relative location of imports.
-    pub fn set_pwd(&mut self, path: PathBuf) {
+    pub fn set_cwd(&mut self, path: PathBuf) {
         self.path = path;
     }
 
@@ -165,13 +165,13 @@ impl Parser {
         let mut parser = Self::new(tokens)?;
         path.pop();
         let temp = parser.path.clone();
-        parser.set_pwd(path.clone());
+        parser.set_cwd(path.clone());
 
         // parse the module
         let body = parser.parse().context("failed to parse module body")?;
 
         // reset old parser working directory
-        parser.set_pwd(temp);
+        parser.set_cwd(temp);
 
         Ok(body)
     }
