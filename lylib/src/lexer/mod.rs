@@ -161,12 +161,6 @@ impl Lexer {
 
                             self.tokens
                                 .push(Endl.at(self.line, self.char, self.char + 1));
-
-                            // advance line counter only if this is an endline
-                            // semicolons do not count as lines
-                            if c == '\n' {
-                                self.line += 1;
-                            }
                         }
 
                         // comments
@@ -276,6 +270,9 @@ impl Lexer {
                 }
             }
 
+            if c == '\n' {
+                self.line += 1;
+            }
             self.char += 1;
         }
     }

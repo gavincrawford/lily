@@ -72,3 +72,22 @@ fn multiline_spans() {
     assert_eq!(&src[y_token.start()..y_token.end()], "y");
     assert_eq!(y_token.line(), 2);
 }
+
+#[test]
+fn comment_spans() {
+    // a comment's newline must still advance the line counter
+    let src = "# comment\nlet x = 1;";
+    let spanned = Lexer::default().lex_spanned(src.into()).unwrap();
+    let lines: Vec<usize> = spanned.iter().map(|t| t.line()).collect();
+    // line 1: Endl (from the comment);   line 2: let, x, =, 1, Endl
+    assert_eq!(lines, vec![1, 2, 2, 2, 2, 2]);
+
+    // multiple consecutive comment lines should each advance the counter by one
+    let src = "# one\n# two\n# three\nlet x = 1;";
+    let spanned = Lexer::default().lex_spanned(src.into()).unwrap();
+    let x_token = spanned
+        .iter()
+        .find(|t| *t.kind() == Identifier(intern!("x")))
+        .unwrap();
+    assert_eq!(x_token.line(), 4);
+}
