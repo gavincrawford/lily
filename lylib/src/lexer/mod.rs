@@ -147,28 +147,18 @@ impl Lexer {
                             self.keyword_register.push(c);
                         }
                         '.' => {
-                            if !self.keyword_register.is_empty() {
-                                self.push_token(
-                                    Identifier(intern!(self.keyword_register.clone())),
-                                    self.char,
-                                );
-                            }
-                            self.keyword_register.clear();
+                            // flush any pending keywords
+                            self.flush_keyword();
+
                             self.tokens
                                 .push(Dot.at(self.line, self.char, self.char + 1));
                         }
 
                         // endlines
                         ';' | '\n' => {
-                            if let Some(token) = Token::from_keyword(&self.keyword_register) {
-                                self.push_token(token, self.char);
-                            } else if !self.keyword_register.is_empty() {
-                                self.push_token(
-                                    Identifier(intern!(self.keyword_register.clone())),
-                                    self.char,
-                                );
-                            }
-                            self.keyword_register.clear();
+                            // flush any pending keywords
+                            self.flush_keyword();
+
                             self.tokens
                                 .push(Endl.at(self.line, self.char, self.char + 1));
 
