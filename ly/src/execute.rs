@@ -32,9 +32,10 @@ pub fn execute(args: Args) -> Result<()> {
         .debug_lexer(args.debug_lexer)
         .execute(buf, stdout(), stdin())?;
 
-    // for debugging
-    #[cfg(debug_assertions)]
-    println!("{}", interp.memory.borrow());
+    // map out memory (when in debug mode)
+    if args.debug_memory {
+        println!("{}", interp.memory.borrow());
+    }
     Ok(())
 }
 
@@ -49,6 +50,7 @@ mod tests {
             no_std: false,
             debug_parser: false,
             debug_lexer: false,
+            debug_memory: false,
         });
         assert!(res.is_ok());
     }
@@ -60,6 +62,7 @@ mod tests {
             no_std: false,
             debug_parser: false,
             debug_lexer: false,
+            debug_memory: false,
         });
         assert!(res.is_ok());
     }

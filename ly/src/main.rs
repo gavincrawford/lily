@@ -19,6 +19,10 @@ struct Args {
     /// Debug lexer output during execution.
     #[arg(long)]
     debug_lexer: bool,
+
+    /// Debug memory map after execution.
+    #[arg(long)]
+    debug_memory: bool,
 }
 
 fn main() {
