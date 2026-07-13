@@ -1,5 +1,5 @@
 mod execute;
-use clap::{arg, command, Parser};
+use clap::Parser;
 use execute::execute;
 
 #[derive(Parser, Debug)]
