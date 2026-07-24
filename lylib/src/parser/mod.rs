@@ -330,11 +330,11 @@ impl Parser {
                     unreachable!();
                 };
                 for node in body_nodes {
-                    match &**node {
+                    match node.as_ref() {
                         // if the member is a structure variable, add an owned value
                         ASTNode::Declare { target, value } => {
                             // if this field is literal, add it, bail otherwise
-                            let ASTNode::Identifier(id) = &**target else {
+                            let ASTNode::Identifier(id) = target.as_ref() else {
                                 bail!("invalid default field '{target:?}'");
                             };
 

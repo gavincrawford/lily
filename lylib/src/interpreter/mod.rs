@@ -289,7 +289,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                                 // parent isn't an instance-- check if it's a module instead
                                 instance_ctx.or_else(|| {
-                                    let ID::Symbol(sym) = &**parent else {
+                                    let ID::Symbol(sym) = parent.as_ref() else {
                                         return None;
                                     };
                                     // fetch from current context first, base context otherwise
@@ -517,7 +517,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
 
                 // Resolve parent where it's applicable. This is done manually for a few cases that
                 // chained derefs might apply to
-                let resolved_parent = match &**parent {
+                let resolved_parent = match parent.as_ref() {
                     ASTNode::FunctionCall { .. } | ASTNode::UnaryOp { .. } => &self
                         .execute_expr(parent)?
                         .context("deref parent cannot be undefined")?,

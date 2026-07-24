@@ -21,7 +21,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let parent_id = self.node_to_id(parent.clone())?;
 
                 // get the child identifier
-                if let ASTNode::Identifier(child_id) = &**child {
+                if let ASTNode::Identifier(child_id) = child.as_ref() {
                     // construct a member access ID
                     Ok(ID::Member {
                         parent: Rc::new(parent_id),
