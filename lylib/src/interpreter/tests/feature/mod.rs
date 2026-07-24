@@ -119,6 +119,8 @@ test!(functions_truthy => (
     is_truthy := true
 ));
 
+test!(functions_unused_return => "reached\n");
+
 test!(functions_zero_args => (
     result := "hello",
     num := 42

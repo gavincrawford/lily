@@ -85,13 +85,21 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         if let ASTNode::Block(statements) = &*ast {
             // if this segment is a block, execute all of its statements
             for statement in statements {
+                // only pass return value through for functions above base scope.
+                //
+                // if we let cases at base scope through, a bare function call that returns a value
+                // would accidentally exit out of this `execute` call, ending the script's run-time
+                // abruptly, and without warning
+                //
+                // BUG: this is still an issue if these bare function calls are executed inside some
+                // other context. figure out some way to execute returns in a way in which they
+                // recognize their reciever, or add some sort of sentinel value (return the entire
+                // ASTNode::Return, for example)
                 if let Some(ret_value) = self
                     .execute_expr(statement)
                     .context("failed to evaluate expression")?
+                    && self.scope_id > 0
                 {
-                    if self.scope_id == 0 {
-                        bail!("cannot return as base scope");
-                    }
                     return Ok(Some(ret_value));
                 }
             }
@@ -560,6 +568,11 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 let expr = self
                     .resolve_refs(ASTNode::try_inner(expr))
                     .context("could not flatten references")?;
+
+                // bail if this return is called at scope level zero
+                if self.scope_id == 0 {
+                    bail!("cannot return as base scope");
+                }
 
                 Ok(Some(expr))
             }
