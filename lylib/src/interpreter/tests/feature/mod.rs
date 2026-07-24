@@ -111,6 +111,10 @@ test!(functions_arg_copy => (
     modified := 105
 ));
 
+test!(functions_bare_nested => "reached\n");
+
+test!(functions_bare_return => "reached\n");
+
 test!(functions_by_ref => (
     res := 2
 ));
@@ -118,8 +122,6 @@ test!(functions_by_ref => (
 test!(functions_truthy => (
     is_truthy := true
 ));
-
-test!(functions_unused_return => "reached\n");
 
 test!(functions_zero_args => (
     result := "hello",

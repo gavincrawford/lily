@@ -85,22 +85,15 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         if let ASTNode::Block(statements) = &*ast {
             // if this segment is a block, execute all of its statements
             for statement in statements {
-                // only pass return value through for functions above base scope.
-                //
-                // if we let cases at base scope through, a bare function call that returns a value
-                // would accidentally exit out of this `execute` call, ending the script's run-time
-                // abruptly, and without warning
-                //
-                // BUG: this is still an issue if these bare function calls are executed inside some
-                // other context. figure out some way to execute returns in a way in which they
-                // recognize their reciever, or add some sort of sentinel value (return the entire
-                // ASTNode::Return, for example)
-                if let Some(ret_value) = self
+                // only pass through returns and breaks to the outer scope
+                // this prevents bare functions that return a value from exiting here, as they still
+                // return `Some`, but have no use that consumes it
+                if let Some(result) = self
                     .execute_expr(statement)
                     .context("failed to evaluate expression")?
-                    && self.scope_id > 0
+                    && matches!(result.as_ref(), ASTNode::Return(_) | ASTNode::Break)
                 {
-                    return Ok(Some(ret_value));
+                    return Ok(Some(result.clone()));
                 }
             }
         } else {
@@ -355,7 +348,7 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     );
                 }
 
-                match variable {
+                let res = match variable {
                     Variable::Builtin(n) => {
                         if let Some((_, closure)) = self.builtins.closures.get(n) {
                             // call closure with i/o handles
@@ -416,6 +409,16 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                             .into(),
                         ))
                     }
+                };
+
+                // destructure return values, return their inner value
+                // other contentful results should pass directly through
+                match res? {
+                    Some(value) => match value.as_ref() {
+                        ASTNode::Return(return_value) => Ok(Some(return_value.clone())),
+                        _ => Ok(Some(value)),
+                    },
+                    None => Ok(None),
                 }
             }
             ASTNode::Struct { id, .. } => {
@@ -574,7 +577,8 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                     bail!("cannot return as base scope");
                 }
 
-                Ok(Some(expr))
+                // rewrap return value in node sentinel
+                Ok(Some(ASTNode::Return(expr).into()))
             }
             ASTNode::Module { path, alias, body } => {
                 let ctx = match alias {
