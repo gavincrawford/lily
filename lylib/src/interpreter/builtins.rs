@@ -30,135 +30,128 @@ impl Debug for Builtins {
 
 impl Builtins {
     pub(crate) fn new() -> Self {
-        Self {
-            closures: vec![
-                (
-                    intern!("print"),
-                    Box::new(|stdout, _stdin, args| {
-                        unpack!(args => value);
-                        match &**value {
-                            ASTNode::Literal(token) => writeln!(stdout, "{token}"),
-                            other => writeln!(stdout, "{other:?}"),
-                        }?;
-                        Ok(None)
-                    }),
-                ),
-                (
-                    intern!("len"),
-                    Box::new(|_stdout, _stdin, args| {
-                        unpack!(args => item);
-                        match &**item {
-                            ASTNode::List(items) => {
-                                Ok(Some(lit!(Token::Number(items.len() as f64))))
-                            }
-                            ASTNode::Literal(Token::Str(string)) => {
-                                Ok(Some(lit!(Token::Number(string.len() as f64))))
-                            }
-                            _ => bail!("cannot take length of {:?}", &**item),
+        let closures: Vec<(usize, Box<ExFn>)> = vec![
+            (
+                intern!("print"),
+                Box::new(|stdout, _stdin, args| {
+                    unpack!(args => value);
+                    match &**value {
+                        ASTNode::Literal(token) => writeln!(stdout, "{token}"),
+                        other => writeln!(stdout, "{other:?}"),
+                    }?;
+                    Ok(None)
+                }),
+            ),
+            (
+                intern!("len"),
+                Box::new(|_stdout, _stdin, args| {
+                    unpack!(args => item);
+                    match &**item {
+                        ASTNode::List(items) => Ok(Some(lit!(Token::Number(items.len() as f64)))),
+                        ASTNode::Literal(Token::Str(string)) => {
+                            Ok(Some(lit!(Token::Number(string.len() as f64))))
                         }
-                    }),
-                ),
-                (
-                    intern!("split"),
-                    Box::new(|_stdout, _stdin, args| {
-                        unpack!(args => string, delimiter);
-                        let delimiter = match &**delimiter {
-                            ASTNode::Literal(Token::Str(s)) => s.clone(),
-                            ASTNode::Literal(Token::Char(c)) => c.to_string(),
-                            _ => bail!(
-                                "split delimiter must be a string or char, got {:?}",
-                                &**delimiter
-                            ),
-                        };
-                        match &**string {
-                            ASTNode::Literal(Token::Str(string)) => {
-                                let parts: Vec<Rc<RefCell<Variable>>> = string
-                                    .split(delimiter.as_str())
-                                    .map(|part| {
-                                        Variable::Owned(ASTNode::Literal(Token::Str(
-                                            part.to_string(),
-                                        )))
+                        _ => bail!("cannot take length of {:?}", &**item),
+                    }
+                }),
+            ),
+            (
+                intern!("split"),
+                Box::new(|_stdout, _stdin, args| {
+                    unpack!(args => string, delimiter);
+                    let delimiter = match &**delimiter {
+                        ASTNode::Literal(Token::Str(s)) => s.clone(),
+                        ASTNode::Literal(Token::Char(c)) => c.to_string(),
+                        _ => bail!(
+                            "split delimiter must be a string or char, got {:?}",
+                            &**delimiter
+                        ),
+                    };
+                    match &**string {
+                        ASTNode::Literal(Token::Str(string)) => {
+                            let parts: Vec<Rc<RefCell<Variable>>> = string
+                                .split(delimiter.as_str())
+                                .map(|part| {
+                                    Variable::Owned(ASTNode::Literal(Token::Str(part.to_string())))
                                         .into()
-                                    })
-                                    .collect();
-                                Ok(Some(ASTNode::List(parts).into()))
-                            }
-                            _ => bail!("cannot split {:?}", &**string),
+                                })
+                                .collect();
+                            Ok(Some(ASTNode::List(parts).into()))
                         }
-                    }),
-                ),
-                (
-                    intern!("sort"),
-                    Box::new(|_stdout, _stdin, args| {
-                        unpack!(args => list);
-                        match &**list {
-                            ASTNode::List(items) => {
-                                let mut clone = items.clone();
-                                clone.sort();
-                                Ok(Some(ASTNode::List(clone).into()))
-                            }
-                            _ => bail!("cannot sort {:?}", &**list),
+                        _ => bail!("cannot split {:?}", &**string),
+                    }
+                }),
+            ),
+            (
+                intern!("sort"),
+                Box::new(|_stdout, _stdin, args| {
+                    unpack!(args => list);
+                    match &**list {
+                        ASTNode::List(items) => {
+                            let mut clone = items.clone();
+                            clone.sort();
+                            Ok(Some(ASTNode::List(clone).into()))
                         }
-                    }),
-                ),
-                (
-                    intern!("chars"),
-                    Box::new(|_stdout, _stdin, args| {
-                        unpack!(args => string);
-                        match &**string {
-                            ASTNode::Literal(Token::Str(v)) => {
-                                let values: Vec<Rc<RefCell<Variable>>> = v
-                                    .chars()
-                                    .map(|ch| {
-                                        Variable::Owned(ASTNode::Literal(Token::Char(ch))).into()
-                                    })
-                                    .collect();
-                                Ok(Some(ASTNode::List(values).into()))
-                            }
-                            _ => bail!("cannot fetch characters of {:?}", &**string),
+                        _ => bail!("cannot sort {:?}", &**list),
+                    }
+                }),
+            ),
+            (
+                intern!("chars"),
+                Box::new(|_stdout, _stdin, args| {
+                    unpack!(args => string);
+                    match &**string {
+                        ASTNode::Literal(Token::Str(v)) => {
+                            let values: Vec<Rc<RefCell<Variable>>> = v
+                                .chars()
+                                .map(|ch| Variable::Owned(ASTNode::Literal(Token::Char(ch))).into())
+                                .collect();
+                            Ok(Some(ASTNode::List(values).into()))
                         }
-                    }),
-                ),
-                (
-                    intern!("assert"),
-                    Box::new(|_stdout, _stdin, args| {
-                        unpack!(args => condition);
-                        match &**condition {
-                            ASTNode::Literal(Token::Bool(true)) => {}
-                            _ => return Err(anyhow!("assertion failed")),
+                        _ => bail!("cannot fetch characters of {:?}", &**string),
+                    }
+                }),
+            ),
+            (
+                intern!("assert"),
+                Box::new(|_stdout, _stdin, args| {
+                    unpack!(args => condition);
+                    match &**condition {
+                        ASTNode::Literal(Token::Bool(true)) => {}
+                        _ => return Err(anyhow!("assertion failed")),
+                    }
+                    Ok(None)
+                }),
+            ),
+            // ========================================
+            // ================= MATH =================
+            // ========================================
+            (
+                intern!("cos"),
+                Box::new(|_stdout, _stdin, args| {
+                    unpack!(args => n);
+                    match &**n {
+                        ASTNode::Literal(Token::Number(n)) => {
+                            Ok(Some(lit!(Token::Number(n.cos()))))
                         }
-                        Ok(None)
-                    }),
-                ),
-                // ========================================
-                // ================= MATH =================
-                // ========================================
-                (
-                    intern!("cos"),
-                    Box::new(|_stdout, _stdin, args| {
-                        unpack!(args => n);
-                        match &**n {
-                            ASTNode::Literal(Token::Number(n)) => {
-                                Ok(Some(lit!(Token::Number(n.cos()))))
-                            }
-                            _ => Err(anyhow!("cannot call cosine on: {n:#?}")),
+                        _ => Err(anyhow!("cannot call cosine on: {n:#?}")),
+                    }
+                }),
+            ),
+            (
+                intern!("sin"),
+                Box::new(|_stdout, _stdin, args| {
+                    unpack!(args => n);
+                    match &**n {
+                        ASTNode::Literal(Token::Number(n)) => {
+                            Ok(Some(lit!(Token::Number(n.sin()))))
                         }
-                    }),
-                ),
-                (
-                    intern!("sin"),
-                    Box::new(|_stdout, _stdin, args| {
-                        unpack!(args => n);
-                        match &**n {
-                            ASTNode::Literal(Token::Number(n)) => {
-                                Ok(Some(lit!(Token::Number(n.sin()))))
-                            }
-                            _ => Err(anyhow!("cannot call sine on: {n:#?}")),
-                        }
-                    }),
-                ),
-            ],
-        }
+                        _ => Err(anyhow!("cannot call sine on: {n:#?}")),
+                    }
+                }),
+            ),
+        ];
+        Self { closures }
     }
 }
 
