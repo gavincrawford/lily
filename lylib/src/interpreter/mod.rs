@@ -479,7 +479,14 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
                 self.drop_scope();
                 Ok(None)
             }
-            ASTNode::Break => Ok(Some(statement.clone())),
+            ASTNode::Break => {
+                // bail if this break is called at scope level zero
+                if self.scope_id == 0 {
+                    bail!("cannot break at base scope");
+                }
+
+                Ok(Some(statement.clone()))
+            }
             ASTNode::Index { target, index } => {
                 // get index as a usize
                 let usize_idx = self

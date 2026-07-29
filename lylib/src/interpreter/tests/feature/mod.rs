@@ -115,6 +115,10 @@ test!(functions_bare_nested => "reached\n");
 
 test!(functions_bare_return => "reached\n");
 
+test!(functions_break_no_loop => panic);
+
+test!(functions_break_own_loop => "12345\n");
+
 test!(functions_by_ref => (
     res := 2
 ));
@@ -135,6 +139,8 @@ test!(loops => (
 test!(loops_break => (
     x := 1
 ));
+
+test!(break_base_scope => panic);
 
 test!(loops_nested => (
     x := 25

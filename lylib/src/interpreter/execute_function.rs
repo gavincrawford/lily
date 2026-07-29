@@ -41,6 +41,13 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
             let result = self.execute(body.clone())?;
             self.drop_scope();
 
+            // a bare break with no enclosing loop in this function must not leak into the caller
+            if let Some(node) = &result
+                && ASTNode::Break == **node
+            {
+                bail!("cannot break outside of a loop");
+            }
+
             return Ok(result);
         }
         bail!("failed to execute non-function value")
