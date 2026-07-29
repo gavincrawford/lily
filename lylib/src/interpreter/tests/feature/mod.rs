@@ -263,6 +263,18 @@ test!(struct_builtins => (
     method_result := 3
 ));
 
+test!(struct_global_function_call => (
+    result := 10
+));
+
+test!(struct_global_type_instantiation => (
+    result := 5
+));
+
+test!(struct_global_variable_read => (
+    result := 10
+));
+
 test!(unary => (
     v := true,
     not_v := false,

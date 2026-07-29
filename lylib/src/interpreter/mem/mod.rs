@@ -80,9 +80,20 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
         let handle = module.borrow();
 
         // return value
-        handle
-            .get_owned(resolved_id)
-            .with_context(|| format!("failed to read {id:?}"))
+        let result = handle.get_owned(resolved_id);
+        drop(handle);
+
+        // struct/module methosds run with local `self.context`, but also need to be able to access
+        // root memory from `self.memory`-- retry there if we can't find this variable
+        if result.is_err()
+            && self.context.is_some()
+            && matches!(id, ID::Symbol(_))
+            && let Ok(value) = self.memory.borrow().get_owned(resolved_id)
+        {
+            return Ok(value);
+        }
+
+        result.with_context(|| format!("failed to read {id:?}"))
     }
 
     /// Declares a new variable.
