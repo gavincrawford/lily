@@ -37,6 +37,7 @@ cargo run -- <file.ly>                 # Run a Lily program
 cargo run -- <file.ly> --no-std        # Run without standard library
 cargo run -- <file.ly> --debug-parser  # Debug mode - prints AST during execution
 cargo run -- <file.ly> --debug-lexer   # Debug mode - prints tokens during execution
+cargo run -- <file.ly> --debug-memory  # Debug mode - prints the memory map after execution
 ```
 
 ## Architecture
@@ -71,6 +72,7 @@ Non-obvious details worth knowing (rest of the module layout is discoverable by 
 - **lylib/src/lexer/token/mod.rs**: `Token` enum and `SpannedToken` (token + line + byte-offset span `[start, end)`); `Token::at(line, start, end)` produces a `SpannedToken`
 - **lylib/src/parser/mod.rs**: consumes `Vec<SpannedToken>` into a syntax tree (uses `VecDeque` internally; `peek_line` attaches line context to errors). Postfix `++`/`--` are desugared at parse time into `ASTNode::Assign { target, value: Op(target, +/-, 1) }`, so they work on any valid assignment target (simple identifiers, index expressions, deref chains). Compound assignment `+=`/`-=`/`*=`/`/=` desugars the same way via `parse_compound_assign` (`ASTNode::Assign { target, value: Op(target, +/-/*//, rhs) }`), with `rhs` parsed as a full expression.
 - **lylib/src/parser/astnode.rs**: `Identifier(ID)` is distinct from `Literal(Token)` — parser and interpreter treat identifiers and literals as separate node kinds.
+- **Deref-chain pre-folding**: Simple deref chains (`a.b.c`) are folded at parse time into a single `ASTNode::Identifier(ID::Member { parent, member })` chain rather than nested `ASTNode::Deref` nodes; `ASTNode::Deref` is now only produced for chains rooted in a non-identifier expression (e.g. `parent().child`). See `ID` in `lylib/src/interpreter/id/mod.rs`.
 
 ## Macros System
 
@@ -97,7 +99,7 @@ The project uses an extensive macro system (`lylib/src/macros.rs`) to simplify A
   - Structures: `node!(struct Name => body)`
   - Lists: `node!([lit!(1), lit!(2), lit!(3)])`
   - Indices: `node!(list[0])`, `node!(list[expr])`, or `node!(index target, lit!(0))`
-  - Derefs: `node!(a.b.c)` or `node!(deref parent, child)`
+  - Derefs: `node!(a.b.c)` (folds to an `ASTNode::Identifier(ID::Member { .. })` chain) or `node!(deref parent, child)` (literal `ASTNode::Deref`, for non-identifier-rooted chains)
 
 ### Testing Macros
 
