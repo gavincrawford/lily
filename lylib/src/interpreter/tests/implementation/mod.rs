@@ -23,6 +23,14 @@ test!(factorial => (
     zero_fac := 1
 ));
 
+test!(dfs => (
+    result == node!([lit!(1), lit!(2), lit!(4), lit!(5), lit!(3), lit!(6), lit!(7)])
+));
+
+test!(bfs => (
+    result == node!([lit!(1), lit!(2), lit!(3), lit!(4), lit!(5), lit!(6), lit!(7)])
+));
+
 test!(matrix_rotation => (
     matrix_a == node!([
         node!([lit!(1), lit!(4), lit!(7)]),
