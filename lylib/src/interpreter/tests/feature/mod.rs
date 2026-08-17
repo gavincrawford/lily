@@ -275,6 +275,11 @@ test!(struct_global_variable_read => (
     result := 10
 ));
 
+test!(struct_list_field_isolation => (
+    a_val := 99,
+    b_val := 1
+));
+
 test!(unary => (
     v := true,
     not_v := false,

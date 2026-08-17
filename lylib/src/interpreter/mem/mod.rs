@@ -99,6 +99,18 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Declares a new variable.
     #[inline]
     pub(crate) fn declare(&mut self, id: &ID, value: Variable) -> Result<()> {
+        // indexing into a variable can't safely write through `resolve_access_target`'s walk, since
+        // the variable `Rc` may be shared. instead, deep-clone, mutate in isolation, and replace
+        if let ID::Member { parent, member } = id
+            && let ID::Index(index) = member.as_ref()
+        {
+            let mut current = self.get(parent)?;
+            current
+                .declare(*index, value, self.scope_id)
+                .with_context(|| format!("failed to declare {id:?}"))?;
+            return self.assign(parent, current);
+        }
+
         // get absolute module and ID
         let (module, resolved_id) = self.resolve_access_target(id)?;
 
@@ -114,6 +126,17 @@ impl<Out: Write, In: Read> Interpreter<Out, In> {
     /// Assigns to an existing variable.
     #[inline]
     pub(crate) fn assign(&mut self, id: &ID, value: Variable) -> Result<()> {
+        // see the comment in `declare` above-- identical pattern
+        if let ID::Member { parent, member } = id
+            && let ID::Index(index) = member.as_ref()
+        {
+            let mut current = self.get(parent)?;
+            current
+                .assign(*index, value, self.scope_id)
+                .with_context(|| format!("failed to assign {id:?}"))?;
+            return self.assign(parent, current);
+        }
+
         // get absolute module and ID
         let (module, resolved_id) = self.resolve_access_target(id)?;
 
