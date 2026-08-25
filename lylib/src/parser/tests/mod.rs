@@ -166,6 +166,15 @@ parse_test!(unary_mixed =>
     node!(declare c => node!(unary Sub, node!(unary LogicalNot, node!(unary LogicalNot, ident!("y")))))
 );
 
+parse_test!(unary_not_precedence =>
+    "let a = !true && false;
+    let b = !x == y;
+    let c = !a || !b;";
+    node!(declare a => node!(op node!(unary LogicalNot, lit!(true)), LogicalAnd, lit!(false))),
+    node!(declare b => node!(op node!(unary LogicalNot, ident!("x")), LogicalEq, ident!("y"))),
+    node!(declare c => node!(op node!(unary LogicalNot, ident!("a")), LogicalOr, node!(unary LogicalNot, ident!("b"))))
+);
+
 parse_test!(nested_imports ("src/parser/tests/nested_imports") =>
     "import \"./module1.ly\" as mod1; let ten_mod1 = mod1.add1(5, 5); let ten_mod2 = mod1.mod2.add2(5, 5);";
     node!(mod mod1 => block!(
