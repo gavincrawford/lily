@@ -23,7 +23,7 @@ let mixed_b = false && false || true
 # combined with negation
 let neg_and = !false && true
 let neg_or = !true || false
-let neg_group = !(true && false)
+let neg_group = !(!true && !false)
 
 # combined with comparisons
 let cmp = (1 < 2) && (3 > 2)

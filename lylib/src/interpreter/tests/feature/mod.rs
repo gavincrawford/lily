@@ -298,6 +298,13 @@ test!(unary_list_deref => (
     negate := -1
 ));
 
+test!(unary_not_precedence => (
+    a := false,
+    b := true,
+    c := true,
+    d := true
+));
+
 test!(unary_struct_deref => (
     after_inc := 6,
     after_dec := 4,

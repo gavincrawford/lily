@@ -80,7 +80,8 @@ impl Parser {
             Token::Add | Token::Sub => 5,
             Token::Mul | Token::Div | Token::Floor => 6,
             Token::Pow => 7,
-            Token::Increment | Token::Decrement => 8,
+            Token::LogicalNot => 8,
+            Token::Increment | Token::Decrement => 9,
             _ => 0,
         }
     }
